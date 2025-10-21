@@ -1,5 +1,5 @@
 import { apiService } from './api';
-import { Organization } from '../types/auth';
+import type { Organization } from '../types/auth';
 
 interface UpdateOrganizationData {
   name?: string;
