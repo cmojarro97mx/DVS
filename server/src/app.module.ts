@@ -14,6 +14,7 @@ import { CalendarModule } from './modules/calendar/calendar.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { QuotationsModule } from './modules/quotations/quotations.module';
 import { OrganizationsModule } from './modules/organizations/organizations.module';
+import { GoogleAuthModule } from './modules/google-auth/google-auth.module';
 import { PrismaService } from './common/prisma.service';
 
 @Module({
@@ -35,6 +36,7 @@ import { PrismaService } from './common/prisma.service';
     CalendarModule,
     LeadsModule,
     QuotationsModule,
+    GoogleAuthModule,
   ],
   providers: [PrismaService],
 })

@@ -18,6 +18,9 @@ model User {
   avatar        String?
   organizationId String?
   organization  Organization? @relation(fields: [organizationId], references: [id])
+  googleAccessToken  String?
+  googleRefreshToken String?
+  googleTokenExpiry  DateTime?
   refreshTokens RefreshToken[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
