@@ -120,6 +120,7 @@ export class AuthService {
         name: true,
         role: true,
         status: true,
+        organizationId: true,
       },
     });
   }
