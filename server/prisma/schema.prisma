@@ -1,0 +1,541 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          String    @default("employee")
+  status        String    @default("Active")
+  phone         String?
+  avatar        String?
+  organizationId String?
+  organization  Organization? @relation(fields: [organizationId], references: [id])
+  refreshTokens RefreshToken[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  assignedOperations OperationAssignee[]
+  assignedTasks     TaskAssignee[]
+  notes         Note[]
+  expenses      Expense[]
+  createdOperations Operation[] @relation("OperationCreator")
+  
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  @@map("refresh_tokens")
+}
+
+model Organization {
+  id              String    @id @default(uuid())
+  name            String
+  rfc             String?
+  taxRegime       String?
+  address         String?
+  phone           String?
+  email           String?
+  logo            String?
+  website         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  users           User[]
+  clients         Client[]
+  suppliers       Supplier[]
+  operations      Operation[]
+  bankAccounts    BankAccount[]
+  
+  @@map("organizations")
+}
+
+model Client {
+  id              String    @id @default(uuid())
+  name            String
+  contactPerson   String?
+  email           String?
+  phone           String?
+  address         String?
+  status          String    @default("Active")
+  currency        String    @default("USD")
+  rfc             String?
+  taxRegime       String?
+  cfdiUse         String?
+  taxAddress      String?
+  postalCode      String?
+  billingEmail    String?
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  operations      Operation[]
+  invoices        Invoice[]
+  quotations      Quotation[]
+  
+  @@map("clients")
+}
+
+model Supplier {
+  id              String    @id @default(uuid())
+  name            String
+  contactPerson   String?
+  email           String?
+  phone           String?
+  address         String?
+  status          String    @default("Active")
+  category        String?
+  rfc             String?
+  bankAccount     String?
+  notes           String?
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  operations      OperationSupplier[]
+  
+  @@map("suppliers")
+}
+
+model Employee {
+  id          String    @id @default(uuid())
+  name        String
+  email       String    @unique
+  role        String
+  status      String    @default("Active")
+  hireDate    DateTime?
+  phone       String?
+  department  String?
+  salary      Float?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@map("employees")
+}
+
+model Operation {
+  id                String    @id @default(uuid())
+  projectName       String
+  projectCategory   String?
+  startDate         DateTime?
+  deadline          DateTime?
+  status            String    @default("Planning")
+  progress          Int       @default(0)
+  operationType     String?
+  insurance         String?
+  shippingMode      String?
+  courrier          String?
+  bookingTracking   String?
+  etd               DateTime?
+  eta               DateTime?
+  pickupDate        DateTime?
+  pickupAddress     String?
+  deliveryAddress   String?
+  mbl_awb           String?
+  hbl_awb           String?
+  notes             String?
+  currency          String    @default("USD")
+  clientId          String?
+  client            Client?   @relation(fields: [clientId], references: [id])
+  organizationId    String?
+  organization      Organization? @relation(fields: [organizationId], references: [id])
+  createdById       String?
+  createdBy         User?     @relation("OperationCreator", fields: [createdById], references: [id])
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  assignees         OperationAssignee[]
+  suppliers         OperationSupplier[]
+  tasks             Task[]
+  operationNotes    Note[]
+  invoices          Invoice[]
+  payments          Payment[]
+  expenses          Expense[]
+  documents         Document[]
+  
+  @@map("operations")
+}
+
+model OperationAssignee {
+  id            String     @id @default(uuid())
+  operationId   String
+  userId        String
+  operation     Operation  @relation(fields: [operationId], references: [id], onDelete: Cascade)
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime   @default(now())
+  
+  @@unique([operationId, userId])
+  @@map("operation_assignees")
+}
+
+model OperationSupplier {
+  id            String     @id @default(uuid())
+  operationId   String
+  supplierId    String
+  operation     Operation  @relation(fields: [operationId], references: [id], onDelete: Cascade)
+  supplier      Supplier   @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  createdAt     DateTime   @default(now())
+  
+  @@unique([operationId, supplierId])
+  @@map("operation_suppliers")
+}
+
+model Column {
+  id        String   @id @default(uuid())
+  title     String
+  order     Int
+  boardId   String   @default("default")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  tasks     Task[]
+  
+  @@map("columns")
+}
+
+model Task {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  priority    String    @default("Medium")
+  dueDate     DateTime?
+  columnId    String
+  column      Column    @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  operationId String?
+  operation   Operation? @relation(fields: [operationId], references: [id], onDelete: Cascade)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  assignees   TaskAssignee[]
+  
+  @@map("tasks")
+}
+
+model TaskAssignee {
+  id        String   @id @default(uuid())
+  taskId    String
+  userId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  
+  @@unique([taskId, userId])
+  @@map("task_assignees")
+}
+
+model Note {
+  id          String    @id @default(uuid())
+  content     String
+  author      String
+  operationId String?
+  operation   Operation? @relation(fields: [operationId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id])
+  attachmentUrl String?
+  attachmentName String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@map("notes")
+}
+
+model Document {
+  id          String    @id @default(uuid())
+  name        String
+  type        String    @default("file")
+  url         String?
+  size        Int?
+  mimeType    String?
+  parentId    String?
+  operationId String?
+  operation   Operation? @relation(fields: [operationId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@map("documents")
+}
+
+model BankAccount {
+  id              String    @id @default(uuid())
+  accountName     String
+  bankName        String
+  accountNumber   String
+  currency        String    @default("USD")
+  balance         Float     @default(0)
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  invoices        Invoice[]
+  payments        Payment[]
+  expenses        Expense[]
+  transactions    BankTransaction[]
+  
+  @@map("bank_accounts")
+}
+
+model Invoice {
+  id              String    @id @default(uuid())
+  invoiceNumber   String    @unique
+  invoiceDate     DateTime
+  dueDate         DateTime
+  currency        String    @default("USD")
+  exchangeRate    Float     @default(1)
+  discount        Float     @default(0)
+  discountType    String    @default("%")
+  subTotal        Float
+  taxAmount       Float     @default(0)
+  total           Float
+  status          String    @default("Draft")
+  notes           String?
+  clientId        String?
+  client          Client?   @relation(fields: [clientId], references: [id])
+  operationId     String?
+  operation       Operation? @relation(fields: [operationId], references: [id])
+  bankAccountId   String?
+  bankAccount     BankAccount? @relation(fields: [bankAccountId], references: [id])
+  items           Json
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  payments        Payment[]
+  
+  @@map("invoices")
+}
+
+model Payment {
+  id              String    @id @default(uuid())
+  paymentDate     DateTime
+  amount          Float
+  currency        String    @default("USD")
+  paymentMethod   String
+  reference       String?
+  notes           String?
+  invoiceId       String?
+  invoice         Invoice?  @relation(fields: [invoiceId], references: [id])
+  operationId     String?
+  operation       Operation? @relation(fields: [operationId], references: [id])
+  bankAccountId   String?
+  bankAccount     BankAccount? @relation(fields: [bankAccountId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@map("payments")
+}
+
+model Expense {
+  id              String    @id @default(uuid())
+  itemName        String
+  currency        String    @default("USD")
+  exchangeRate    Float     @default(1)
+  price           Float
+  purchaseDate    DateTime
+  employee        String?
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id])
+  expenseCategory String?
+  purchasedFrom   String?
+  notes           String?
+  receiptUrl      String?
+  operationId     String?
+  operation       Operation? @relation(fields: [operationId], references: [id])
+  bankAccountId   String?
+  bankAccount     BankAccount? @relation(fields: [bankAccountId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@map("expenses")
+}
+
+model Event {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  location    String?
+  attendees   Json?
+  color       String?
+  allDay      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@map("events")
+}
+
+model Lead {
+  id          String    @id @default(uuid())
+  name        String
+  email       String?
+  phone       String?
+  company     String?
+  status      String    @default("New")
+  source      String?
+  notes       String?
+  estimatedValue Float?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@map("leads")
+}
+
+model Quotation {
+  id              String    @id @default(uuid())
+  quotationNumber String    @unique
+  quotationDate   DateTime  @default(now())
+  validUntil      DateTime?
+  clientName      String?
+  clientEmail     String?
+  clientCompany   String?
+  status          String    @default("Draft")
+  currency        String    @default("USD")
+  items           Json
+  subtotal        Float
+  tax             Float     @default(0)
+  total           Float
+  notes           String?
+  termsConditions String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@map("quotations")
+}
+
+model EmailAccount {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  provider        String
+  status          String    @default("disconnected")
+  syncEmail       Boolean   @default(true)
+  syncCalendar    Boolean   @default(true)
+  accessToken     String?
+  refreshToken    String?
+  tokenExpiry     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  emails          EmailMessage[]
+  
+  @@map("email_accounts")
+}
+
+model EmailMessage {
+  id          String    @id @default(uuid())
+  threadId    String?
+  accountId   String
+  account     EmailAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  folder      String    @default("inbox")
+  from        String
+  fromName    String?
+  to          Json
+  cc          Json?
+  bcc         Json?
+  subject     String
+  snippet     String?
+  body        String
+  htmlBody    String?
+  date        DateTime
+  unread      Boolean   @default(true)
+  starred     Boolean   @default(false)
+  attachments Json?
+  messageId   String?   @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@map("email_messages")
+}
+
+model FileFolder {
+  id          String    @id @default(uuid())
+  name        String
+  parentId    String?
+  type        String    @default("folder")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  files       File[]
+  
+  @@map("file_folders")
+}
+
+model File {
+  id          String    @id @default(uuid())
+  name        String
+  url         String
+  size        Int
+  mimeType    String
+  folderId    String?
+  folder      FileFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  preview     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@map("files")
+}
+
+model BankTransaction {
+  id              String    @id @default(uuid())
+  date            DateTime
+  description     String
+  amount          Float
+  type            String
+  bankAccountId   String
+  bankAccount     BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  reconciled      Boolean   @default(false)
+  reconciledWith  String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@map("bank_transactions")
+}
+
+model ReconciliationSession {
+  id              String    @id @default(uuid())
+  date            DateTime  @default(now())
+  status          String    @default("in_progress")
+  reconciliationMonth DateTime
+  reconciledCount Int       @default(0)
+  unreconciledCount Int     @default(0)
+  totalTransactions Int     @default(0)
+  totalDebitTransactions Int @default(0)
+  progressPercentage Float  @default(0)
+  reconciledAmount Float    @default(0)
+  reconciliationData Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@map("reconciliation_sessions")
+}
+
+model Automation {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  type        String
+  enabled     Boolean   @default(false)
+  trigger     Json?
+  actions     Json?
+  conditions  Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@map("automations")
+}
