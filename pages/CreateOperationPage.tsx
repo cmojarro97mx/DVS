@@ -248,11 +248,17 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
                 name: clientData.name,
                 email: clientData.email,
                 phone: clientData.phone,
-                contactPerson: clientData.contactPerson,
+                contactPerson: clientData.contactPerson || '',
                 address: clientData.address,
                 status: clientData.status,
             });
-            handleSelectClient(newClient);
+            const fullClient: Client = {
+                ...newClient,
+                contactPerson: newClient.contactPerson || '',
+                phone: newClient.phone || '',
+                address: newClient.address || '',
+            };
+            handleSelectClient(fullClient);
             setIsClientModalOpen(false);
             await loadClients();
         } catch (err) {
