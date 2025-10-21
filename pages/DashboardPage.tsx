@@ -1,0 +1,878 @@
+import React, { useState, useCallback, useMemo } from 'react';
+import { Sidebar } from '../components/Sidebar';
+import { TopHeader } from '../components/TopHeader';
+import DashboardPageContent from './DashboardPageContent';
+import LogisticsProjectsPage from './LogisticsProjectsPage';
+import CreateOperationPage from './CreateOperationPage';
+import OperationDetailPage from './OperationDetailPage';
+import ClientsManager from './ClientsManager';
+import CreateClientPage from './CreateClientPage'; // New
+import ClientDetailPage from './ClientDetailPanel';
+import EmailClientPage from './EmailClientPage';
+import FinanceDashboardPage from './FinanceDashboardPage';
+import FinanceHubPage from './FinanceHubPage'; // Import new page
+import AllExpensesPage from './AllExpensesPage';
+import AllInvoicesPage from './AllInvoicesPage';
+import AllPaymentsPage from './AllPaymentsPage';
+import CalendarPage from './CalendarPage';
+import FilesManagerPage from './FilesManagerPage';
+import QuotationsPage from './QuotationsPage';
+import EmployeesPage from './EmployeesPage';
+import AdminPage from './AdminPage'; // Import new page
+import BankAccountsPage from './BankAccountsPage';
+import BankReconciliationPage from './BankReconciliationPage';
+import { ConfirmationModal } from '../components/ConfirmationModal';
+import IntegrationsPage from './IntegrationsPage'; // New Integrations Page
+import CompanyProfilePage from './CompanyProfilePage'; // New Company Profile Page
+import LinkedAccountsPage from './LinkedAccountsPage'; // New Linked Accounts Page
+import AIAgentsPage from './AIAgentsPage';
+import AIOperationCreatorPage from './AIOperationCreatorPage';
+import { 
+    initialProjects, 
+    initialClients, 
+    initialTeamMembers,
+    initialTasksData,
+    initialColumnsData,
+    initialColumnOrderData,
+    initialEmails,
+    initialAccounts,
+    initialEvents,
+    initialQuotations,
+    initialReconciliationHistory,
+    initialBankAccounts,
+    initialInvoices,
+    initialPayments,
+    initialExpenses,
+    initialNotes,
+} from '../data/dummyData';
+
+export interface UploadedFile {
+  file: File;
+  preview: string;
+}
+
+export interface FileSystemItem {
+  id: string;
+  name: string;
+  type: 'folder' | 'file';
+  parentId: string | null;
+  file?: File;
+  preview?: string;
+}
+
+export interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  phone?: string;
+  hireDate?: string;
+  status: 'Active' | 'Inactive';
+}
+
+export interface Commission {
+  employeeName: string;
+  rate: number; // as percentage
+}
+
+export interface CommissionSnapshot {
+  id: string;
+  timestamp: string;
+  savedBy: string;
+  commissions: Commission[];
+  projectedProfit: number;
+  realProfit: number;
+}
+
+
+export interface Project {
+  id: string;
+  projectName: string;
+  projectCategory: string;
+  startDate: string;
+  deadline: string;
+  status: string;
+  assignees: string[];
+  progress: number;
+  operationType: string;
+  insurance: string;
+  shippingMode: string;
+  courrier: string;
+  bookingTracking: string;
+  etd: string;
+  eta: string;
+  pickupDate: string;
+  pickupAddress: string;
+  deliveryAddress: string;
+  mbl_awb: string;
+  hbl_awb: string;
+  notes: string;
+  clientId: string;
+  documents?: FileSystemItem[];
+  currency: Currency;
+  commissionHistory?: CommissionSnapshot[];
+  // FIX: Added optional 'supplierIds' property to Project interface.
+  supplierIds?: string[];
+}
+
+export interface Note {
+  id: string;
+  author: string;
+  timestamp: string;
+  content: string;
+  attachment?: UploadedFile;
+}
+
+export interface Task {
+  id: string;
+  operationId: string;
+  title: string;
+  description: string;
+  priority: 'Low' | 'Medium' | 'High';
+  assignees: string[];
+  dueDate: string;
+}
+
+export interface Column {
+  id: string;
+  title: string;
+  taskIds: string[];
+}
+
+export type Currency = 'USD' | 'MXN' | 'EUR';
+
+export interface BankAccount {
+  id: string;
+  accountName: string;
+  bankName: string;
+  accountNumber: string;
+  currency: Currency;
+}
+
+export interface Expense {
+    id: string;
+    operationId?: string; // Expenses can be administrative and not tied to an operation
+    itemName: string;
+    currency: Currency;
+    exchangeRate: number;
+    price: number;
+    purchaseDate: string;
+    employee: string;
+    expenseCategory: string;
+    purchasedFrom?: string;
+    bankAccount: string; // Bank account is now required
+    description?: string;
+    bill?: UploadedFile;
+}
+
+export interface InvoiceItem {
+  id: string;
+  itemName: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  tax: number;
+  amount: number;
+}
+
+export interface Invoice {
+    id: string;
+    operationId: string;
+    invoiceNumber: string;
+    invoiceDate: string;
+    dueDate: string;
+    currency: Currency;
+    exchangeRate: number;
+    client: string;
+    bankAccount?: string;
+    paymentDetails?: string;
+    generatedBy?: string;
+    billingAddress?: string;
+    shippingAddress?: string;
+    discount: number;
+    discountType: '%' | 'flat';
+    items: InvoiceItem[];
+    subTotal: number;
+    taxAmount: number;
+    total: number;
+    status: 'Draft' | 'Sent' | 'Paid' | 'Overdue' | 'Canceled';
+}
+
+export interface Payment {
+    id: string;
+    operationId: string;
+    invoiceId: string;
+    paymentDate: string;
+    amount: number;
+    currency: Currency;
+    paymentMethod: string;
+    notes?: string;
+    bankAccountId?: string;
+}
+
+export interface Contact {
+  id: string;
+  name: string;
+  role: string;
+  email: string;
+  phone: string;
+}
+
+export interface TaxInfo {
+  rfc: string;
+  taxRegime: string;
+  cfdiUse: string;
+  taxAddress: string;
+  postalCode: string;
+  billingEmail: string;
+}
+
+export interface Client {
+  id: string;
+  name: string;
+  contactPerson: string;
+  email: string;
+  phone: string;
+  address: string;
+  status: 'Active' | 'Inactive';
+  taxId?: string;
+  tier?: 'Gold' | 'Silver' | 'Bronze' | 'Standard';
+  contacts?: Contact[];
+  currency?: Currency;
+  documents?: FileSystemItem[];
+  taxInfo?: TaxInfo;
+  taxCertificate?: UploadedFile;
+}
+
+// FIX: Added and exported the Supplier interface.
+export interface Supplier {
+  id: string;
+  name: string;
+  category: string;
+  contactPerson: string;
+  email: string;
+  phone: string;
+  contacts?: Contact[];
+  services?: string[];
+  rating?: number;
+  documents?: UploadedFile[];
+}
+
+export interface Lead {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  serviceInterest: string;
+  message: string;
+  status: 'New' | 'Contacted' | 'Qualified' | 'Lost';
+  source: 'AI Widget' | 'Manual Entry';
+  createdAt: string;
+}
+
+export interface QuotationItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface Quotation {
+  id: string;
+  quotationNumber: string;
+  leadId?: string;
+  clientName: string;
+  date: string;
+  validUntil: string;
+  status: 'Draft' | 'Sent' | 'Accepted' | 'Rejected';
+  currency: string;
+  items: QuotationItem[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  notes?: string;
+}
+
+export interface EmailAttachment {
+    filename: string;
+    size: string;
+    url: string;
+}
+
+export interface EmailMessage {
+    id: string;
+    threadId: string;
+    accountId: string;
+    folder: string;
+    from: string;
+    fromName: string;
+    to: string[];
+    cc?: string[];
+    bcc?: string[];
+    subject: string;
+    snippet: string;
+    body: string;
+    date: string;
+    unread: boolean;
+    starred: boolean;
+    attachments: EmailAttachment[];
+}
+
+export interface EmailAccount {
+  id: string;
+  email: string;
+  provider: 'gmail' | 'gsuite' | 'other';
+  status: 'connected' | 'error';
+  password?: string;
+  smtpHost?: string;
+  smtpPort?: number;
+  imapHost?: string;
+  imapPort?: number;
+  syncEmail?: boolean;
+  syncCalendar?: boolean;
+}
+
+export interface Event {
+  id: string;
+  title: string;
+  description?: string;
+  allDay: boolean;
+  start: string;
+  end: string;
+  category: 'Meeting' | 'Deadline' | 'Shipment' | 'Personal' | 'Other';
+}
+
+export interface BankTransaction {
+    id: string;
+    date: string;
+    description: string;
+    amount: number;
+    type: 'debit' | 'credit';
+}
+
+export interface SatInvoice {
+    uuid: string;
+    issuerName: string;
+    receiverName: string;
+    date: string;
+    total: number;
+    currency: 'MXN' | 'USD';
+    status: 'Vigente' | 'Cancelado';
+    pdfUrl: string;
+    xmlUrl: string;
+}
+
+export interface ReconciliationSession {
+  id: string;
+  date: Date;
+  status: 'processing' | 'completed' | 'saved' | 'error';
+  summary: {
+    reconciledCount: number;
+    unreconciledCount: number;
+    totalTransactions: number;
+    totalDebitTransactions: number;
+    progressPercentage: number;
+    reconciledAmount: number;
+  };
+  data: {
+    transactions: BankTransaction[];
+    reconciliationMap: Map<string, string>;
+    bankStatements: { name: string; size: number }[];
+    reconciliationMonth: Date;
+  };
+}
+
+export type View =
+  | 'dashboard'
+  | 'operations'
+  | 'create-operation'
+  | 'detail-operation'
+  | 'clients'
+  | 'create-client'
+  | 'client-detail'
+  | 'employees'
+  | 'quotations'
+  | 'emails'
+  | 'calendar'
+  | 'files'
+  | 'finance-hub'
+  | 'finance'
+  | 'all_expenses'
+  | 'all_invoices'
+  | 'all_payments'
+  | 'bank_accounts'
+  | 'bank-reconciliation'
+  | 'admin'
+  | 'company-profile'
+  | 'integrations'
+  | 'linked-accounts'
+  | 'ai-agents'
+  | 'ai-operation-creator';
+
+const viewTitles: Record<View, string> = {
+  dashboard: 'Dashboard',
+  operations: 'Logistics Operations',
+  'create-operation': 'Create New Operation',
+  'detail-operation': 'Operation Details',
+  clients: 'Clients',
+  'create-client': 'Create New Client',
+  'client-detail': 'Client Details',
+  employees: 'Employees',
+  quotations: 'Quotations',
+  emails: 'Email Client',
+  calendar: 'Calendar',
+  files: 'File Manager',
+  'finance-hub': 'Financial Hub',
+  finance: 'Financial Overview',
+  all_expenses: 'All Expenses',
+  all_invoices: 'All Invoices',
+  all_payments: 'All Payments',
+  bank_accounts: 'Bank Accounts',
+  'bank-reconciliation': 'Bank Reconciliation',
+  admin: 'Company',
+  'company-profile': 'Company Profile',
+  integrations: 'Integrations',
+  'linked-accounts': 'Análisis de Correo',
+  'ai-agents': 'Automation Assistant',
+  'ai-operation-creator': 'AI Operation Creator',
+};
+
+
+interface DashboardPageProps {
+  onLogout: () => void;
+}
+
+const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
+  const [activeView, setActiveView] = useState<View>('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+  const [operationDetailInitialState, setOperationDetailInitialState] = useState<{ openTab?: string; editInvoiceId?: string; viewInvoiceId?: string } | null>(null);
+
+  // States
+  const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const [clients, setClients] = useState<Client[]>(initialClients);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(initialTeamMembers);
+  const [quotations, setQuotations] = useState<Quotation[]>(initialQuotations);
+  const [tasks, setTasks] = useState<Record<string, Task>>(initialTasksData);
+  const [columns, setColumns] = useState<Record<string, Column>>(initialColumnsData);
+  const [columnOrder, setColumnOrder] = useState<string[]>(initialColumnOrderData);
+  const [notes, setNotes] = useState<Note[]>(initialNotes);
+  const [expenses, setExpenses] = useState<Expense[]>(initialExpenses);
+  const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
+  const [payments, setPayments] = useState<Payment[]>(initialPayments);
+  const [events, setEvents] = useState<Event[]>(initialEvents);
+  const [fileSystem, setFileSystem] = useState<FileSystemItem[]>([]);
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>(initialBankAccounts);
+  const [reconciliationHistory, setReconciliationHistory] = useState<ReconciliationSession[]>(initialReconciliationHistory);
+  const [emails, setEmails] = useState<EmailMessage[]>(initialEmails);
+  const [emailAccounts, setEmailAccounts] = useState<EmailAccount[]>(initialAccounts);
+
+  const projectsWithRealProgress = useMemo(() => {
+    // FIX: Explicitly cast Object.values results to fix 'unknown' type errors,
+    // ensuring properties can be accessed safely.
+    const doneColumn = (Object.values(columns) as Column[]).find(col => col.title.toLowerCase() === 'done');
+    const doneTaskIds = doneColumn ? new Set(doneColumn.taskIds) : new Set<string>();
+    
+    const allTasks = Object.values(tasks) as Task[];
+
+    return projects.map(project => {
+      const projectTasks = allTasks.filter(task => task.operationId === project.id);
+      
+      if (projectTasks.length === 0) {
+        return { ...project, progress: project.status === 'Delivered' ? 100 : 0 };
+      }
+
+      const doneTaskCount = projectTasks.filter(task => doneTaskIds.has(task.id)).length;
+      
+      const progress = Math.round((doneTaskCount / projectTasks.length) * 100);
+
+      if (project.status === 'Delivered' && progress < 100) {
+        return { ...project, progress: 100 };
+      }
+      
+      return { ...project, progress };
+    });
+  }, [projects, tasks, columns]);
+
+  const handleCreateOperation = (projectDetails: Omit<Project, 'id' | 'progress'>, files: UploadedFile[]) => {
+    const documentItems: FileSystemItem[] = files.map((f, i) => ({
+      id: `file-new-${Date.now()}-${i}`,
+      name: f.file.name,
+      type: 'file',
+      parentId: null,
+      file: f.file,
+      preview: f.preview,
+    }));
+
+    const newProject: Project = {
+      ...projectDetails,
+      id: `OP-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+      progress: 0,
+      documents: documentItems
+    };
+    setProjects(prev => [...prev, newProject]);
+    setSelectedProjectId(newProject.id);
+    setActiveView('detail-operation');
+  };
+  
+  const handleViewClientDetails = (clientId: string) => {
+    setSelectedClientId(clientId);
+    setActiveView('client-detail');
+  };
+
+  const handleSaveNewClient = (clientData: Omit<Client, 'id'>) => {
+    const newClient: Client = { ...clientData, id: `client-${Date.now()}` };
+    setClients(prev => [newClient, ...prev]);
+    setSelectedClientId(newClient.id);
+    setActiveView('client-detail');
+  };
+  
+  const handleUpdateClient = (updatedClient: Client) => {
+      setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
+  };
+
+  const handleDeleteClient = (clientId: string) => {
+      setClients(prev => prev.filter(c => c.id !== clientId));
+      if (selectedClientId === clientId) {
+          setActiveView('clients');
+          setSelectedClientId(null);
+      }
+  };
+  
+  const handleAddClient = useCallback((clientData: Omit<Client, 'id'>): Client => {
+    const newClient: Client = {
+      ...clientData,
+      id: `client-${Date.now()}`
+    };
+    setClients(prev => [newClient, ...prev]);
+    return newClient;
+  }, []);
+
+  const handleViewOperation = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setActiveView('detail-operation');
+  };
+
+  const handleEditInvoice = (invoiceId: string, operationId: string) => {
+    setOperationDetailInitialState({ openTab: 'invoices', editInvoiceId: invoiceId });
+    setSelectedProjectId(operationId);
+    setActiveView('detail-operation');
+  };
+
+  const handleViewInvoiceDetail = (invoiceId: string, operationId: string) => {
+    setOperationDetailInitialState({ openTab: 'invoices', viewInvoiceId: invoiceId });
+    setSelectedProjectId(operationId);
+    setActiveView('detail-operation');
+  };
+
+  const handleAddEmployee = (employeeData: Omit<TeamMember, 'id'>) => {
+    const newEmployee: TeamMember = {
+      ...employeeData,
+      id: `tm-${Date.now()}`
+    };
+    setTeamMembers(prev => [newEmployee, ...prev]);
+  };
+
+  const handleUpdateEmployee = (updatedEmployee: TeamMember) => {
+    setTeamMembers(prev => prev.map(emp => emp.id === updatedEmployee.id ? updatedEmployee : emp));
+  };
+  
+  const handleDeleteEmployee = (employeeId: string) => {
+    setTeamMembers(prev => prev.filter(emp => emp.id !== employeeId));
+  };
+
+  const handleAddQuotation = (quotationData: Omit<Quotation, 'id'>) => {
+    const newQuotation: Quotation = {
+        ...quotationData,
+        id: `QT-${Date.now()}`
+    };
+    setQuotations(prev => [newQuotation, ...prev]);
+  };
+
+  const handleUpdateQuotation = (updatedQuotation: Quotation) => {
+      setQuotations(prev => prev.map(q => q.id === updatedQuotation.id ? updatedQuotation : q));
+  };
+
+  const handleDeleteQuotation = (quotationId: string) => {
+      setQuotations(prev => prev.filter(q => q.id !== quotationId));
+  };
+  
+  const handleAddBankAccount = (accountData: Omit<BankAccount, 'id'>) => {
+    const newAccount: BankAccount = {
+        ...accountData,
+        id: `ba-${Date.now()}`
+    };
+    setBankAccounts(prev => [newAccount, ...prev]);
+  };
+
+  const handleUpdateBankAccount = (updatedAccount: BankAccount) => {
+    setBankAccounts(prev => prev.map(ba => ba.id === updatedAccount.id ? updatedAccount : ba));
+  };
+
+  const handleDeleteBankAccount = (accountId: string) => {
+    setBankAccounts(prev => prev.filter(ba => ba.id !== accountId));
+  };
+
+  const handleSendEmail = useCallback((email: Omit<EmailMessage, 'id' | 'threadId' | 'unread' | 'snippet' | 'starred'>) => {
+      const newEmail: EmailMessage = {
+          ...email,
+          id: `email-${Date.now()}`,
+          threadId: `thread-${Date.now()}`,
+          unread: false,
+          snippet: email.body.substring(0, 100),
+          starred: false,
+      };
+      setEmails(prev => [newEmail, ...prev]);
+  }, []);
+  
+  const handleUpdateEmailAccount = (updatedAccount: EmailAccount) => {
+      setEmailAccounts(prev => prev.map(acc => acc.id === updatedAccount.id ? updatedAccount : acc));
+  };
+
+
+  const selectedProject = projectsWithRealProgress.find(p => p.id === selectedProjectId);
+
+  const renderContent = () => {
+    switch (activeView) {
+      case 'dashboard':
+        return <DashboardPageContent 
+          projects={projectsWithRealProgress} 
+          clients={clients}
+          invoices={invoices}
+          expenses={expenses}
+          tasks={tasks}
+          columns={columns}
+          setActiveView={setActiveView} 
+          onViewOperation={handleViewOperation}
+        />;
+      case 'operations':
+        return <LogisticsProjectsPage setActiveView={setActiveView} onViewOperation={handleViewOperation} projects={projectsWithRealProgress} />;
+      case 'create-operation':
+        return <CreateOperationPage 
+          setActiveView={setActiveView} 
+          onCreateOperation={handleCreateOperation} 
+          teamMembers={teamMembers} 
+          clients={clients}
+          onAddClient={handleAddClient}
+        />;
+      case 'detail-operation':
+        if (selectedProject) {
+          const projectClient = clients.find(c => c.id === selectedProject.clientId);
+          const projectNotes = notes.filter(n => n.id.startsWith(selectedProject.id));
+          const projectExpenses = expenses.filter(e => e.operationId === selectedProject.id);
+          const projectInvoices = invoices.filter(i => i.operationId === selectedProject.id);
+          const projectPayments = payments.filter(p => p.operationId === selectedProject.id);
+          return <OperationDetailPage 
+            setActiveView={setActiveView} 
+            project={selectedProject}
+            client={projectClient}
+            documents={selectedProject.documents || []}
+            onUpdateDocuments={(updatedFiles) => {
+                setProjects(projects.map(p => p.id === selectedProject.id ? {...p, documents: updatedFiles} : p))
+            }}
+            notes={projectNotes}
+            onAddNote={(content, file) => {
+                const newNote: Note = { id: `${selectedProject.id}-note-${Date.now()}`, author: 'Current User', timestamp: new Date().toLocaleString(), content, attachment: file ? { file, preview: URL.createObjectURL(file)} : undefined };
+                setNotes(prev => [...prev, newNote]);
+            }}
+            onUpdateNote={(noteId, content) => setNotes(notes.map(n => n.id === noteId ? {...n, content} : n))}
+            onDeleteNote={(noteId) => setNotes(notes.filter(n => n.id !== noteId))}
+            expenses={projectExpenses}
+            onAddExpense={(expense) => setExpenses(prev => [...prev, {...expense, id: `exp-${Date.now()}`}])}
+            onUpdateExpense={(expense) => setExpenses(expenses.map(e => e.id === expense.id ? expense : e))}
+            onDeleteExpense={(expenseId) => setExpenses(expenses.filter(e => e.id !== expenseId))}
+            invoices={projectInvoices}
+            onAddInvoice={(invoice) => setInvoices(prev => [...prev, {...invoice, id: `inv-${Date.now()}`}])}
+            onUpdateInvoice={(invoice) => setInvoices(invoices.map(i => i.id === invoice.id ? invoice : i))}
+            onDeleteInvoice={(invoiceId) => setInvoices(invoices.filter(i => i.id !== invoiceId))}
+            payments={projectPayments}
+            onAddPayment={(payment) => setPayments(prev => [...prev, {...payment, id: `pay-${Date.now()}`}])}
+            onUpdatePayment={(payment) => setPayments(payments.map(e => e.id === payment.id ? payment : e))}
+            onDeletePayment={(paymentId) => setPayments(payments.filter(p => p.id !== paymentId))}
+            tasks={tasks}
+            columns={columns}
+            columnOrder={columnOrder}
+            onSaveTask={(task) => setTasks(prev => ({...prev, [task.id]: task}))}
+            onDeleteTask={(taskId) => {
+                const newTasks = {...tasks};
+                delete newTasks[taskId];
+                setTasks(newTasks);
+                const newColumns = {...columns};
+                for(const colId in newColumns) {
+                    newColumns[colId].taskIds = newColumns[colId].taskIds.filter(id => id !== taskId);
+                }
+                setColumns(newColumns);
+            }}
+            onUpdateColumns={setColumns}
+            teamMembers={teamMembers}
+            onUpdateAssignees={(newAssignees) => {
+                setProjects(projects.map(p => p.id === selectedProject.id ? {...p, assignees: newAssignees} : p))
+            }}
+             onUpdateCommissionHistory={(updatedHistory) => {
+                setProjects(projects.map(p => p.id === selectedProject.id ? {...p, commissionHistory: updatedHistory} : p))
+            }}
+            bankAccounts={bankAccounts}
+            initialState={operationDetailInitialState}
+            onClearInitialState={() => setOperationDetailInitialState(null)}
+            emails={emails}
+          />;
+        }
+        return null;
+      case 'clients':
+        return <ClientsManager 
+          clients={clients} 
+          onViewClientDetails={handleViewClientDetails}
+          onAddNewClient={() => setActiveView('create-client')}
+        />;
+      case 'create-client':
+        return <CreateClientPage 
+          onCancel={() => setActiveView('clients')}
+          onSave={handleSaveNewClient}
+        />;
+      case 'client-detail': {
+        const selectedClient = clients.find(c => c.id === selectedClientId);
+        if (selectedClient) {
+          const isDeletable = !projectsWithRealProgress.some(p => p.clientId === selectedClient.id);
+          return <ClientDetailPage
+              client={selectedClient}
+              onBack={() => { setActiveView('clients'); setSelectedClientId(null); }}
+              onUpdateClient={handleUpdateClient}
+              onDeleteRequest={() => setClientToDelete(selectedClient)}
+              isDeletable={isDeletable}
+              projects={projectsWithRealProgress.filter(p => p.clientId === selectedClient.id)}
+              onViewOperation={handleViewOperation}
+              payments={payments}
+              invoices={invoices}
+          />;
+        }
+        return null;
+      }
+      case 'admin':
+        return <AdminPage setActiveView={setActiveView} />;
+      case 'company-profile':
+        return <CompanyProfilePage setActiveView={setActiveView} />;
+      case 'employees':
+        return <EmployeesPage
+          teamMembers={teamMembers}
+          onAddEmployee={handleAddEmployee}
+          onUpdateEmployee={handleUpdateEmployee}
+          onDeleteEmployee={handleDeleteEmployee}
+        />;
+      case 'quotations':
+        return <QuotationsPage
+                    setActiveView={setActiveView}
+                    quotations={quotations}
+                    onAddQuotation={handleAddQuotation}
+                    onUpdateQuotation={handleUpdateQuotation}
+                    onDeleteQuotation={handleDeleteQuotation}
+                />;
+      case 'emails':
+        return <EmailClientPage emails={emails} onSendEmail={handleSendEmail} />;
+      case 'finance-hub':
+        return <FinanceHubPage setActiveView={setActiveView} />;
+      case 'finance':
+        return <FinanceDashboardPage setActiveView={setActiveView} invoices={invoices} payments={payments} expenses={expenses} />;
+      case 'all_expenses':
+        return <AllExpensesPage setActiveView={setActiveView} expenses={expenses} projects={projectsWithRealProgress} teamMembers={teamMembers} onAddExpense={exp => setExpenses(prev => [...prev, {...exp, id: `exp-all-${Date.now()}`}])} onUpdateExpense={exp => setExpenses(expenses.map(e => e.id === exp.id ? exp : e))} onDeleteExpense={id => setExpenses(expenses.filter(e => e.id !== id))} bankAccounts={bankAccounts} />;
+      case 'all_invoices':
+        return <AllInvoicesPage 
+                    setActiveView={setActiveView} 
+                    invoices={invoices} 
+                    payments={payments}
+                    projects={projectsWithRealProgress} 
+                    onViewOperation={handleViewOperation}
+                    onDeleteInvoice={(invoiceId) => setInvoices(invoices.filter(i => i.id !== invoiceId))}
+                    onEditInvoice={handleEditInvoice}
+                    onViewInvoiceDetail={handleViewInvoiceDetail}
+                />;
+      case 'all_payments':
+        return <AllPaymentsPage setActiveView={setActiveView} payments={payments} invoices={invoices} projects={projectsWithRealProgress} onViewOperation={handleViewOperation} />;
+      case 'bank_accounts':
+        return <BankAccountsPage
+            accounts={bankAccounts}
+            payments={payments}
+            expenses={expenses}
+            onAddAccount={handleAddBankAccount}
+            onUpdateAccount={handleUpdateBankAccount}
+            onDeleteAccount={handleDeleteBankAccount}
+        />;
+      case 'bank-reconciliation':
+        return <BankReconciliationPage history={reconciliationHistory} setHistory={setReconciliationHistory} />;
+      case 'calendar':
+        return <CalendarPage
+          events={events}
+          onAddEvent={e => setEvents(prev => [...prev, { ...e, id: `evt-${Date.now()}` }])}
+          onUpdateEvent={e => setEvents(prev => prev.map(ev => ev.id === e.id ? e : ev))}
+          onDeleteEvent={id => setEvents(prev => prev.filter(ev => ev.id !== id))}
+          emailAccounts={emailAccounts}
+          setActiveView={setActiveView}
+        />;
+      case 'files':
+        return <FilesManagerPage fileSystem={fileSystem} onFileSystemUpdate={setFileSystem} />;
+      case 'integrations':
+        return <IntegrationsPage 
+                    setActiveView={setActiveView}
+                    emailAccounts={emailAccounts}
+                    onUpdateEmailAccount={handleUpdateEmailAccount}
+                />;
+      case 'linked-accounts':
+        return <LinkedAccountsPage 
+                    accounts={emailAccounts} 
+                    emails={emails} 
+                    setActiveView={setActiveView} 
+                />;
+      case 'ai-agents':
+        return <AIAgentsPage setActiveView={setActiveView} />;
+      case 'ai-operation-creator':
+        return <AIOperationCreatorPage
+                    setActiveView={setActiveView}
+                    emailAccounts={emailAccounts}
+                    emails={emails}
+                    projects={projects}
+                    onCreateOperation={handleCreateOperation}
+                />;
+      default:
+        return <div className="p-6">{viewTitles[activeView] || 'Not Implemented'}</div>;
+    }
+  };
+
+  return (
+    <div className="flex h-screen bg-slate-100">
+      <Sidebar 
+        activeView={activeView} 
+        setActiveView={setActiveView} 
+        isSidebarOpen={isSidebarOpen} 
+        setIsSidebarOpen={setIsSidebarOpen}
+        onLogout={onLogout}
+      />
+      
+      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-20'}`}>
+        <TopHeader onLogout={onLogout} />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 p-6">
+          {renderContent()}
+        </main>
+      </div>
+      
+       <ConfirmationModal
+        isOpen={!!clientToDelete}
+        onClose={() => setClientToDelete(null)}
+        onConfirm={() => {
+          if (clientToDelete) {
+            handleDeleteClient(clientToDelete.id);
+            setClientToDelete(null);
+          }
+        }}
+        title="Delete Client"
+      >
+        Are you sure you want to delete client "{clientToDelete?.name}"? This action cannot be undone.
+      </ConfirmationModal>
+    </div>
+  );
+};
+
+export default DashboardPage;
