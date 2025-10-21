@@ -48,6 +48,11 @@ outputType = "console"
 [[ports]]
 localPort = 3001
 externalPort = 3001
+exposeLocalhost = true
+
+[[ports]]
+localPort = 43571
+externalPort = 80
 
 [deployment]
 deploymentTarget = "autoscale"
