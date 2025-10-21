@@ -9,9 +9,9 @@ import { EyeSlashIcon } from '../components/icons/EyeSlashIcon';
 import { CheckCircleIcon } from '../components/icons/CheckCircleIcon';
 import { UserGroupIcon } from '../components/icons/UserGroupIcon';
 import { BriefcaseIcon } from '../components/icons/BriefcaseIcon';
+import { useAuth } from '../src/contexts/AuthContext';
 
 interface RegisterPageProps {
-  onRegister: () => void;
   onGoToLogin: () => void;
 }
 
@@ -61,7 +61,8 @@ const Stepper: React.FC<{ currentStep: number }> = ({ currentStep }) => (
 );
 
 
-const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onGoToLogin }) => {
+const RegisterPage: React.FC<RegisterPageProps> = ({ onGoToLogin }) => {
+  const { register } = useAuth();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
@@ -73,6 +74,8 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onGoToLogin }) 
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Partial<typeof formData>>({});
+  const [apiError, setApiError] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -108,10 +111,19 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onGoToLogin }) 
   
   const handleBack = () => setStep(prev => prev - 1);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Final registration data:', formData);
-    onRegister();
+    if (!validateStep()) return;
+
+    setIsRegistering(true);
+    setApiError('');
+
+    try {
+      await register(formData.email, formData.password, formData.name, formData.company);
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
+      setIsRegistering(false);
+    }
   };
   
   const renderInput = (id: keyof typeof formData, label: string, type: string, icon: React.ReactNode, placeholder?: string, required = true) => (
