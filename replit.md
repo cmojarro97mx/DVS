@@ -37,7 +37,12 @@ Nexxio es una plataforma completa de gestión de logística y CRM que permite ad
 - ✅ Configuración de Replit completada
 - ✅ Datos de prueba eliminados
 - ✅ Deployment configurado
-- ⏳ **En progreso**: Implementación de Google OAuth
+- ✅ **Google OAuth backend implementado**:
+  - GoogleAuthModule con endpoints: /authorize, /callback, /status, /disconnect
+  - Campos agregados al schema Prisma: googleAccessToken, googleRefreshToken, googleTokenExpiry
+  - Prisma Client regenerado con nuevos campos
+  - Backend compilando sin errores
+- ⏳ **Pendiente**: Migración de base de datos (ejecutar `npm run db:push --force`)
 
 ## Configuración de Replit
 
@@ -113,6 +118,12 @@ Todos los módulos tienen endpoints CRUD estándar (GET, POST, PUT, DELETE):
 - `/api/leads` - Gestión de prospectos
 - `/api/quotations` - Gestión de cotizaciones
 
+### Google OAuth
+- `GET /api/google-auth/authorize` - Iniciar autorización OAuth
+- `GET /api/google-auth/callback` - Callback de Google OAuth
+- `GET /api/google-auth/status` - Verificar estado de conexión
+- `GET /api/google-auth/disconnect` - Desconectar cuenta de Google
+
 ### Multi-Tenancy
 - Todas las entidades filtradas por `organizationId`
 - JWT incluye `organizationId` para validación
@@ -183,3 +194,10 @@ Esquema completo implementado con las siguientes tablas:
   - Multi-tenancy implementado con organizationId en todas las tablas
   - JWT incluye organizationId para aislamiento de datos
   - Organizaciones creadas automáticamente durante registro
+- **Google OAuth backend implementado**:
+  - Módulo GoogleAuthModule creado en `server/src/modules/google-auth/`
+  - 4 endpoints funcionando: /authorize, /callback, /status, /disconnect
+  - Schema Prisma actualizado con campos: googleAccessToken, googleRefreshToken, googleTokenExpiry
+  - Prisma Client regenerado correctamente
+  - Backend compilando sin errores
+  - Pendiente: ejecutar `cd server && npm run db:push --force` para crear columnas en BD
