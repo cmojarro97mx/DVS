@@ -93,6 +93,7 @@ El backend proporciona endpoints REST completos para todos los módulos:
 ### Módulos Disponibles
 Todos los módulos tienen endpoints CRUD estándar (GET, POST, PUT, DELETE):
 - `/api/users` - Gestión de usuarios
+- `/api/organizations` - Gestión de organizaciones (GET /current, PUT /current)
 - `/api/clients` - Gestión de clientes
 - `/api/operations` - Gestión de operaciones logísticas
 - `/api/invoices` - Gestión de facturas
@@ -104,6 +105,12 @@ Todos los módulos tienen endpoints CRUD estándar (GET, POST, PUT, DELETE):
 - `/api/calendar` - Gestión de eventos del calendario
 - `/api/leads` - Gestión de prospectos
 - `/api/quotations` - Gestión de cotizaciones
+
+### Multi-Tenancy
+- Todas las entidades filtradas por `organizationId`
+- JWT incluye `organizationId` para validación
+- Organizaciones creadas automáticamente durante registro
+- Aislamiento completo de datos entre organizaciones
 
 ## Base de Datos (Neon PostgreSQL)
 
@@ -130,8 +137,8 @@ Esquema completo implementado con las siguientes tablas:
 ## Próximos Pasos Sugeridos
 
 1. ✅ ~~Implementar backend API para persistencia de datos~~ - COMPLETADO
-2. **Conectar frontend React con el backend API** - EN PROGRESO
-3. Implementar Google OAuth para email y calendario
+2. ✅ ~~Conectar frontend React con el backend API~~ - COMPLETADO
+3. **Implementar Google OAuth para email y calendario** - PENDIENTE
 4. Configurar almacenamiento de archivos (Replit Object Storage)
 5. Configurar Tailwind CSS como PostCSS plugin (eliminar CDN)
 6. Agregar validaciones y manejo de errores más robustos
@@ -152,3 +159,10 @@ Esquema completo implementado con las siguientes tablas:
   - Autenticación JWT con refresh tokens
   - API REST completa en puerto 3001
   - 80+ endpoints disponibles
+- **Frontend conectado con backend**:
+  - AuthContext implementado para gestión de sesión
+  - Login y Register conectados con backend API
+  - CompanyProfilePage carga y guarda datos reales desde backend
+  - Multi-tenancy implementado con organizationId en todas las tablas
+  - JWT incluye organizationId para aislamiento de datos
+  - Organizaciones creadas automáticamente durante registro
