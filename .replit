@@ -48,14 +48,13 @@ outputType = "console"
 [[ports]]
 localPort = 3001
 externalPort = 3001
-exposeLocalhost = true
 
 [[ports]]
 localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 44369
+localPort = 40511
 externalPort = 3000
 
 [deployment]
