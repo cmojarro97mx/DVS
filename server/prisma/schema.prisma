@@ -402,6 +402,8 @@ model Quotation {
   quotationNumber String    @unique
   quotationDate   DateTime  @default(now())
   validUntil      DateTime?
+  clientId        String?
+  client          Client?   @relation(fields: [clientId], references: [id])
   clientName      String?
   clientEmail     String?
   clientCompany   String?
