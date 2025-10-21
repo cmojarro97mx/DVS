@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { PlusIcon } from '../components/icons/PlusIcon';
 import { SearchIcon } from '../components/icons/SearchIcon';
 import { ProjectAvatar } from '../components/ProjectAvatar';
@@ -8,6 +8,7 @@ import { Banner } from '../components/Banner';
 import { CalendarIcon } from '../components/icons/CalendarIcon';
 import { ChevronRightIcon } from '../components/icons/ChevronRightIcon';
 import { FilterIcon } from '../components/icons/FilterIcon';
+import { operationsService } from '../src/services/operationsService';
 
 const getStatusColor = (status: string) => {
     switch (status) {
@@ -27,12 +28,35 @@ const statuses = ['All', 'Delivered', 'In Transit', 'On Hold', 'Canceled', 'Plan
 interface LogisticsProjectsPageProps {
   setActiveView: (view: View) => void;
   onViewOperation: (projectId: string) => void;
-  projects: Project[];
 }
 
-const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActiveView, onViewOperation, projects }) => {
+const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActiveView, onViewOperation }) => {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+
+  useEffect(() => {
+    loadOperations();
+  }, []);
+
+  const loadOperations = async () => {
+    try {
+      setIsLoading(true);
+      setError('');
+      const data = await operationsService.getAll();
+      setProjects(data.map(op => ({
+        ...op,
+        assignees: op.assignees || []
+      })));
+    } catch (err) {
+      setError('Failed to load operations');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredProjects = useMemo(() => {
     return projects.filter(project => {
@@ -88,8 +112,18 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
       </div>
 
       {/* Main Content Area */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+          {error}
+        </div>
+      )}
+      
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col flex-grow min-h-0">
-        {filteredProjects.length > 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+          </div>
+        ) : filteredProjects.length > 0 ? (
           <div className="overflow-y-auto">
             <table className="w-full">
               <thead className="sticky top-0 bg-white z-10">

@@ -13,14 +13,13 @@ import { DocumentPdfIcon } from '../components/icons/DocumentPdfIcon';
 import { PhotoIcon } from '../components/icons/PhotoIcon';
 import { DocumentCsvIcon } from '../components/icons/DocumentCsvIcon';
 import { DocumentTextIcon } from '../components/icons/DocumentTextIcon';
+import { operationsService } from '../src/services/operationsService';
+import { clientsService } from '../src/services/clientsService';
 
 
 interface CreateOperationPageProps {
     setActiveView: (view: View) => void;
-    onCreateOperation: (projectDetails: Omit<Project, 'id' | 'progress'>, files: UploadedFile[]) => void;
     teamMembers: TeamMember[];
-    clients: Client[];
-    onAddClient: (clientData: Omit<Client, 'id'>) => Client;
 }
 
 const STEPS = [
@@ -160,16 +159,36 @@ const ExpressClientModal: React.FC<{
 };
 
 
-const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView, onCreateOperation, teamMembers, clients, onAddClient }) => {
+const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView, teamMembers }) => {
     const [currentStep, setCurrentStep] = useState(0);
     const [highestStepVisited, setHighestStepVisited] = useState(0);
     const [files, setFiles] = useState<UploadedFile[]>([]);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveError, setSaveError] = useState('');
     
+    const [clients, setClients] = useState<Client[]>([]);
+    const [isLoadingClients, setIsLoadingClients] = useState(true);
     const [isClientModalOpen, setIsClientModalOpen] = useState(false);
     const [clientSearch, setClientSearch] = useState('');
     const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
     const clientDropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        loadClients();
+    }, []);
+
+    const loadClients = async () => {
+        try {
+            setIsLoadingClients(true);
+            const data = await clientsService.getAll();
+            setClients(data);
+        } catch (err) {
+            console.error('Failed to load clients:', err);
+        } finally {
+            setIsLoadingClients(false);
+        }
+    };
 
     const [formData, setFormData] = useState<Omit<Project, 'id' | 'progress'>>({
         projectName: '', projectCategory: '', 
@@ -223,10 +242,22 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
         setIsClientDropdownOpen(false);
     };
 
-    const handleSaveNewClient = (clientData: Omit<Client, 'id'>) => {
-        const newClient = onAddClient(clientData);
-        handleSelectClient(newClient);
-        setIsClientModalOpen(false);
+    const handleSaveNewClient = async (clientData: Omit<Client, 'id'>) => {
+        try {
+            const newClient = await clientsService.create({
+                name: clientData.name,
+                email: clientData.email,
+                phone: clientData.phone,
+                contactPerson: clientData.contactPerson,
+                address: clientData.address,
+                status: clientData.status,
+            });
+            handleSelectClient(newClient);
+            setIsClientModalOpen(false);
+            await loadClients();
+        } catch (err) {
+            console.error('Failed to create client:', err);
+        }
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -268,7 +299,7 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
         let allErrors: { [key: string]: string } = {};
@@ -280,7 +311,40 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
         setErrors(allErrors);
 
         if (Object.keys(allErrors).length === 0) {
-            onCreateOperation(formData, files);
+            try {
+                setIsSaving(true);
+                setSaveError('');
+                
+                await operationsService.create({
+                    projectName: formData.projectName,
+                    projectCategory: formData.projectCategory,
+                    startDate: formData.startDate,
+                    deadline: formData.deadline,
+                    status: formData.status,
+                    operationType: formData.operationType,
+                    insurance: formData.insurance,
+                    shippingMode: formData.shippingMode,
+                    courrier: formData.courrier,
+                    bookingTracking: formData.bookingTracking,
+                    etd: formData.etd,
+                    eta: formData.eta,
+                    pickupDate: formData.pickupDate,
+                    pickupAddress: formData.pickupAddress,
+                    deliveryAddress: formData.deliveryAddress,
+                    mbl_awb: formData.mbl_awb,
+                    hbl_awb: formData.hbl_awb,
+                    notes: formData.notes,
+                    currency: formData.currency,
+                    clientId: formData.clientId,
+                });
+                
+                setActiveView('logistics-projects');
+            } catch (err) {
+                setSaveError(err instanceof Error ? err.message : 'Failed to create operation');
+                console.error(err);
+            } finally {
+                setIsSaving(false);
+            }
         } else {
             const firstErrorStep = STEPS.findIndex(step => 
                 step.fields.some(field => (allErrors as any)[field])
