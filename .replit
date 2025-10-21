@@ -50,14 +50,6 @@ localPort = 3001
 externalPort = 3001
 exposeLocalhost = true
 
-[[ports]]
-localPort = 46169
-externalPort = 80
-
-[[ports]]
-localPort = 5000
-externalPort = 80
-
 [deployment]
 deploymentTarget = "autoscale"
 run = ["npm", "run", "preview"]

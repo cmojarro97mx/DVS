@@ -6,9 +6,10 @@ import { ShieldCheckIcon } from '../components/icons/ShieldCheckIcon';
 import { UploadCloudIcon } from '../components/icons/UploadCloudIcon';
 import { DocumentPdfIcon } from '../components/icons/DocumentPdfIcon';
 import { XIcon } from '../components/icons/XIcon';
+import { clientsService } from '../src/services/clientsService';
 
 interface CreateClientPageProps {
-    onSave: (clientData: Omit<Client, 'id'>) => void;
+    onSave: () => void;
     onCancel: () => void;
 }
 
@@ -30,6 +31,8 @@ const Select = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => <select
 
 const CreateClientPage: React.FC<CreateClientPageProps> = ({ onSave, onCancel }) => {
     const [currentStep, setCurrentStep] = useState(0);
+    const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState('');
     const [formData, setFormData] = useState<Omit<Client, 'id'>>({
         name: '', contactPerson: '', email: '', phone: '', address: '', status: 'Active',
         tier: 'Standard', currency: 'USD', contacts: [], documents: [],
@@ -62,9 +65,31 @@ const CreateClientPage: React.FC<CreateClientPageProps> = ({ onSave, onCancel })
     };
 
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        onSave(formData);
+        
+        try {
+            setIsSaving(true);
+            setError('');
+            
+            await clientsService.create({
+                name: formData.name,
+                email: formData.email,
+                phone: formData.phone,
+                address: formData.address,
+                contactPerson: formData.contactPerson,
+                status: formData.status,
+                tier: formData.tier,
+                taxId: formData.taxInfo?.rfc,
+            });
+            
+            onSave();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to create client');
+            console.error(err);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -90,6 +115,11 @@ const CreateClientPage: React.FC<CreateClientPageProps> = ({ onSave, onCancel })
                         </nav>
                      </div>
                      <div className="md:w-2/3 p-8">
+                        {error && (
+                            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">
+                                {error}
+                            </div>
+                        )}
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {currentStep === 0 && (
                                 <div className="space-y-4">
@@ -146,7 +176,9 @@ const CreateClientPage: React.FC<CreateClientPageProps> = ({ onSave, onCancel })
                                     {currentStep < STEPS.length - 1 ? (
                                         <button type="button" onClick={() => setCurrentStep(1)} className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700">Next</button>
                                     ) : (
-                                        <button type="submit" className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700">Save Client</button>
+                                        <button type="submit" disabled={isSaving} className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            {isSaving ? 'Saving...' : 'Save Client'}
+                                        </button>
                                     )}
                                 </div>
                             </div>

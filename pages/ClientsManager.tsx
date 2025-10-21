@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Client } from './DashboardPage';
 import { PlusIcon } from '../components/icons/PlusIcon';
 import { SearchIcon } from '../components/icons/SearchIcon';
@@ -8,9 +8,9 @@ import { ChevronRightIcon } from '../components/icons/ChevronRightIcon';
 import { FilterIcon } from '../components/icons/FilterIcon';
 import { BriefcaseIcon } from '../components/icons/BriefcaseIcon';
 import { DiamondIcon } from '../components/icons/DiamondIcon';
+import { clientsService } from '../src/services/clientsService';
 
 interface ClientsManagerProps {
-    clients: Client[];
     onViewClientDetails: (clientId: string) => void;
     onAddNewClient: () => void;
 }
@@ -75,9 +75,30 @@ const getTierColor = (tier?: 'Gold' | 'Silver' | 'Bronze' | 'Standard') => {
 
 const statuses = ['All', 'Active', 'Inactive'];
 
-const ClientsManager: React.FC<ClientsManagerProps> = ({ clients, onViewClientDetails, onAddNewClient }) => {
+const ClientsManager: React.FC<ClientsManagerProps> = ({ onViewClientDetails, onAddNewClient }) => {
+    const [clients, setClients] = useState<Client[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
+
+    useEffect(() => {
+        loadClients();
+    }, []);
+
+    const loadClients = async () => {
+        try {
+            setIsLoading(true);
+            setError('');
+            const data = await clientsService.getAll();
+            setClients(data);
+        } catch (err) {
+            setError('Failed to load clients');
+            console.error(err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const filteredClients = useMemo(() => {
         return clients.filter(client => {
@@ -133,8 +154,18 @@ const ClientsManager: React.FC<ClientsManagerProps> = ({ clients, onViewClientDe
                 </button>
             </div>
             
+            {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+                    {error}
+                </div>
+            )}
+            
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col flex-grow min-h-0">
-                {filteredClients.length > 0 ? (
+                {isLoading ? (
+                    <div className="flex items-center justify-center h-64">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+                    </div>
+                ) : filteredClients.length > 0 ? (
                     <div className="overflow-y-auto">
                         <table className="w-full">
                             <thead className="sticky top-0 bg-white z-10">
