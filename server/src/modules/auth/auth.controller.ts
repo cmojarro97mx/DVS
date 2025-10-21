@@ -5,6 +5,7 @@ class RegisterDto {
   email: string;
   password: string;
   name: string;
+  organizationName: string;
 }
 
 class LoginDto {
@@ -22,6 +23,7 @@ export class AuthController {
       registerDto.email,
       registerDto.password,
       registerDto.name,
+      registerDto.organizationName,
     );
   }
 

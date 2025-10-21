@@ -10,7 +10,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async register(email: string, password: string, name: string) {
+  async register(email: string, password: string, name: string, organizationName: string) {
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
     });
@@ -21,13 +21,24 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    const organization = await this.prisma.organization.create({
+      data: {
+        name: organizationName,
+        email: email,
+      },
+    });
+
     const user = await this.prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name,
-        role: 'employee',
+        role: 'admin',
         status: 'Active',
+        organizationId: organization.id,
+      },
+      include: {
+        organization: true,
       },
     });
 
@@ -39,6 +50,9 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.role,
+        status: user.status,
+        organizationId: user.organizationId,
+        organization: user.organization,
       },
       ...tokens,
     };
@@ -47,6 +61,9 @@ export class AuthService {
   async login(email: string, password: string) {
     const user = await this.prisma.user.findUnique({
       where: { email },
+      include: {
+        organization: true,
+      },
     });
 
     if (!user) {
@@ -67,6 +84,11 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.role,
+        status: user.status,
+        phone: user.phone,
+        avatar: user.avatar,
+        organizationId: user.organizationId,
+        organization: user.organization,
       },
       ...tokens,
     };

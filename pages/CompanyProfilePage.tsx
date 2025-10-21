@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, UploadedFile } from './DashboardPage';
 import { CompanyIcon } from '../components/icons/CompanyIcon';
 import { EditIcon } from '../components/icons/EditIcon';
@@ -11,32 +11,27 @@ import { XIcon } from '../components/icons/XIcon';
 import { AtSymbolIcon } from '../components/icons/AtSymbolIcon';
 import { PhoneIcon } from '../components/icons/PhoneIcon';
 import { GlobeAltIcon } from '../components/icons/GlobeAltIcon';
+import { useAuth } from '../src/contexts/AuthContext';
+import { organizationService } from '../src/services/organizationService';
 
 interface CompanyProfilePageProps {
     setActiveView: (view: View) => void;
 }
 
-const initialCompanyData = {
-    companyName: 'Nexxio Logistics',
-    email: 'contact@nexxio.com',
-    phone: '+1 (555) 123-4567',
-    website: 'https://www.nexxio.com',
-    address: {
-        street: '123 Logistics Lane',
-        city: 'Trade City',
-        state: 'CA',
-        zip: '90210',
-        country: 'USA'
-    },
+interface CompanyData {
+    companyName: string;
+    email: string;
+    phone: string;
+    website: string;
+    address: string;
     taxInfo: {
-        legalName: 'Nexxio Logistics LLC',
-        taxId: 'XX-12345678',
-        vatId: 'VAT123456789'
-    },
-    logo: null as UploadedFile | null
-};
+        legalName: string;
+        taxId: string;
+        vatId: string;
+    };
+    logo: UploadedFile | null;
+}
 
-type CompanyData = typeof initialCompanyData;
 type ActiveTab = 'general' | 'address' | 'tax' | 'branding';
 
 const colors = [
@@ -88,17 +83,64 @@ const TextInput: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = (props)
 );
 
 const CompanyProfilePage: React.FC<CompanyProfilePageProps> = ({ setActiveView }) => {
-    const [companyData, setCompanyData] = useState<CompanyData>(initialCompanyData);
-    const [editedData, setEditedData] = useState<CompanyData>(initialCompanyData);
+    const { user } = useAuth();
+    const [companyData, setCompanyData] = useState<CompanyData>({
+        companyName: '',
+        email: '',
+        phone: '',
+        website: '',
+        address: '',
+        taxInfo: {
+            legalName: '',
+            taxId: '',
+            vatId: ''
+        },
+        logo: null
+    });
+    const [editedData, setEditedData] = useState<CompanyData>(companyData);
     const [isEditing, setIsEditing] = useState(false);
     const [activeTab, setActiveTab] = useState<ActiveTab>('general');
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        loadOrganizationData();
+    }, []);
+
+    const loadOrganizationData = async () => {
+        try {
+            setIsLoading(true);
+            const org = await organizationService.getCurrentOrganization();
+            const data: CompanyData = {
+                companyName: org.name || '',
+                email: org.email || '',
+                phone: org.phone || '',
+                website: org.website || '',
+                address: org.address || '',
+                taxInfo: {
+                    legalName: org.name || '',
+                    taxId: org.rfc || '',
+                    vatId: org.taxRegime || ''
+                },
+                logo: null
+            };
+            setCompanyData(data);
+            setEditedData(data);
+        } catch (err) {
+            setError('Failed to load organization data');
+            console.error(err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setEditedData(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
     const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setEditedData(prev => ({ ...prev, address: { ...prev.address, [e.target.name]: e.target.value } }));
+        setEditedData(prev => ({ ...prev, address: e.target.value }));
     };
     
     const handleTaxInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,15 +164,41 @@ const CompanyProfilePage: React.FC<CompanyProfilePageProps> = ({ setActiveView }
         }
     };
 
-    const handleSave = () => {
-        setCompanyData(editedData);
-        setIsEditing(false);
+    const handleSave = async () => {
+        try {
+            setIsSaving(true);
+            setError('');
+            await organizationService.updateOrganization({
+                name: editedData.companyName,
+                email: editedData.email,
+                phone: editedData.phone,
+                website: editedData.website,
+                address: editedData.address,
+                rfc: editedData.taxInfo.taxId,
+                taxRegime: editedData.taxInfo.vatId,
+            });
+            setCompanyData(editedData);
+            setIsEditing(false);
+        } catch (err) {
+            setError('Failed to save organization data');
+            console.error(err);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleCancel = () => {
-        setEditedData(companyData); // Revert changes
+        setEditedData(companyData);
         setIsEditing(false);
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-fade-in space-y-6">
@@ -148,8 +216,10 @@ const CompanyProfilePage: React.FC<CompanyProfilePageProps> = ({ setActiveView }
                         <div>
                              {isEditing ? (
                                 <div className="flex items-center gap-2">
-                                    <button onClick={handleCancel} className="px-4 py-2 text-sm font-semibold border rounded-lg hover:bg-gray-100 text-gray-700">Cancel</button>
-                                    <button onClick={handleSave} className="px-4 py-2 text-sm font-semibold border rounded-lg bg-blue-600 text-white hover:bg-blue-700">Save Changes</button>
+                                    <button onClick={handleCancel} disabled={isSaving} className="px-4 py-2 text-sm font-semibold border rounded-lg hover:bg-gray-100 text-gray-700 disabled:opacity-50">Cancel</button>
+                                    <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 text-sm font-semibold border rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">
+                                        {isSaving ? 'Saving...' : 'Save Changes'}
+                                    </button>
                                 </div>
                             ) : (
                                 <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-3 py-2 text-sm border rounded-lg text-gray-700 hover:bg-gray-50">

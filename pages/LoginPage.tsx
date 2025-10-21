@@ -4,22 +4,33 @@ import { EmailIcon } from '../components/icons/EmailIcon';
 import { LockIcon } from '../components/icons/LockIcon';
 import { EyeIcon } from '../components/icons/EyeIcon';
 import { EyeSlashIcon } from '../components/icons/EyeSlashIcon';
+import { useAuth } from '../src/contexts/AuthContext';
 
 interface LoginPageProps {
-  onLogin: () => void;
   onToggleView: () => void;
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onToggleView }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onToggleView }) => {
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log({ email, password, rememberMe });
-    onLogin();
+    setError('');
+    setIsLoading(true);
+
+    try {
+      await login(email, password);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -104,12 +115,19 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onToggleView }) => {
             </div>
           </div>
 
+          {error && (
+            <div className="rounded-lg bg-red-50 border border-red-200 p-3">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
           <div>
             <button
               type="submit"
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-300 shadow-sm"
+              disabled={isLoading}
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-300 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign In
+              {isLoading ? 'Signing In...' : 'Sign In'}
             </button>
           </div>
         </form>

@@ -13,6 +13,7 @@ import { FilesModule } from './modules/files/files.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { QuotationsModule } from './modules/quotations/quotations.module';
+import { OrganizationsModule } from './modules/organizations/organizations.module';
 import { PrismaService } from './common/prisma.service';
 
 @Module({
@@ -22,6 +23,7 @@ import { PrismaService } from './common/prisma.service';
     }),
     AuthModule,
     UsersModule,
+    OrganizationsModule,
     ClientsModule,
     OperationsModule,
     InvoicesModule,
