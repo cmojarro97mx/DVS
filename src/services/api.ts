@@ -142,6 +142,11 @@ class ApiService {
   }
 
   async put<T>(endpoint: string, data?: unknown): Promise<T> {
+    console.log('🔷 API SERVICE - PUT Request');
+    console.log('🔷 Endpoint:', endpoint);
+    console.log('🔷 Data received:', data);
+    console.log('🔷 Stringified body:', JSON.stringify(data));
+    
     return this.request<T>(endpoint, {
       method: 'PUT',
       body: JSON.stringify(data),
