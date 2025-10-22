@@ -10,6 +10,8 @@ import { EditIcon } from '../components/icons/EditIcon';
 import { TrashIcon } from '../components/icons/TrashIcon';
 import { XIcon } from '../components/icons/XIcon';
 import { CalendarIcon } from '../components/icons/CalendarIcon';
+import { FileTextIcon } from '../components/icons/FileTextIcon';
+import { NotesIcon } from '../components/icons/NotesIcon';
 import { employeesService } from '../src/services/employeesService';
 
 // --- Local Components (to avoid creating new files) ---
@@ -177,6 +179,7 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [activeMenu, setActiveMenu] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<'overview' | 'documents' | 'notes'>('overview');
     const menuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
