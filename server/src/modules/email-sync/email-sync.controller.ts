@@ -1,4 +1,4 @@
-import { Controller, Post, Get, UseGuards, Req, Query, Param } from '@nestjs/common';
+import { Controller, Post, Get, UseGuards, Req, Query, Param, Body } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { EmailSyncService } from './email-sync.service';
 import { EmailStorageService } from '../email-storage/email-storage.service';
@@ -231,5 +231,59 @@ export class EmailSyncController {
     }
 
     return { error: 'No HTML body found' };
+  }
+
+  @Get('accounts/:accountId/discovery')
+  async discoverDateRange(@Req() req: Request, @Param('accountId') accountId: string) {
+    const user = req.user as any;
+    
+    const account = await this.prisma.emailAccount.findFirst({
+      where: { id: accountId, userId: user.userId },
+    });
+
+    if (!account) {
+      return { error: 'Account not found' };
+    }
+
+    if (account.detectedOldestEmailDate && account.detectedNewestEmailDate) {
+      return {
+        oldestEmailDate: account.detectedOldestEmailDate,
+        newestEmailDate: account.detectedNewestEmailDate,
+        estimatedTotalMessages: account.estimatedTotalMessages || account.totalMessagesInGmail,
+        cached: true,
+      };
+    }
+
+    const discovery = await this.emailSyncService.discoverEmailDateRange(user.userId, accountId);
+    
+    return {
+      ...discovery,
+      cached: false,
+    };
+  }
+
+  @Post('accounts/:accountId/settings')
+  async updateSettings(
+    @Req() req: Request,
+    @Param('accountId') accountId: string,
+    @Body() body: { syncFromDate: string },
+  ) {
+    const user = req.user as any;
+    
+    const account = await this.prisma.emailAccount.findFirst({
+      where: { id: accountId, userId: user.userId },
+    });
+
+    if (!account) {
+      return { error: 'Account not found' };
+    }
+
+    const syncFromDate = new Date(body.syncFromDate);
+    await this.emailSyncService.updateSyncSettings(user.userId, accountId, syncFromDate);
+
+    return {
+      message: 'Sync settings updated successfully',
+      syncFromDate,
+    };
   }
 }

@@ -37,11 +37,20 @@ export class EmailSyncService {
     let syncedCount = 0;
     let pageToken: string | undefined;
     
+    const query = account.syncFromDate 
+      ? `after:${this.formatDateForGmailQuery(account.syncFromDate)}`
+      : undefined;
+    
+    if (query) {
+      this.logger.log(`Filtering emails with query: ${query}`);
+    }
+    
     do {
       const response = await gmail.users.messages.list({
         userId: 'me',
         maxResults: 100,
         pageToken,
+        q: query,
       });
 
       const messages = response.data.messages || [];
@@ -308,5 +317,156 @@ export class EmailSyncService {
     } catch (error) {
       this.logger.error('Error in automatic email sync:', error.message);
     }
+  }
+
+  async discoverEmailDateRange(userId: string, accountId: string): Promise<{
+    oldestEmailDate: Date | null;
+    newestEmailDate: Date | null;
+    estimatedTotalMessages: number;
+  }> {
+    this.logger.log(`Starting discovery for account ${accountId}`);
+    
+    const account = await this.prisma.emailAccount.findFirst({
+      where: { id: accountId, userId },
+    });
+
+    if (!account) {
+      throw new Error('Account not found');
+    }
+
+    const accessToken = await this.googleAuthService.getAccessToken(userId, accountId);
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({ access_token: accessToken });
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+    const profile = await gmail.users.getProfile({ userId: 'me' });
+    const totalMessages = profile.data.messagesTotal || 0;
+    this.logger.log(`Account has ${totalMessages} total messages`);
+
+    let oldestEmailDate: Date | null = null;
+    let newestEmailDate: Date | null = null;
+
+    if (totalMessages > 0) {
+      try {
+        const newestResponse = await gmail.users.messages.list({
+          userId: 'me',
+          maxResults: 1,
+        });
+
+        if (newestResponse.data.messages && newestResponse.data.messages.length > 0) {
+          const newestMessageId = newestResponse.data.messages[0].id;
+          const newestMessage = await gmail.users.messages.get({
+            userId: 'me',
+            id: newestMessageId,
+            format: 'metadata',
+            metadataHeaders: ['Date'],
+          });
+          
+          const dateHeader = newestMessage.data.payload?.headers?.find(
+            (h: any) => h.name?.toLowerCase() === 'date'
+          );
+          
+          if (dateHeader?.value) {
+            newestEmailDate = new Date(dateHeader.value);
+          }
+        }
+      } catch (error) {
+        this.logger.error('Error fetching newest email:', error.message);
+      }
+
+      try {
+        let currentYear = 1990;
+        const currentYearNow = new Date().getFullYear();
+        let foundOldest = false;
+
+        while (currentYear <= currentYearNow && !foundOldest) {
+          const oldestResponse = await gmail.users.messages.list({
+            userId: 'me',
+            maxResults: 10,
+            q: `before:${currentYear + 1}/01/01`,
+          });
+
+          if (oldestResponse.data.messages && oldestResponse.data.messages.length > 0) {
+            const messages = oldestResponse.data.messages;
+            const lastMessageId = messages[messages.length - 1].id;
+            
+            const oldestMessage = await gmail.users.messages.get({
+              userId: 'me',
+              id: lastMessageId,
+              format: 'metadata',
+              metadataHeaders: ['Date'],
+            });
+            
+            const dateHeader = oldestMessage.data.payload?.headers?.find(
+              (h: any) => h.name?.toLowerCase() === 'date'
+            );
+            
+            if (dateHeader?.value) {
+              oldestEmailDate = new Date(dateHeader.value);
+              this.logger.log(`Found oldest email from year ${currentYear}: ${oldestEmailDate.toISOString()}`);
+              foundOldest = true;
+            }
+            break;
+          }
+
+          currentYear += 5;
+        }
+
+        if (!foundOldest) {
+          this.logger.warn('Could not find oldest email, using current date as fallback');
+          oldestEmailDate = new Date();
+        }
+      } catch (error) {
+        this.logger.error('Error fetching oldest email:', error.message);
+        oldestEmailDate = new Date();
+      }
+    }
+
+    await this.prisma.emailAccount.update({
+      where: { id: accountId },
+      data: {
+        detectedOldestEmailDate: oldestEmailDate,
+        detectedNewestEmailDate: newestEmailDate,
+        estimatedTotalMessages: totalMessages,
+        totalMessagesInGmail: totalMessages,
+      },
+    });
+
+    this.logger.log(`Discovery complete: ${oldestEmailDate?.toISOString()} to ${newestEmailDate?.toISOString()}, ${totalMessages} messages`);
+
+    return {
+      oldestEmailDate,
+      newestEmailDate,
+      estimatedTotalMessages: totalMessages,
+    };
+  }
+
+  async updateSyncSettings(userId: string, accountId: string, syncFromDate: Date): Promise<void> {
+    this.logger.log(`Updating sync settings for account ${accountId}: syncFromDate=${syncFromDate.toISOString()}`);
+    
+    const account = await this.prisma.emailAccount.findFirst({
+      where: { id: accountId, userId },
+    });
+
+    if (!account) {
+      throw new Error('Account not found');
+    }
+
+    await this.prisma.emailAccount.update({
+      where: { id: accountId },
+      data: {
+        syncFromDate,
+        pendingInitialSync: false,
+      },
+    });
+
+    this.logger.log(`Sync settings updated for account ${accountId}`);
+  }
+
+  private formatDateForGmailQuery(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}/${month}/${day}`;
   }
 }

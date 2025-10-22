@@ -7,6 +7,7 @@ import { GoogleCalendarIcon } from '../components/icons/GoogleCalendarIcon';
 import { GSuiteIcon } from '../components/icons/GSuiteIcon';
 import { MailIcon } from '../components/icons/MailIcon';
 import { CheckCircleIcon } from '../components/icons/CheckCircleIcon';
+import EmailSyncWizard from '../src/components/email-sync/EmailSyncWizard';
 
 interface IntegrationsPageProps {
     setActiveView: (view: View) => void;
@@ -154,6 +155,9 @@ const IntegrationSection: React.FC<{ title: string; children: React.ReactNode }>
 const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) => {
     const [googleStatus, setGoogleStatus] = useState<GoogleConnectionStatus | null>(null);
     const [loading, setLoading] = useState(true);
+    const [showSyncWizard, setShowSyncWizard] = useState(false);
+    const [wizardAccountId, setWizardAccountId] = useState<string | null>(null);
+    const [wizardAccountEmail, setWizardAccountEmail] = useState<string>('');
 
 
     useEffect(() => {
@@ -273,6 +277,27 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
 
     const handleToggleGmail = async (accountId: string, enabled: boolean) => {
         try {
+            if (enabled) {
+                const account = googleStatus?.accounts.find(acc => acc.id === accountId);
+                if (!account) return;
+                
+                const accountResponse = await fetch(`/api/email-sync/accounts/${accountId}/discovery`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                    },
+                });
+
+                if (accountResponse.ok) {
+                    const discoveryData = await accountResponse.json();
+                    if (discoveryData.oldestEmailDate) {
+                        setWizardAccountId(accountId);
+                        setWizardAccountEmail(account.email);
+                        setShowSyncWizard(true);
+                        return;
+                    }
+                }
+            }
+
             const token = localStorage.getItem('accessToken');
             const endpoint = enabled ? '/api/google-auth/sync/gmail/enable' : '/api/google-auth/sync/gmail/disable';
             
@@ -292,6 +317,33 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
             console.error('Error toggling Gmail sync:', error);
             alert('Error al cambiar la sincronización de Gmail');
         }
+    };
+
+    const handleWizardComplete = async () => {
+        setShowSyncWizard(false);
+        if (wizardAccountId) {
+            const token = localStorage.getItem('accessToken');
+            const response = await fetch('/api/google-auth/sync/gmail/enable', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ accountId: wizardAccountId }),
+            });
+            
+            if (response.ok) {
+                fetchGoogleStatus();
+            }
+        }
+        setWizardAccountId(null);
+        setWizardAccountEmail('');
+    };
+
+    const handleWizardCancel = () => {
+        setShowSyncWizard(false);
+        setWizardAccountId(null);
+        setWizardAccountEmail('');
     };
 
     const handleToggleCalendar = async (accountId: string, enabled: boolean) => {
@@ -396,6 +448,15 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
                 </div>
             </div>
         </div>
+
+        {showSyncWizard && wizardAccountId && (
+            <EmailSyncWizard
+                accountId={wizardAccountId}
+                accountEmail={wizardAccountEmail}
+                onComplete={handleWizardComplete}
+                onCancel={handleWizardCancel}
+            />
+        )}
         </>
     );
 };

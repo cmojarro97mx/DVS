@@ -14,6 +14,7 @@
     "@google/genai": "^1.25.0",
     "@types/mime-types": "^3.0.1",
     "@types/multer": "^2.0.0",
+    "lucide-react": "^0.546.0",
     "mime-types": "^3.0.1",
     "multer": "^2.0.2",
     "react": "^19.2.0",
