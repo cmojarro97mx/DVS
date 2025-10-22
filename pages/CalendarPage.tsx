@@ -121,9 +121,9 @@ const UpcomingEvents: React.FC<{
     };
 
     return (
-        <div className="bg-white rounded-xl border border-slate-200 flex flex-col h-full">
-            <h3 className="text-base font-bold text-slate-800 p-4 border-b border-slate-200 flex-shrink-0">Próximos eventos</h3>
-            <div className="flex-grow overflow-y-auto p-4 space-y-3">
+        <div className="bg-white rounded-lg border border-slate-200 flex flex-col h-full">
+            <h3 className="text-sm md:text-base font-bold text-slate-800 p-3 md:p-4 border-b border-slate-200 flex-shrink-0">Próximos eventos</h3>
+            <div className="flex-grow overflow-y-auto p-3 md:p-4 space-y-2 md:space-y-3">
                 {upcomingEvents.length > 0 ? (
                     upcomingEvents.map(event => {
                         const categoryStyle = EVENT_CATEGORIES[event.category] || EVENT_CATEGORIES['Other'];
@@ -131,27 +131,27 @@ const UpcomingEvents: React.FC<{
                         const isCompleted = event.status === 'completed';
                         
                         return (
-                             <div key={event.id} onClick={() => onEdit(event)} className={`p-3 rounded-lg border-l-4 cursor-pointer transition-all duration-200 ${categoryStyle.bg} ${categoryStyle.border} ${isCompleted ? 'opacity-60' : ''}`}>
+                             <div key={event.id} onClick={() => onEdit(event)} className={`p-2 md:p-3 rounded-lg border-l-4 cursor-pointer transition-colors ${categoryStyle.bg} ${categoryStyle.border} ${isCompleted ? 'opacity-60' : ''}`}>
                                 <div className="flex items-start justify-between gap-2">
-                                    <div className="flex items-center gap-2 flex-grow">
-                                        <p className={`font-bold text-sm ${categoryStyle.text} ${isCompleted ? 'line-through' : ''}`}>{event.title}</p>
+                                    <div className="flex items-center gap-1.5 md:gap-2 flex-grow">
+                                        <p className={`font-bold text-xs md:text-sm ${categoryStyle.text} ${isCompleted ? 'line-through' : ''}`}>{event.title}</p>
                                         {isCompleted && (
-                                            <CheckCircleIcon className="w-4 h-4 text-green-600 flex-shrink-0" title="Completado" />
+                                            <CheckCircleIcon className="w-3 h-3 md:w-4 md:h-4 text-green-600 flex-shrink-0" title="Completado" />
                                         )}
                                     </div>
                                     {isGoogleEvent && (
-                                        <GoogleCalendarIcon className="w-4 h-4 text-blue-500 flex-shrink-0" title="Sincronizado con Google Calendar" />
+                                        <GoogleCalendarIcon className="w-3 h-3 md:w-4 md:h-4 text-blue-500 flex-shrink-0" title="Sincronizado con Google Calendar" />
                                     )}
                                 </div>
-                                <p className="text-xs text-slate-500 mt-1">{formatEventDate(event.start, event.end, event.allDay)}</p>
-                                {event.description && <p className="text-xs text-slate-600 mt-1 truncate">{event.description}</p>}
+                                <p className="text-[10px] md:text-xs text-slate-500 mt-1">{formatEventDate(event.start, event.end, event.allDay)}</p>
+                                {event.description && <p className="text-[10px] md:text-xs text-slate-600 mt-1 truncate">{event.description}</p>}
                             </div>
                         )
                     })
                 ) : (
-                    <div className="text-center text-slate-500 py-10">
-                        <CalendarDaysIcon className="w-10 h-10 mx-auto text-slate-300" />
-                        <p className="mt-2 font-medium">No hay eventos próximos este mes.</p>
+                    <div className="text-center text-slate-500 py-8 md:py-10">
+                        <CalendarDaysIcon className="w-8 h-8 md:w-10 md:h-10 mx-auto text-slate-300" />
+                        <p className="mt-2 text-xs md:text-sm font-medium">No hay eventos próximos este mes.</p>
                     </div>
                 )}
             </div>
@@ -450,28 +450,28 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                 </div>
             </div>
 
-            <div className="lg:col-span-1 flex flex-col gap-6 min-h-0">
-                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-                    <h3 className="text-base font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                        <LinkIcon className="w-5 h-5 text-slate-500"/> 
+            <div className="lg:col-span-1 flex flex-col gap-3 md:gap-4 min-h-0">
+                <div className="p-3 md:p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <h3 className="text-sm md:text-base font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                        <LinkIcon className="w-4 h-4 md:w-5 md:h-5 text-slate-500"/> 
                         Filtrar eventos por fuente
                     </h3>
                     
-                    <label className="flex items-center gap-3 p-2 hover:bg-white rounded-md cursor-pointer transition-colors">
+                    <label className="flex items-center gap-2 md:gap-3 p-2 hover:bg-white rounded cursor-pointer transition-colors">
                         <input
                             type="checkbox"
                             checked={includeLocalEvents}
                             onChange={(e) => setIncludeLocalEvents(e.target.checked)}
-                            className="w-4 h-4 text-red-600 border-slate-300 rounded focus:ring-red-500"
+                            className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-600 border-slate-300 rounded focus:ring-red-500 focus:ring-1"
                         />
-                        <span className="font-semibold text-sm text-slate-800">Eventos Locales</span>
+                        <span className="font-semibold text-xs md:text-sm text-slate-800">Eventos Locales</span>
                     </label>
                     
                     {emailAccounts.length > 0 ? (
                         <div className="mt-2 space-y-1">
-                            <p className="text-xs font-medium text-slate-500 px-2 mb-1">Cuentas Vinculadas</p>
+                            <p className="text-[10px] md:text-xs font-medium text-slate-500 px-2 mb-1">Cuentas Vinculadas</p>
                             {emailAccounts.map(account => (
-                                <label key={account.id} className="flex items-center gap-3 p-2 hover:bg-white rounded-md cursor-pointer transition-colors">
+                                <label key={account.id} className="flex items-center gap-2 md:gap-3 p-2 hover:bg-white rounded cursor-pointer transition-colors">
                                     <input
                                         type="checkbox"
                                         checked={selectedAccountIds.includes(account.id)}
@@ -482,18 +482,18 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                                                 setSelectedAccountIds(selectedAccountIds.filter(id => id !== account.id));
                                             }
                                         }}
-                                        className="w-4 h-4 text-red-600 border-slate-300 rounded focus:ring-red-500"
+                                        className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-600 border-slate-300 rounded focus:ring-red-500 focus:ring-1"
                                     />
-                                    <ProviderIcon provider={account.provider} className="w-5 h-5" />
-                                    <span className="font-semibold text-sm text-slate-800 flex-grow">{account.email}</span>
+                                    <ProviderIcon provider={account.provider} className="w-4 h-4 md:w-5 md:h-5" />
+                                    <span className="font-semibold text-xs md:text-sm text-slate-800 flex-grow truncate">{account.email}</span>
                                 </label>
                             ))}
                         </div>
                     ) : (
-                        <div className="text-sm text-slate-500 p-2 text-center mt-2">No hay cuentas vinculadas.</div>
+                        <div className="text-xs md:text-sm text-slate-500 p-2 text-center mt-2">No hay cuentas vinculadas.</div>
                     )}
                     
-                    <button onClick={() => setActiveView('integrations')} className="text-sm font-medium text-blue-600 hover:underline w-full text-center mt-3">
+                    <button onClick={() => setActiveView('integrations')} className="text-xs md:text-sm font-medium text-blue-600 hover:underline w-full text-center mt-3">
                         Administrar integraciones
                     </button>
                 </div>

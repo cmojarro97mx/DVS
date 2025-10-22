@@ -5,6 +5,9 @@ import { TagIcon } from './icons/TagIcon';
 import { ClockIcon } from './icons/ClockIcon';
 import { AlignLeftIcon } from './icons/AlignLeftIcon';
 import { TrashIcon } from './icons/TrashIcon';
+import { GoogleCalendarIcon } from './icons/GoogleCalendarIcon';
+import { CheckCircleIcon } from './icons/CheckCircleIcon';
+import { XCircleIcon } from './icons/XCircleIcon';
 
 interface EventModalProps {
     isOpen: boolean;
@@ -127,16 +130,43 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSave, onDele
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
             <form onSubmit={handleSubmit} className="flex flex-col h-full">
               <header className="p-4 flex justify-between items-center border-b border-slate-200 flex-shrink-0">
-                <h3 id="event-modal-title" className="text-xl font-bold text-slate-800">{eventToEdit ? 'Edit Event' : 'Create Event'}</h3>
+                <div className="flex items-center gap-3">
+                  <h3 id="event-modal-title" className="text-xl font-bold text-slate-800">{eventToEdit ? 'Editar Evento' : 'Crear Evento'}</h3>
+                  {eventToEdit && (eventToEdit as any).source === 'google' && (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 rounded-full">
+                      <GoogleCalendarIcon className="w-4 h-4 text-blue-600" />
+                      <span className="text-xs font-semibold text-blue-700">Google</span>
+                    </div>
+                  )}
+                  {eventToEdit && (eventToEdit as any).status === 'completed' && (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 rounded-full">
+                      <CheckCircleIcon className="w-4 h-4 text-green-600" />
+                      <span className="text-xs font-semibold text-green-700">Completado</span>
+                    </div>
+                  )}
+                  {eventToEdit && (eventToEdit as any).status === 'cancelled' && (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-red-50 rounded-full">
+                      <XCircleIcon className="w-4 h-4 text-red-600" />
+                      <span className="text-xs font-semibold text-red-700">Cancelado</span>
+                    </div>
+                  )}
+                </div>
                 <button type="button" onClick={onClose} className="p-2 rounded-full hover:bg-slate-100">
                   <XIcon className="w-6 h-6 text-slate-600" />
                 </button>
               </header>
 
               <div className="p-6 space-y-8 flex-grow overflow-y-auto">
+                {eventToEdit && (eventToEdit as any).source === 'google' && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      <strong>Nota:</strong> Este evento está sincronizado con Google Calendar. Los cambios se reflejarán en ambas plataformas.
+                    </p>
+                  </div>
+                )}
                 <input 
                   type="text" 
-                  placeholder="Add title" 
+                  placeholder="Agregar título" 
                   name="title" 
                   value={formData.title} 
                   onChange={handleChange} 
@@ -162,7 +192,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSave, onDele
                   <AlignLeftIcon className={iconClasses + " mt-2.5"} />
                   <textarea 
                     name="description" 
-                    placeholder="Add description..." 
+                    placeholder="Agregar descripción..." 
                     value={formData.description} 
                     onChange={handleChange} 
                     className={`${flatInputBase} py-2 text-sm resize-none h-24`} 
@@ -190,13 +220,13 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSave, onDele
                 <div>
                   {eventToEdit && (
                     <button type="button" onClick={handleDelete} className="flex items-center gap-2 px-4 py-2 text-red-700 rounded-lg text-sm font-medium hover:bg-red-100">
-                      <TrashIcon className="w-5 h-5" /> Delete
+                      <TrashIcon className="w-5 h-5" /> Eliminar
                     </button>
                   )}
                 </div>
                 <div className="flex gap-3">
-                  <button type="button" onClick={onClose} className="px-5 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-                  <button type="submit" className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Save</button>
+                  <button type="button" onClick={onClose} className="px-5 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50">Cancelar</button>
+                  <button type="submit" className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Guardar</button>
                 </div>
               </footer>
             </form>
