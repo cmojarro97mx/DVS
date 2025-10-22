@@ -24,8 +24,9 @@ export interface CreateNoteData {
 export interface UpdateNoteData extends Partial<CreateNoteData> {}
 
 export const notesService = {
-  async getAll(): Promise<Note[]> {
-    return apiService.get<Note[]>('/notes');
+  async getAll(operationId?: string): Promise<Note[]> {
+    const query = operationId ? `?operationId=${operationId}` : '';
+    return apiService.get<Note[]>(`/notes${query}`);
   },
 
   async getById(id: string): Promise<Note> {

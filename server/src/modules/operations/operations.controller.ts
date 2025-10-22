@@ -1,4 +1,17 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, Request } from '@nestjs/common';
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Put, 
+  Delete, 
+  Param, 
+  Body, 
+  UseGuards, 
+  Request,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { OperationsService } from './operations.service';
 
@@ -30,5 +43,42 @@ export class OperationsController {
   @Delete(':id')
   remove(@Param('id') id: string, @Request() req) {
     return this.operationsService.remove(id, req.user.organizationId);
+  }
+
+  @Get(':id/documents')
+  getDocuments(@Param('id') id: string, @Request() req) {
+    return this.operationsService.getDocuments(id, req.user.organizationId);
+  }
+
+  @Post(':id/documents')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadDocument(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req,
+  ) {
+    return this.operationsService.uploadDocument(id, file, req.user.organizationId);
+  }
+
+  @Delete(':id/documents/:documentId')
+  deleteDocument(
+    @Param('id') id: string,
+    @Param('documentId') documentId: string,
+    @Request() req,
+  ) {
+    return this.operationsService.deleteDocument(documentId, id, req.user.organizationId);
+  }
+
+  @Put(':id/commissions')
+  updateCommissionHistory(
+    @Param('id') id: string,
+    @Body() body: { commissionHistory: any },
+    @Request() req,
+  ) {
+    return this.operationsService.updateCommissionHistory(
+      id,
+      body.commissionHistory,
+      req.user.organizationId,
+    );
   }
 }

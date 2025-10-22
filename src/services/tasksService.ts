@@ -26,8 +26,9 @@ export interface CreateTaskData {
 export interface UpdateTaskData extends Partial<CreateTaskData> {}
 
 export const tasksService = {
-  async getAll(): Promise<Task[]> {
-    return apiService.get<Task[]>('/tasks');
+  async getAll(operationId?: string): Promise<Task[]> {
+    const query = operationId ? `?operationId=${operationId}` : '';
+    return apiService.get<Task[]>(`/tasks${query}`);
   },
 
   async getById(id: string): Promise<Task> {

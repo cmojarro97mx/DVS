@@ -76,4 +76,36 @@ export const operationsService = {
   async delete(id: string): Promise<void> {
     return apiService.delete<void>(`/operations/${id}`);
   },
+
+  async getDocuments(operationId: string): Promise<any[]> {
+    return apiService.get<any[]>(`/operations/${operationId}/documents`);
+  },
+
+  async uploadDocument(operationId: string, file: File): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const token = localStorage.getItem('token');
+    const response = await fetch(`/api/operations/${operationId}/documents`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to upload document');
+    }
+
+    return response.json();
+  },
+
+  async deleteDocument(operationId: string, documentId: string): Promise<void> {
+    return apiService.delete<void>(`/operations/${operationId}/documents/${documentId}`);
+  },
+
+  async updateCommissionHistory(operationId: string, commissionHistory: any): Promise<Operation> {
+    return apiService.put<Operation>(`/operations/${operationId}/commissions`, { commissionHistory });
+  },
 };

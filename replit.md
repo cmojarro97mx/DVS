@@ -19,17 +19,26 @@ The frontend uses React 19 with TypeScript, styled using Tailwind CSS, and bundl
 -   **Authentication**: JWT-based authentication with refresh token mechanisms for persistent sessions. Google OAuth for external integrations.
 -   **Multi-Tenancy**: All data is isolated by `organizationId`, enforced through JWT validation and database queries. Organizations are automatically created upon user registration.
 -   **Core Modules**:
-    -   Logistics Operations
+    -   Logistics Operations (with notes, tasks, documents, and commission tracking)
     -   Client and Supplier Management
     -   Financial Management (Invoices, Payments, Expenses)
     -   Employee Management
-    -   Task Management (Kanban)
-    -   Notes
+    -   Task Management (Kanban, assignable to employees)
+    -   Notes (with operation association and file attachments)
     -   File Management (Drag & drop, folder management)
     -   Calendar and Events
     -   Lead and Quotation Management
--   **File Storage**: Integrated with Backblaze B2 (S3-compatible) for secure and scalable file storage, with atomic delete operations to maintain data consistency.
--   **API Endpoints**: Comprehensive CRUD operations for all modules, including specific endpoints for authentication, organization management, and Google OAuth flow.
+-   **File Storage**: Integrated with Backblaze B2 (S3-compatible) for secure and scalable file storage. All operation documents, note attachments, and organization logos are stored in Backblaze B2.
+-   **Operation Management Features** (October 2025):
+    -   **Notes**: Notes can be associated with operations via `operationId`. Notes service filters by userId and operationId for multi-tenant security.
+    -   **Tasks**: Tasks can be assigned to employees and associated with operations. Tasks include assignees (many-to-many with users), columnId for Kanban board management, and operationId.
+    -   **Documents**: Documents are uploaded to Backblaze B2 in folders organized by operation (`operations/{operationId}/`). API endpoints: GET, POST, DELETE at `/operations/:id/documents`.
+    -   **Commissions**: Commission history is stored as JSON in the Operation model. Endpoint: PUT `/operations/:id/commissions`.
+-   **API Endpoints**: Comprehensive CRUD operations for all modules, including:
+    -   Authentication and organization management
+    -   Google OAuth flow
+    -   Operation-specific endpoints for documents and commissions
+    -   Note and Task filtering by operationId
 
 **System Design Choices:**
 -   **Modular Design**: The application is structured into distinct modules for better maintainability and scalability.

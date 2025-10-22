@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
+import { BackblazeService } from '../../common/backblaze.service';
 
 @Injectable()
 export class OperationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private backblazeService: BackblazeService,
+  ) {}
 
   async findAll(organizationId: string) {
     return this.prisma.operation.findMany({
@@ -159,5 +163,97 @@ export class OperationsService {
     });
 
     return { success: true };
+  }
+
+  async uploadDocument(
+    operationId: string,
+    file: Express.Multer.File,
+    organizationId: string,
+  ) {
+    const operation = await this.prisma.operation.findFirst({
+      where: { id: operationId, organizationId },
+    });
+
+    if (!operation) {
+      throw new NotFoundException(`Operation with ID ${operationId} not found`);
+    }
+
+    const folder = `operations/${operationId}`;
+    const { url, key } = await this.backblazeService.uploadFile(file, folder);
+
+    const document = await this.prisma.document.create({
+      data: {
+        name: file.originalname,
+        type: 'file',
+        url,
+        size: file.size,
+        mimeType: file.mimetype,
+        operationId,
+      },
+    });
+
+    return document;
+  }
+
+  async getDocuments(operationId: string, organizationId: string) {
+    const operation = await this.prisma.operation.findFirst({
+      where: { id: operationId, organizationId },
+    });
+
+    if (!operation) {
+      throw new NotFoundException(`Operation with ID ${operationId} not found`);
+    }
+
+    return this.prisma.document.findMany({
+      where: { operationId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async deleteDocument(
+    documentId: string,
+    operationId: string,
+    organizationId: string,
+  ) {
+    const operation = await this.prisma.operation.findFirst({
+      where: { id: operationId, organizationId },
+    });
+
+    if (!operation) {
+      throw new NotFoundException(`Operation with ID ${operationId} not found`);
+    }
+
+    const document = await this.prisma.document.findFirst({
+      where: { id: documentId, operationId },
+    });
+
+    if (!document) {
+      throw new NotFoundException(`Document with ID ${documentId} not found`);
+    }
+
+    await this.prisma.document.delete({
+      where: { id: documentId },
+    });
+
+    return { success: true };
+  }
+
+  async updateCommissionHistory(
+    operationId: string,
+    commissionHistory: any,
+    organizationId: string,
+  ) {
+    const operation = await this.prisma.operation.findFirst({
+      where: { id: operationId, organizationId },
+    });
+
+    if (!operation) {
+      throw new NotFoundException(`Operation with ID ${operationId} not found`);
+    }
+
+    return this.prisma.operation.update({
+      where: { id: operationId },
+      data: { commissionHistory },
+    });
   }
 }
