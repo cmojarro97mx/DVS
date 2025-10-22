@@ -396,12 +396,12 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
           </button>
         </header>
         
-        <div className="flex-1 flex flex-col lg:flex-row gap-3 md:gap-4 overflow-hidden">
-            <div className="flex-1 flex flex-col overflow-hidden">
-                <div className="grid grid-cols-7 text-center font-semibold text-[10px] md:text-xs text-slate-500 flex-shrink-0">
-                    {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => <div key={day} className="py-1 md:py-1.5 border-b border-slate-200">{day}</div>)}
+        <div className="flex-1 flex flex-col xl:flex-row gap-4 overflow-hidden">
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                <div className="grid grid-cols-7 text-center font-semibold text-xs text-slate-500 flex-shrink-0">
+                    {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => <div key={day} className="py-1.5 border-b border-slate-200">{day}</div>)}
                 </div>
-                <div className="grid grid-cols-7 flex-1 border-l border-slate-200 overflow-y-auto" style={{ gridAutoRows: 'minmax(80px, 1fr)' }}>
+                <div className="grid grid-cols-7 flex-1 border-l border-slate-200 overflow-y-auto" style={{ gridAutoRows: 'minmax(90px, 1fr)' }}>
                     {daysInMonth.map((day, index) => {
                     const isToday = new Date().toDateString() === day.toDateString();
                     const isCurrentMonth = day.getMonth() === currentDate.getMonth();
@@ -460,28 +460,28 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                 </div>
             </div>
 
-            <div className="lg:w-80 xl:w-96 flex flex-col gap-3 overflow-y-auto flex-shrink-0">
-                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex-shrink-0">
-                    <h3 className="text-sm font-semibold text-slate-800 mb-2 flex items-center gap-2">
+            <div className="xl:w-80 flex flex-col gap-4 min-h-0 overflow-y-auto flex-shrink-0">
+                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 flex-shrink-0">
+                    <h3 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
                         <LinkIcon className="w-4 h-4 text-slate-500"/> 
                         Filtrar eventos por fuente
                     </h3>
                     
-                    <label className="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer transition-colors">
+                    <label className="flex items-center gap-2 p-2.5 hover:bg-white rounded cursor-pointer transition-colors">
                         <input
                             type="checkbox"
                             checked={includeLocalEvents}
                             onChange={(e) => setIncludeLocalEvents(e.target.checked)}
-                            className="w-3.5 h-3.5 text-red-600 border-slate-300 rounded focus:ring-red-500 focus:ring-1 flex-shrink-0"
+                            className="w-4 h-4 text-red-600 border-slate-300 rounded focus:ring-red-500 focus:ring-1 flex-shrink-0"
                         />
-                        <span className="font-semibold text-xs text-slate-800">Eventos Locales</span>
+                        <span className="font-semibold text-sm text-slate-800">Eventos Locales</span>
                     </label>
                     
                     {emailAccounts.length > 0 ? (
-                        <div className="mt-2 space-y-1 max-h-48 overflow-y-auto">
-                            <p className="text-[10px] font-medium text-slate-500 px-2 mb-1">Cuentas Vinculadas</p>
+                        <div className="mt-3 space-y-1 max-h-64 overflow-y-auto">
+                            <p className="text-xs font-medium text-slate-500 px-2 mb-2">Cuentas Vinculadas</p>
                             {emailAccounts.map(account => (
-                                <label key={account.id} className="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer transition-colors group">
+                                <label key={account.id} className="flex items-center gap-2.5 p-2.5 hover:bg-white rounded cursor-pointer transition-colors group">
                                     <input
                                         type="checkbox"
                                         checked={selectedAccountIds.includes(account.id)}
@@ -492,31 +492,31 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                                                 setSelectedAccountIds(selectedAccountIds.filter(id => id !== account.id));
                                             }
                                         }}
-                                        className="w-3.5 h-3.5 text-red-600 border-slate-300 rounded focus:ring-red-500 focus:ring-1 flex-shrink-0"
+                                        className="w-4 h-4 text-red-600 border-slate-300 rounded focus:ring-red-500 focus:ring-1 flex-shrink-0"
                                     />
-                                    <ProviderIcon provider={account.provider} className="w-4 h-4 flex-shrink-0" />
+                                    <ProviderIcon provider={account.provider} className="w-5 h-5 flex-shrink-0" />
                                     <div className="flex-grow min-w-0">
-                                        <span className="font-semibold text-xs text-slate-800 block truncate">{account.email}</span>
+                                        <span className="font-semibold text-sm text-slate-800 block truncate">{account.email}</span>
                                         {account.calendarSyncEnabled && (
-                                            <span className="text-[10px] text-green-600">✓ Sincronización activa</span>
+                                            <span className="text-xs text-green-600">✓ Sincronización activa</span>
                                         )}
                                     </div>
                                 </label>
                             ))}
                         </div>
                     ) : (
-                        <div className="text-xs md:text-sm text-slate-500 p-2 text-center mt-2">
+                        <div className="text-sm text-slate-500 p-3 text-center mt-2">
                             <p className="mb-2">No hay cuentas vinculadas.</p>
                             <button
                                 onClick={() => setActiveView('integrations')}
-                                className="text-blue-600 hover:text-blue-700 text-xs font-medium underline"
+                                className="text-blue-600 hover:text-blue-700 text-sm font-medium underline"
                             >
                                 Vincular cuenta de Google
                             </button>
                         </div>
                     )}
                     
-                    <button onClick={() => setActiveView('integrations')} className="text-xs md:text-sm font-medium text-blue-600 hover:underline w-full text-center mt-3">
+                    <button onClick={() => setActiveView('integrations')} className="text-sm font-medium text-blue-600 hover:underline w-full text-center mt-3 py-1">
                         Administrar integraciones
                     </button>
                 </div>
