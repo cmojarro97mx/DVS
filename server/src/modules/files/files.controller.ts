@@ -25,6 +25,16 @@ export class FilesController {
     return this.filesService.findAll(req.user.organizationId);
   }
 
+  @Get('manager/all')
+  getAllFiles(@Req() req: any) {
+    return this.filesService.getAllOrganizationFiles(req.user.organizationId);
+  }
+
+  @Get('manager/stats')
+  getStats(@Req() req: any) {
+    return this.filesService.getFileStats(req.user.organizationId);
+  }
+
   @Get('folders')
   getFolders(@Req() req: any) {
     return this.filesService.getFolders(req.user.organizationId);

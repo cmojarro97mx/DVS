@@ -30,6 +30,7 @@ import AIOperationCreatorPage from './AIOperationCreatorPage';
 import CompanyHubPage from './CompanyHubPage'; // Import new Company Hub Page
 import EmailHubPage from './EmailHubPage'; // Import new Email Hub Page
 import NotificationsSettingsPage from './NotificationsSettingsPage'; // Notifications Settings Page
+import FileManagerPage from './FileManagerPage'; // File Manager Page
 import { employeesService } from '../src/services/employeesService';
 import { clientsService } from '../src/services/clientsService';
 import { 
@@ -419,7 +420,8 @@ export type View =
   | 'ai-operation-creator'
   | 'company-hub'
   | 'email-hub'
-  | 'notifications-settings';
+  | 'notifications-settings'
+  | 'file-manager';
 
 const viewTitles: Record<View, string> = {
   dashboard: 'Dashboard',
@@ -450,7 +452,8 @@ const viewTitles: Record<View, string> = {
   'ai-operation-creator': 'AI Operation Creator',
   'company-hub': 'Empresa',
   'email-hub': 'Email & Calendario',
-  'notifications-settings': 'Configuración de Notificaciones'
+  'notifications-settings': 'Configuración de Notificaciones',
+  'file-manager': 'Gestor de Archivos'
 };
 
 
@@ -908,6 +911,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
         return <EmailHubPage setActiveView={setActiveView} />;
       case 'notifications-settings':
         return <NotificationsSettingsPage />;
+      case 'file-manager':
+        return <FileManagerPage />;
       default:
         return <div className="p-6">{viewTitles[activeView] || 'Not Implemented'}</div>;
     }

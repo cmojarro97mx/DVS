@@ -106,6 +106,127 @@ export class FilesService {
     return this.prisma.file.delete({ where: { id } });
   }
 
+  async getAllOrganizationFiles(organizationId: string) {
+    // Get files from Files table
+    const files = await this.prisma.file.findMany({
+      where: { organizationId },
+      include: {
+        folder: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    // Get operation documents
+    const documents = await this.prisma.document.findMany({
+      where: {
+        operation: {
+          organizationId,
+        },
+      },
+      include: {
+        operation: {
+          select: {
+            id: true,
+            referenceNumber: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    // Transform to unified format
+    const unifiedFiles = [
+      ...files.map((file) => ({
+        id: file.id,
+        name: file.name,
+        url: file.url,
+        storageKey: file.storageKey,
+        size: file.size,
+        mimeType: file.mimeType,
+        preview: file.preview,
+        createdAt: file.createdAt,
+        updatedAt: file.updatedAt,
+        source: 'files' as const,
+        folder: file.folder,
+        operationReference: null,
+      })),
+      ...documents.map((doc) => ({
+        id: doc.id,
+        name: doc.name,
+        url: doc.url,
+        storageKey: doc.url, // Documents store URL directly
+        size: doc.size,
+        mimeType: doc.mimeType,
+        preview: null,
+        createdAt: doc.createdAt,
+        updatedAt: doc.updatedAt,
+        source: 'operations' as const,
+        folder: null,
+        operationReference: doc.operation.referenceNumber,
+      })),
+    ];
+
+    // Sort by creation date
+    unifiedFiles.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    return unifiedFiles;
+  }
+
+  async getFileStats(organizationId: string) {
+    const files = await this.prisma.file.findMany({
+      where: { organizationId },
+      select: {
+        size: true,
+        mimeType: true,
+      },
+    });
+
+    const documents = await this.prisma.document.findMany({
+      where: {
+        operation: {
+          organizationId,
+        },
+      },
+      select: {
+        size: true,
+        mimeType: true,
+      },
+    });
+
+    const allFiles = [...files, ...documents];
+    const totalSize = allFiles.reduce((acc, file) => acc + (file.size || 0), 0);
+    const totalCount = allFiles.length;
+
+    // Group by mime type
+    const typeStats = allFiles.reduce((acc, file) => {
+      const category = this.getFileCategory(file.mimeType);
+      acc[category] = (acc[category] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return {
+      totalSize,
+      totalCount,
+      typeStats,
+      filesCount: files.length,
+      documentsCount: documents.length,
+    };
+  }
+
+  private getFileCategory(mimeType: string): string {
+    if (mimeType.startsWith('image/')) return 'images';
+    if (mimeType.startsWith('video/')) return 'videos';
+    if (mimeType.includes('pdf')) return 'pdfs';
+    if (mimeType.includes('word') || mimeType.includes('document')) return 'documents';
+    if (mimeType.includes('sheet') || mimeType.includes('excel')) return 'spreadsheets';
+    if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('tar')) return 'archives';
+    return 'others';
+  }
+
   async createFolder(name: string, parentId: string | undefined, organizationId: string) {
     if (parentId) {
       const parent = await this.prisma.fileFolder.findFirst({
