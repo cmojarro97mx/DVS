@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class TasksService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async findAll(organizationId: string, operationId?: string) {
     return this.prisma.task.findMany({
@@ -77,6 +81,13 @@ export class TasksService {
           }),
         ),
       );
+
+      await this.notificationsService.sendNotificationToUsers(assignees, {
+        title: 'Nueva tarea asignada',
+        body: `Se te ha asignado la tarea: ${task.title}`,
+        url: `/tasks/${task.id}`,
+        data: { type: 'task_assigned', taskId: task.id },
+      });
     }
 
     return this.findOne(task.id, organizationId);
@@ -87,7 +98,10 @@ export class TasksService {
       where: { 
         id,
         organizationId,
-      } 
+      },
+      include: {
+        assignees: true,
+      },
     });
     if (!existing) {
       throw new NotFoundException(`Task with ID ${id} not found`);
@@ -101,6 +115,8 @@ export class TasksService {
     });
 
     if (assignees !== undefined) {
+      const oldAssigneeIds = existing.assignees.map(a => a.userId);
+      
       await this.prisma.taskAssignee.deleteMany({
         where: { taskId: id },
       });
@@ -116,6 +132,28 @@ export class TasksService {
             }),
           ),
         );
+
+        const addedAssignees = assignees.filter(id => !oldAssigneeIds.includes(id));
+        if (addedAssignees.length > 0) {
+          await this.notificationsService.sendNotificationToUsers(addedAssignees, {
+            title: 'Nueva tarea asignada',
+            body: `Se te ha asignado la tarea: ${task.title}`,
+            url: `/tasks/${task.id}`,
+            data: { type: 'task_assigned', taskId: task.id },
+          });
+        }
+      }
+    }
+
+    if (taskData.status === 'completed' && existing.status !== 'completed') {
+      const assigneeIds = assignees || existing.assignees.map(a => a.userId);
+      if (assigneeIds.length > 0) {
+        await this.notificationsService.sendNotificationToUsers(assigneeIds, {
+          title: 'Tarea completada',
+          body: `La tarea "${task.title}" ha sido completada`,
+          url: `/tasks/${task.id}`,
+          data: { type: 'task_completed', taskId: task.id },
+        });
       }
     }
 
