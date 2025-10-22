@@ -148,21 +148,39 @@ export class EmailStorageService {
       const objects = keys.map(key => ({ Key: key }));
       
       const batchSize = 1000;
+      const allErrors: Array<{ key: string; code: string; message: string }> = [];
+      
       for (let i = 0; i < objects.length; i += batchSize) {
         const batch = objects.slice(i, i + batchSize);
         
-        await this.s3Client.send(
+        const response = await this.s3Client.send(
           new DeleteObjectsCommand({
             Bucket: this.bucketName,
             Delete: {
               Objects: batch,
-              Quiet: true,
+              Quiet: false,
             },
           })
         );
+
+        if (response.Errors && response.Errors.length > 0) {
+          for (const error of response.Errors) {
+            allErrors.push({
+              key: error.Key || 'unknown',
+              code: error.Code || 'UNKNOWN',
+              message: error.Message || 'Unknown error',
+            });
+            this.logger.warn(`Failed to delete ${error.Key}: ${error.Code} - ${error.Message}`);
+          }
+        }
       }
       
-      this.logger.log(`Deleted ${keys.length} files from Backblaze`);
+      if (allErrors.length > 0) {
+        this.logger.error(`Failed to delete ${allErrors.length} of ${keys.length} files from Backblaze`);
+        throw new Error(`Partial deletion failure: ${allErrors.length} files failed to delete. First error: ${allErrors[0].code} - ${allErrors[0].message}`);
+      }
+      
+      this.logger.log(`Successfully deleted ${keys.length} files from Backblaze`);
     } catch (error) {
       this.logger.error(`Failed to batch delete files:`, error);
       throw error;

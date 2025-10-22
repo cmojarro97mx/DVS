@@ -513,28 +513,41 @@ export class EmailSyncService {
 
     if (keysToDelete.length > 0) {
       this.logger.log(`Deleting ${keysToDelete.length} files from Backblaze`);
-      await this.emailStorageService.deleteFiles(keysToDelete);
+      try {
+        await this.emailStorageService.deleteFiles(keysToDelete);
+      } catch (error) {
+        this.logger.error(`Failed to delete files from Backblaze, aborting database cleanup:`, error);
+        throw new Error(`Cleanup aborted: Failed to delete ${keysToDelete.length} files from storage. Database not modified.`);
+      }
     }
 
     const messageIds = messagesToDelete.map(m => m.id);
-    await this.prisma.emailMessage.deleteMany({
-      where: {
-        id: { in: messageIds },
-      },
-    });
+    
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.emailMessage.deleteMany({
+          where: {
+            id: { in: messageIds },
+          },
+        });
 
-    const remainingCount = await this.prisma.emailMessage.count({
-      where: { accountId },
-    });
+        const remainingCount = await tx.emailMessage.count({
+          where: { accountId },
+        });
 
-    await this.prisma.emailAccount.update({
-      where: { id: accountId },
-      data: {
-        syncedMessagesCount: remainingCount,
-      },
-    });
+        await tx.emailAccount.update({
+          where: { id: accountId },
+          data: {
+            syncedMessagesCount: remainingCount,
+          },
+        });
 
-    this.logger.log(`Cleanup complete: deleted ${messagesToDelete.length} messages, ${keysToDelete.length} files. Remaining: ${remainingCount} messages`);
+        this.logger.log(`Cleanup complete: deleted ${messagesToDelete.length} messages, ${keysToDelete.length} files. Remaining: ${remainingCount} messages`);
+      });
+    } catch (error) {
+      this.logger.error(`Failed to cleanup database records:`, error);
+      throw new Error(`Database cleanup failed after storage deletion. Manual intervention may be required.`);
+    }
   }
 
   private formatDateForGmailQuery(date: Date): string {
