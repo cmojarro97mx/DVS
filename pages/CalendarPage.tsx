@@ -16,6 +16,8 @@ import { GoogleCalendarIcon } from '../components/icons/GoogleCalendarIcon';
 import { CheckCircleIcon } from '../components/icons/CheckCircleIcon';
 import { XCircleIcon } from '../components/icons/XCircleIcon';
 import { RefreshIcon } from '../components/icons/RefreshIcon';
+import { CogIcon } from '../components/icons/CogIcon';
+import { FunnelIcon } from '../components/icons/FunnelIcon';
 import { calendarService, Event as BackendEvent } from '../src/services/calendarService';
 import { Event as UIEvent } from './DashboardPage';
 
@@ -461,16 +463,21 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
             </div>
 
             <div className="xl:w-80 flex flex-col gap-4 min-h-0 overflow-y-auto flex-shrink-0">
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-shrink-0 overflow-hidden">
-                    <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
-                        <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                            <LinkIcon className="w-4 h-4 text-slate-600"/> 
-                            Filtros de eventos
-                        </h3>
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm flex-shrink-0 overflow-hidden">
+                    <div className="bg-gradient-to-br from-slate-50 via-white to-slate-50 px-4 py-3.5 border-b border-slate-200">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                <FunnelIcon className="w-4 h-4 text-slate-600"/> 
+                                Filtrar eventos por fuente
+                            </h3>
+                            {syncing && (
+                                <RefreshIcon className="w-4 h-4 text-blue-600 animate-spin" />
+                            )}
+                        </div>
                     </div>
                     
                     <div className="p-4 space-y-3">
-                        <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer transition-all hover:bg-slate-100 group">
+                        <label className="flex items-center gap-3 p-2.5 bg-slate-50/50 rounded-lg cursor-pointer transition-all hover:bg-slate-100/80 border border-transparent hover:border-slate-200 group">
                             <div className="relative flex-shrink-0">
                                 <input
                                     type="checkbox"
@@ -478,7 +485,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                                     onChange={(e) => setIncludeLocalEvents(e.target.checked)}
                                     className="peer sr-only"
                                 />
-                                <div className="w-5 h-5 bg-white border-2 border-slate-300 rounded peer-checked:bg-red-600 peer-checked:border-red-600 transition-all flex items-center justify-center">
+                                <div className="w-5 h-5 bg-white border-2 border-slate-300 rounded peer-checked:bg-red-600 peer-checked:border-red-600 transition-all flex items-center justify-center shadow-sm">
                                     {includeLocalEvents && (
                                         <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -486,22 +493,27 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                                     )}
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 flex-grow">
-                                <CalendarDaysIcon className="w-5 h-5 text-slate-600 group-hover:text-slate-700" />
-                                <span className="font-semibold text-sm text-slate-800">Eventos Locales</span>
+                            <div className="flex items-center gap-2.5 flex-grow">
+                                <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center group-hover:bg-red-200 transition-colors">
+                                    <CalendarDaysIcon className="w-4 h-4 text-red-600" />
+                                </div>
+                                <div className="flex-grow">
+                                    <span className="font-semibold text-sm text-slate-800 block">Eventos Locales</span>
+                                    <span className="text-xs text-slate-500">Creados manualmente</span>
+                                </div>
                             </div>
                         </label>
                         
                         {emailAccounts.length > 0 ? (
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-2 px-1 pt-2">
-                                    <div className="h-px bg-slate-200 flex-grow"></div>
-                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Cuentas sincronizadas</p>
-                                    <div className="h-px bg-slate-200 flex-grow"></div>
+                            <div className="space-y-2.5">
+                                <div className="flex items-center gap-2 px-1 pt-1">
+                                    <div className="h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent flex-grow"></div>
+                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Google Calendar</p>
+                                    <div className="h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent flex-grow"></div>
                                 </div>
-                                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                                <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
                                     {emailAccounts.map(account => (
-                                        <label key={account.id} className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg cursor-pointer transition-all hover:border-slate-300 hover:shadow-sm group">
+                                        <label key={account.id} className="flex items-center gap-3 p-2.5 bg-white border border-slate-200 rounded-lg cursor-pointer transition-all hover:border-blue-300 hover:shadow-sm group">
                                             <div className="relative flex-shrink-0">
                                                 <input
                                                     type="checkbox"
@@ -515,7 +527,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                                                     }}
                                                     className="peer sr-only"
                                                 />
-                                                <div className="w-5 h-5 bg-white border-2 border-slate-300 rounded peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all flex items-center justify-center">
+                                                <div className="w-5 h-5 bg-white border-2 border-slate-300 rounded peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all flex items-center justify-center shadow-sm">
                                                     {selectedAccountIds.includes(account.id) && (
                                                         <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -523,13 +535,20 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                                                     )}
                                                 </div>
                                             </div>
-                                            <ProviderIcon provider={account.provider} className="w-6 h-6 flex-shrink-0" />
+                                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors flex-shrink-0">
+                                                <ProviderIcon provider={account.provider} className="w-4 h-4" />
+                                            </div>
                                             <div className="flex-grow min-w-0">
                                                 <span className="font-semibold text-sm text-slate-800 block truncate">{account.email}</span>
-                                                {account.calendarSyncEnabled && (
-                                                    <div className="flex items-center gap-1 mt-0.5">
-                                                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                                                        <span className="text-xs text-green-600 font-medium">Sincronizado</span>
+                                                {account.calendarSyncEnabled ? (
+                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                                                        <span className="text-xs text-green-600 font-medium">Activo</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                        <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
+                                                        <span className="text-xs text-slate-500 font-medium">Inactivo</span>
                                                     </div>
                                                 )}
                                             </div>
@@ -538,31 +557,34 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                                 </div>
                             </div>
                         ) : (
-                            <div className="text-center py-6 px-3">
-                                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                    <LinkIcon className="w-6 h-6 text-slate-400" />
+                            <div className="text-center py-8 px-3">
+                                <div className="w-14 h-14 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-sm">
+                                    <GoogleCalendarIcon className="w-7 h-7 text-slate-400" />
                                 </div>
-                                <p className="text-sm font-medium text-slate-600 mb-2">Sin cuentas vinculadas</p>
-                                <p className="text-xs text-slate-500 mb-3">Conecta tu cuenta de Google para sincronizar eventos</p>
+                                <p className="text-sm font-semibold text-slate-700 mb-1.5">Sin cuentas vinculadas</p>
+                                <p className="text-xs text-slate-500 mb-4 leading-relaxed">Conecta Google Calendar para<br/>sincronizar tus eventos</p>
                                 <button
                                     onClick={() => setActiveView('integrations')}
-                                    className="text-blue-600 hover:text-blue-700 text-sm font-semibold"
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
                                 >
-                                    Vincular cuenta →
+                                    <LinkIcon className="w-4 h-4" />
+                                    Vincular cuenta
                                 </button>
                             </div>
                         )}
                     </div>
                     
-                    <div className="border-t border-slate-200 bg-slate-50 px-4 py-3">
-                        <button 
-                            onClick={() => setActiveView('integrations')} 
-                            className="w-full flex items-center justify-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors"
-                        >
-                            <CogIcon className="w-4 h-4" />
-                            Administrar integraciones
-                        </button>
-                    </div>
+                    {emailAccounts.length > 0 && (
+                        <div className="border-t border-slate-200 bg-gradient-to-br from-slate-50 via-white to-slate-50 px-4 py-3">
+                            <button 
+                                onClick={() => setActiveView('integrations')} 
+                                className="w-full flex items-center justify-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors py-1"
+                            >
+                                <CogIcon className="w-4 h-4" />
+                                Configurar integraciones
+                            </button>
+                        </div>
+                    )}
                 </div>
                 
                 <UpcomingEvents events={filteredEvents} currentDate={currentDate} onEdit={openEditModal} />
@@ -589,5 +611,28 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
     </div>
   );
 };
+
+// Agregar estilos para scrollbar personalizada
+const style = document.createElement('style');
+style.textContent = `
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+`;
+if (!document.querySelector('style[data-calendar-styles]')) {
+  style.setAttribute('data-calendar-styles', 'true');
+  document.head.appendChild(style);
+}
 
 export default CalendarPage;
