@@ -32,9 +32,10 @@ export default function FilesManagerPage() {
     try {
       const data = await filesService.getAllFiles();
       setFiles(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading files:', error);
-      setError('Error al cargar archivos');
+      const errorMsg = error.response?.data?.message || error.message || 'Error al cargar archivos';
+      setError(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -44,8 +45,10 @@ export default function FilesManagerPage() {
     try {
       const data = await filesService.getAllFolders();
       setFolders(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading folders:', error);
+      const errorMsg = error.response?.data?.message || error.message || 'Error al cargar carpetas';
+      setError(errorMsg);
     }
   };
 
@@ -64,9 +67,10 @@ export default function FilesManagerPage() {
         await filesService.uploadFile(file, selectedFolder);
       }
       await loadFiles();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading files:', error);
-      setError('Error al subir archivos. Por favor intente nuevamente.');
+      const errorMsg = error.response?.data?.message || error.message || 'Error al subir archivos. Verifica tu conexión con Backblaze.';
+      setError(errorMsg);
     } finally {
       setIsUploading(false);
     }

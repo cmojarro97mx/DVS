@@ -11,7 +11,7 @@ export class BackblazeService {
   private endpoint: string;
 
   constructor() {
-    const keyId = process.env.BACKBLAZE_APPLICATION_KEY_ID?.trim();
+    const keyId = process.env.BACKBLAZE_KEY_ID?.trim();
     const appKey = process.env.BACKBLAZE_APPLICATION_KEY?.trim();
     this.bucketName = (process.env.BACKBLAZE_BUCKET_NAME || '').trim();
     this.endpoint = (process.env.BACKBLAZE_ENDPOINT || '').trim();
@@ -22,7 +22,7 @@ export class BackblazeService {
 
     this.s3Client = new S3Client({
       endpoint: `https://${this.endpoint}`,
-      region: 'us-west-000',
+      region: 'us-west-002',
       credentials: {
         accessKeyId: keyId,
         secretAccessKey: appKey,

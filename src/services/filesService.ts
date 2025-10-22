@@ -24,28 +24,44 @@ export interface FileFolder {
 
 export const filesService = {
   async getAllFiles(): Promise<FileItem[]> {
-    const response = await api.get('/files');
-    return response.data;
+    try {
+      const response = await api.get('/files');
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching files:', error);
+      throw error;
+    }
   },
 
   async getFile(id: string): Promise<FileItem> {
-    const response = await api.get(`/files/${id}`);
-    return response.data;
+    try {
+      const response = await api.get(`/files/${id}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching file:', error);
+      throw error;
+    }
   },
 
   async uploadFile(file: File, folderId?: string): Promise<FileItem> {
-    const formData = new FormData();
-    formData.append('file', file);
-    if (folderId) {
-      formData.append('folderId', folderId);
-    }
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (folderId) {
+        formData.append('folderId', folderId);
+      }
 
-    const response = await api.post('/files/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
+      const response = await api.post('/files/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 120000, // 2 minutes timeout for large files
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error uploading file:', error);
+      throw error;
+    }
   },
 
   async deleteFile(id: string): Promise<void> {

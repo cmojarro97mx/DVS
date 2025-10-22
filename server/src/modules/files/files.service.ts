@@ -59,7 +59,13 @@ export class FilesService {
       }
     }
 
-    const { url, key } = await this.backblaze.uploadFile(file, organizationId);
+    // Create proper folder path: organizations/{organizationId}/files/{folderId}
+    let folderPath = `organizations/${organizationId}/files`;
+    if (folderId) {
+      folderPath = `${folderPath}/${folderId}`;
+    }
+
+    const { url, key } = await this.backblaze.uploadFile(file, folderPath);
 
     const createdFile = await this.prisma.file.create({
       data: {
