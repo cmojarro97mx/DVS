@@ -10,6 +10,9 @@ export interface Event {
   attendees?: any;
   color?: string;
   allDay: boolean;
+  source?: 'manual' | 'google';
+  googleEventId?: string;
+  googleCalendarId?: string;
   createdAt?: string;
   updatedAt?: string;
 }

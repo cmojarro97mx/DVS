@@ -12,6 +12,7 @@ import { GmailIcon } from '../components/icons/GmailIcon';
 import { GSuiteIcon } from '../components/icons/GSuiteIcon';
 import { MailIcon } from '../components/icons/MailIcon';
 import { LinkIcon } from '../components/icons/LinkIcon';
+import { GoogleCalendarIcon } from '../components/icons/GoogleCalendarIcon';
 import { calendarService, Event as BackendEvent } from '../src/services/calendarService';
 import { Event as UIEvent } from './DashboardPage';
 
@@ -31,7 +32,7 @@ const COLOR_TO_CATEGORY: Record<string, UIEvent['category']> = {
   'gray': 'Other',
 };
 
-const adaptBackendEventToUI = (backendEvent: BackendEvent): UIEvent => {
+const adaptBackendEventToUI = (backendEvent: BackendEvent): UIEvent & { source?: 'manual' | 'google' } => {
   const category = backendEvent.color && COLOR_TO_CATEGORY[backendEvent.color] 
     ? COLOR_TO_CATEGORY[backendEvent.color] 
     : 'Meeting';
@@ -44,6 +45,7 @@ const adaptBackendEventToUI = (backendEvent: BackendEvent): UIEvent => {
     end: backendEvent.endDate,
     category: category,
     allDay: backendEvent.allDay,
+    source: backendEvent.source || 'manual',
   };
 };
 
@@ -113,9 +115,15 @@ const UpcomingEvents: React.FC<{
                 {upcomingEvents.length > 0 ? (
                     upcomingEvents.map(event => {
                         const categoryStyle = EVENT_CATEGORIES[event.category] || EVENT_CATEGORIES['Other'];
+                        const isGoogleEvent = (event as any).source === 'google';
                         return (
                              <div key={event.id} onClick={() => onEdit(event)} className={`p-3 rounded-lg border-l-4 cursor-pointer transition-all duration-200 ${categoryStyle.bg} ${categoryStyle.border}`}>
-                                <p className={`font-bold text-sm ${categoryStyle.text}`}>{event.title}</p>
+                                <div className="flex items-start justify-between gap-2">
+                                    <p className={`font-bold text-sm ${categoryStyle.text} flex-grow`}>{event.title}</p>
+                                    {isGoogleEvent && (
+                                        <GoogleCalendarIcon className="w-4 h-4 text-blue-500 flex-shrink-0" title="Synced from Google Calendar" />
+                                    )}
+                                </div>
                                 <p className="text-xs text-slate-500 mt-1">{formatEventDate(event.start, event.end, event.allDay)}</p>
                                 {event.description && <p className="text-xs text-slate-600 mt-1 truncate">{event.description}</p>}
                             </div>
