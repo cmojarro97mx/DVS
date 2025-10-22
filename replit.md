@@ -48,6 +48,12 @@ The frontend uses React 19 with TypeScript, styled using Tailwind CSS, and bundl
         -   **Visual Indicators**: Synced events display a Google Calendar icon badge in the Calendar UI.
         -   **Individual Account Controls**: Each connected account has independent Gmail and Calendar sync toggles in the Integrations page.
         -   **Multi-Tenant Security**: Event sync enforces strict user and organization scoping with composite unique constraint `@@unique([userId, googleEventId])` in Prisma schema. Events without valid googleEventId are skipped and logged. All sync operations include organizationId validation and ownership verification before updates to prevent cross-tenant data leakage.
+    -   **Email Analysis Module** (October 2025):
+        -   **Hybrid Storage Architecture**: Metadata stored in PostgreSQL (EmailMessage table), heavy content (HTML bodies, attachments) stored in Backblaze B2 with signed URLs (1-hour expiration).
+        -   **EmailMessage Model**: Stores email metadata including gmailMessageId, threadId, subject, from/to/cc addresses, snippet, date, labels, isRead, hasAttachments, replyCount. Includes counters in EmailAccount for total/downloaded/replied/unreplied messages.
+        -   **Email Sync Service**: Downloads complete email history from Gmail API, extracts attachments (stored in `emails/{accountId}/attachments/`), stores HTML bodies in Backblaze (`emails/{accountId}/messages/`), and maintains metadata in PostgreSQL.
+        -   **Email Analysis Page**: UI with account selector, real-time metrics display (total messages, downloaded, replied, unreplied), and comprehensive email listing with date, subject, recipients, thread chain, and full HTML content rendering.
+        -   **Security**: All email data scoped to userId via EmailAccount relationship. Signed URLs prevent unauthorized access to Backblaze content.
     -   **OAuth Flow**: Secure OAuth 2.0 flow with automatic token refresh, state validation, and persistent storage of access/refresh tokens in EmailAccount table.
         -   **Desktop**: Popup window for OAuth (500x600px) with automatic closure on success/error. Uses window.postMessage for communication.
         -   **Mobile**: Full-page redirect flow (detects iOS/Android devices) with seamless return to dashboard.
@@ -56,6 +62,7 @@ The frontend uses React 19 with TypeScript, styled using Tailwind CSS, and bundl
         -   Google Auth: `/api/google-auth/auth-url` (get OAuth URL), `/api/google-auth/callback` (OAuth callback), `/api/google-auth/status` (list all connected accounts), `/api/google-auth/disconnect/:accountId` (disconnect specific account), `/api/google-auth/sync/gmail/enable` (body: {accountId}), `/api/google-auth/sync/gmail/disable` (body: {accountId}), `/api/google-auth/sync/calendar/enable` (body: {accountId}), `/api/google-auth/sync/calendar/disable` (body: {accountId})
         -   Gmail: All endpoints support optional `accountId` query parameter. `/api/gmail/messages?accountId=xxx`, `/api/gmail/messages/send` (body: {accountId}), `/api/gmail/messages/:id/reply` (body: {accountId}), `/api/gmail/labels?accountId=xxx`
         -   Calendar: All endpoints support optional `accountId` query parameter. `/api/google-calendar/calendars?accountId=xxx`, `/api/google-calendar/events?accountId=xxx`, `/api/google-calendar/sync-events` (body: {accountId}), `/api/google-calendar/sync-from-google` (body: {accountId})
+        -   Email Sync: `/api/email-sync/sync/:accountId` (POST, trigger email sync), `/api/email-sync/accounts` (GET, list accounts with email sync enabled), `/api/email-sync/metrics/:accountId` (GET, get email metrics), `/api/email-sync/messages/:accountId` (GET, list all synced messages), `/api/email-sync/message/:messageId` (GET, get message with signed URLs for HTML and attachments), `/api/email-sync/html/:messageId` (GET, get signed URL for HTML body)
 -   **API Endpoints**: Comprehensive CRUD operations for all modules, including:
     -   Authentication and organization management
     -   Google OAuth flow with persistent connections
