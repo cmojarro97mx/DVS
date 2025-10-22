@@ -15,6 +15,14 @@ export class GoogleAuthController {
     res.redirect(authUrl);
   }
 
+  @Get('auth-url')
+  @UseGuards(JwtAuthGuard)
+  async getAuthUrl(@Req() req: Request) {
+    const user = req.user as any;
+    const authUrl = await this.googleAuthService.getAuthorizationUrl(user.sub);
+    return { url: authUrl };
+  }
+
   @Get('callback')
   async callback(
     @Query('code') code: string,

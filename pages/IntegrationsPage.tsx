@@ -145,8 +145,25 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
         }
     };
 
-    const handleConnectGoogle = () => {
-        window.location.href = '/api/google-auth/authorize';
+    const handleConnectGoogle = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/google-auth/auth-url', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                window.location.href = data.url;
+            } else {
+                throw new Error('Failed to get authorization URL');
+            }
+        } catch (error) {
+            console.error('Error connecting to Google:', error);
+            alert('Error al conectar con Google. Por favor intenta de nuevo.');
+        }
     };
 
     const handleDisconnectGoogle = async () => {
