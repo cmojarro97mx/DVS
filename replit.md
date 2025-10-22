@@ -173,6 +173,18 @@ Esquema completo implementado con las siguientes tablas:
 
 ## Cambios Recientes
 
+**2025-10-22**
+- ✅ **Módulo de Employees completamente funcional**:
+  - Schema Prisma actualizado: agregados userId (relación con User) y organizationId
+  - Módulo completo en backend: service, controller, module con validación
+  - Auto-creación de Employee durante registro de usuario (rol CEO por defecto)
+  - Employee creado para usuario de prueba existente
+  - Frontend conectado: DashboardPage carga employees desde API al iniciar
+  - Empleados aparecen en selector "Assigned To" al crear operaciones
+  - Formulario de creación de empleados corregido (sin campo password)
+  - EmployeesPage conectado con backend API
+  - ✅ **Problema resuelto**: Usuarios ahora aparecen automáticamente en selectores de asignación
+
 **2025-10-21**
 - Eliminados todos los datos de prueba de `dummyData.ts`
 - Configurado port 5000 para Replit (frontend)
@@ -199,6 +211,7 @@ Esquema completo implementado con las siguientes tablas:
     - `expensesService.ts` - Gestión de gastos
     - `tasksService.ts` - Gestión de tareas Kanban
     - `notesService.ts` - Gestión de notas
+    - `employeesService.ts` - Gestión de empleados
   - Multi-tenancy implementado con organizationId en todas las tablas
   - JWT incluye organizationId para aislamiento de datos
   - Organizaciones creadas automáticamente durante registro
@@ -208,4 +221,3 @@ Esquema completo implementado con las siguientes tablas:
   - Schema Prisma actualizado con campos: googleAccessToken, googleRefreshToken, googleTokenExpiry
   - Prisma Client regenerado correctamente
   - Backend compilando sin errores
-  - Pendiente: ejecutar `cd server && npm run db:push --force` para crear columnas en BD
