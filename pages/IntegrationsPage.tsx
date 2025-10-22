@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Banner } from '../components/Banner';
 import { LinkIcon } from '../components/icons/LinkIcon';
-import { EmailAccount, View } from './DashboardPage';
+import { View } from './DashboardPage';
 import { GmailIcon } from '../components/icons/GmailIcon';
 import { GoogleCalendarIcon } from '../components/icons/GoogleCalendarIcon';
 import { GSuiteIcon } from '../components/icons/GSuiteIcon';
@@ -10,8 +10,12 @@ import { CheckCircleIcon } from '../components/icons/CheckCircleIcon';
 
 interface IntegrationsPageProps {
     setActiveView: (view: View) => void;
-    emailAccounts: EmailAccount[];
-    onUpdateEmailAccount: (account: EmailAccount) => void;
+}
+
+interface GoogleConnectionStatus {
+    connected: boolean;
+    hasRefreshToken: boolean;
+    tokenExpiry: string | null;
 }
 
 const HubCard: React.FC<{
@@ -20,10 +24,11 @@ const HubCard: React.FC<{
     icon: React.ElementType;
     onClick: () => void;
     isConnected?: boolean;
-}> = ({ title, description, icon: Icon, onClick, isConnected }) => (
+    isLoading?: boolean;
+}> = ({ title, description, icon: Icon, onClick, isConnected, isLoading }) => (
     <button
         onClick={onClick}
-        disabled={isConnected}
+        disabled={isConnected || isLoading}
         className="w-full flex items-center p-4 bg-white rounded-xl border border-slate-200 transition-all duration-300 group hover:border-blue-400 hover:bg-blue-50/30 hover:-translate-y-0.5 disabled:bg-slate-50 disabled:cursor-not-allowed disabled:hover:border-slate-200 disabled:hover:-translate-y-0"
     >
         <div className={`p-3 rounded-lg border transition-colors ${isConnected ? 'bg-green-50 border-green-200' : 'bg-slate-100 group-hover:bg-blue-50 group-hover:border-blue-200'}`}>
@@ -33,7 +38,11 @@ const HubCard: React.FC<{
             <h3 className={`font-bold transition-colors ${isConnected ? 'text-slate-800' : 'text-slate-800'}`}>{title}</h3>
             <p className="text-sm text-slate-500">{description}</p>
         </div>
-        {isConnected ? (
+        {isLoading ? (
+            <div className="px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">
+                Loading...
+            </div>
+        ) : isConnected ? (
              <div className="flex items-center gap-2 px-2.5 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full">
                 <CheckCircleIcon className="w-4 h-4"/>
                 Connected
@@ -46,70 +55,47 @@ const HubCard: React.FC<{
     </button>
 );
 
-
-const ToggleSwitch: React.FC<{ id?: string; enabled: boolean; onChange: (enabled: boolean) => void; }> = ({ id, enabled, onChange }) => (
-    <button
-        id={id}
-        type="button"
-        className={`${enabled ? 'bg-blue-600' : 'bg-gray-200'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
-        role="switch"
-        aria-checked={enabled}
-        onClick={() => onChange(!enabled)}
-    >
-        <span
-            aria-hidden="true"
-            className={`${enabled ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
-        />
-    </button>
-);
-
-
-const ConnectedAccountItem: React.FC<{ account: EmailAccount, onUpdate: (account: EmailAccount) => void }> = ({ account, onUpdate }) => {
-    const ProviderIcon = {
-        'gmail': GmailIcon,
-        'gsuite': GSuiteIcon,
-        'other': MailIcon,
-    }[account.provider];
-
+const ConnectedGoogleAccount: React.FC<{ 
+    status: GoogleConnectionStatus;
+    onDisconnect: () => void; 
+}> = ({ status, onDisconnect }) => {
     return (
-        <div className="p-4 bg-white transition-colors hover:bg-slate-50/70">
+        <div className="p-6 bg-white transition-colors hover:bg-slate-50/70 rounded-xl border border-slate-200">
             <div className="flex justify-between items-start">
                 <div className="flex items-center gap-3">
-                    <ProviderIcon className="w-8 h-8 flex-shrink-0" />
+                    <GSuiteIcon className="w-10 h-10 flex-shrink-0" />
                     <div>
-                        <span className="font-bold text-base text-slate-800 truncate">{account.email}</span>
+                        <span className="font-bold text-lg text-slate-800">Google Workspace</span>
                         <div className="flex items-center gap-1.5 mt-1">
                              <div className="w-2 h-2 rounded-full bg-green-500"></div>
                              <span className="text-xs font-semibold text-green-700">Connected</span>
                         </div>
                     </div>
                 </div>
-                 <button className="text-sm font-medium text-slate-600 hover:text-red-600 bg-slate-100 hover:bg-red-50 px-3 py-1.5 rounded-md transition-colors">Disconnect</button>
+                 <button 
+                    onClick={onDisconnect}
+                    className="text-sm font-medium text-slate-600 hover:text-red-600 bg-slate-100 hover:bg-red-50 px-3 py-1.5 rounded-md transition-colors"
+                >
+                    Disconnect
+                </button>
             </div>
             
-            <div className="mt-4 pt-4 border-t space-y-3">
-                <div className="flex items-center justify-between">
-                    <label htmlFor={`sync-email-${account.id}`} className="flex items-center gap-3 cursor-pointer">
-                        <MailIcon className="w-5 h-5 text-slate-500" />
-                        <span className="text-sm font-medium text-slate-700">Email Sync</span>
-                    </label>
-                    <ToggleSwitch 
-                        id={`sync-email-${account.id}`}
-                        enabled={account.syncEmail ?? false} 
-                        onChange={() => onUpdate({ ...account, syncEmail: !account.syncEmail })}
-                    />
+            <div className="mt-4 pt-4 border-t space-y-2">
+                <div className="flex items-center gap-3">
+                    <GmailIcon className="w-5 h-5 text-slate-500" />
+                    <span className="text-sm font-medium text-slate-700">Gmail</span>
+                    <CheckCircleIcon className="w-4 h-4 text-green-600 ml-auto" />
                 </div>
-                <div className="flex items-center justify-between">
-                    <label htmlFor={`sync-calendar-${account.id}`} className="flex items-center gap-3 cursor-pointer">
-                        <GoogleCalendarIcon className="w-5 h-5 text-slate-500" />
-                        <span className="text-sm font-medium text-slate-700">Calendar Sync</span>
-                    </label>
-                    <ToggleSwitch 
-                        id={`sync-calendar-${account.id}`}
-                        enabled={account.syncCalendar ?? false} 
-                        onChange={() => onUpdate({ ...account, syncCalendar: !account.syncCalendar })}
-                    />
+                <div className="flex items-center gap-3">
+                    <GoogleCalendarIcon className="w-5 h-5 text-slate-500" />
+                    <span className="text-sm font-medium text-slate-700">Calendar</span>
+                    <CheckCircleIcon className="w-4 h-4 text-green-600 ml-auto" />
                 </div>
+                {status.tokenExpiry && (
+                    <p className="text-xs text-slate-400 mt-3">
+                        Token expires: {new Date(status.tokenExpiry).toLocaleString('es-ES')}
+                    </p>
+                )}
             </div>
         </div>
     );
@@ -125,8 +111,67 @@ const IntegrationSection: React.FC<{ title: string; children: React.ReactNode }>
 );
 
 
-const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView, emailAccounts, onUpdateEmailAccount }) => {
-    const isGoogleConnected = emailAccounts.some(acc => acc.provider === 'gmail' || acc.provider === 'gsuite');
+const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) => {
+    const [googleStatus, setGoogleStatus] = useState<GoogleConnectionStatus | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchGoogleStatus();
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('oauth') === 'success') {
+            fetchGoogleStatus();
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }, []);
+
+    const fetchGoogleStatus = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/google-auth/status', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                setGoogleStatus(data);
+            }
+        } catch (error) {
+            console.error('Error fetching Google status:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleConnectGoogle = () => {
+        window.location.href = '/api/google-auth/authorize';
+    };
+
+    const handleDisconnectGoogle = async () => {
+        if (!confirm('¿Estás seguro de que deseas desconectar tu cuenta de Google? Perderás el acceso a Gmail y Calendar.')) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/google-auth/disconnect', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+            
+            if (response.ok) {
+                setGoogleStatus({ connected: false, hasRefreshToken: false, tokenExpiry: null });
+            }
+        } catch (error) {
+            console.error('Error disconnecting Google:', error);
+            alert('Error al desconectar la cuenta de Google');
+        }
+    };
+
+    const isGoogleConnected = googleStatus?.connected || false;
 
     return (
         <div className="animate-fade-in space-y-8">
@@ -144,33 +189,46 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView, emai
                             description="Sync emails from your Google account."
                             icon={GmailIcon}
                             isConnected={isGoogleConnected}
-                            onClick={() => {}}
+                            isLoading={loading}
+                            onClick={handleConnectGoogle}
                         />
                         <HubCard 
                             title="Google Calendar"
                             description="Sync events from your Google Calendar."
                             icon={GoogleCalendarIcon}
                             isConnected={isGoogleConnected}
-                            onClick={() => {}}
+                            isLoading={loading}
+                            onClick={handleConnectGoogle}
                         />
                     </IntegrationSection>
+                    
+                    <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <h4 className="text-sm font-semibold text-blue-900 mb-2">Features:</h4>
+                        <ul className="text-xs text-blue-800 space-y-1">
+                            <li>• Send emails directly from Nexxio</li>
+                            <li>• Sync operation events to Calendar</li>
+                            <li>• Access your Gmail inbox</li>
+                            <li>• Manage calendar appointments</li>
+                        </ul>
+                    </div>
                 </div>
                 
                 <div className="lg:col-span-2">
                     <IntegrationSection title="Connected Accounts">
-                        {emailAccounts.length > 0 ? (
-                            <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-200 overflow-hidden max-h-[500px] overflow-y-auto">
-                                {emailAccounts.map(account => (
-                                    <ConnectedAccountItem key={account.id} account={account} onUpdate={onUpdateEmailAccount} />
-                                ))}
-                            </div>
+                        {isGoogleConnected && googleStatus ? (
+                            <ConnectedGoogleAccount 
+                                status={googleStatus}
+                                onDisconnect={handleDisconnectGoogle}
+                            />
                         ) : (
                             <div className="text-center bg-slate-50/70 border-2 border-dashed border-slate-200 rounded-xl py-16 flex flex-col items-center justify-center">
                                 <div className="bg-slate-200/70 rounded-full p-4 mb-4">
                                     <LinkIcon className="w-8 h-8 text-slate-400" />
                                 </div>
                                 <h3 className="text-md font-semibold text-slate-800">No accounts connected.</h3>
-                                <p className="mt-1 text-sm text-slate-500 max-w-xs">Connect an integration from the list to see your accounts here.</p>
+                                <p className="mt-1 text-sm text-slate-500 max-w-xs">
+                                    Connect Gmail or Google Calendar to get started.
+                                </p>
                             </div>
                         )}
                     </IntegrationSection>

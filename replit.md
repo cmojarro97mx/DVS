@@ -39,11 +39,20 @@ The frontend uses React 19 with TypeScript, styled using Tailwind CSS, and bundl
     -   **Invoices**: All invoices are scoped to organizationId. Service validates that referenced clients, operations, and bank accounts belong to the same organization before create/update.
     -   **Payments**: All payments are scoped to organizationId. Service validates that referenced invoices, operations, and bank accounts belong to the same organization before create/update.
     -   **Expenses**: All expenses are scoped to organizationId and userId. Service validates that referenced operations and bank accounts belong to the same organization before create/update.
+-   **Google Workspace Integration** (October 2025):
+    -   **Gmail API**: Full email management including sending, reading, replying, and labeling messages. OAuth tokens stored securely in User model.
+    -   **Google Calendar API**: Complete calendar management with support for listing calendars, creating/updating/deleting events, and syncing operation events to Google Calendar.
+    -   **OAuth Flow**: Secure OAuth 2.0 flow with automatic token refresh, state validation, and persistent storage of access/refresh tokens in database.
+    -   **Endpoints**:
+        -   Google Auth: `/api/google-auth/authorize`, `/api/google-auth/callback`, `/api/google-auth/status`, `/api/google-auth/disconnect`
+        -   Gmail: `/api/gmail/messages`, `/api/gmail/messages/send`, `/api/gmail/messages/:id/reply`, `/api/gmail/labels`
+        -   Calendar: `/api/google-calendar/calendars`, `/api/google-calendar/events`, `/api/google-calendar/sync-events`
 -   **API Endpoints**: Comprehensive CRUD operations for all modules, including:
     -   Authentication and organization management
-    -   Google OAuth flow
+    -   Google OAuth flow with persistent connections
     -   Operation-specific endpoints for documents and commissions
     -   Note and Task filtering by operationId
+    -   Gmail and Google Calendar integrations
 
 **System Design Choices:**
 -   **Modular Design**: The application is structured into distinct modules for better maintainability and scalability.
