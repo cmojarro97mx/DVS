@@ -9,6 +9,7 @@ import { CalendarIcon } from '../components/icons/CalendarIcon';
 import { ChevronRightIcon } from '../components/icons/ChevronRightIcon';
 import { FilterIcon } from '../components/icons/FilterIcon';
 import { operationsService } from '../src/services/operationsService';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 
 const getStatusColor = (status: string) => {
     switch (status) {
@@ -38,6 +39,8 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [operationToDelete, setOperationToDelete] = useState<Project | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadOperations();
@@ -53,7 +56,7 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
         assignees: (op.assignees || []).map((a: any) => a.user?.name || 'Unknown')
       }));
       setProjects(loadedProjects);
-      
+
       // Pass loaded operations back to DashboardPage
       if (onOperationsLoaded) {
         onOperationsLoaded(loadedProjects);
@@ -66,10 +69,26 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
     }
   };
 
+  const handleDeleteOperation = async () => {
+    if (!operationToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      await operationsService.delete(operationToDelete.id);
+      window.location.reload(); // Recargar para actualizar la lista
+    } catch (error) {
+      console.error('Error deleting operation:', error);
+      alert('Error al eliminar la operación');
+    } finally {
+      setIsDeleting(false);
+      setOperationToDelete(null);
+    }
+  };
+
   const filteredProjects = useMemo(() => {
     return projects.filter(project => {
         const matchesStatus = statusFilter === 'All' || project.status === statusFilter;
-        
+
         const lowercasedQuery = searchQuery.toLowerCase().trim();
         if (lowercasedQuery === '') {
             return matchesStatus;
@@ -77,7 +96,7 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
 
         const matchesSearch = project.id.toLowerCase().includes(lowercasedQuery) ||
                               project.projectName.toLowerCase().includes(lowercasedQuery);
-        
+
         return matchesStatus && matchesSearch;
     });
   }, [searchQuery, statusFilter, projects]);
@@ -88,7 +107,7 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
         title="Logistics Operations"
         description="Monitor, manage, and track all your ongoing and completed logistics projects from a centralized dashboard."
       />
-      
+
       {/* Controls Bar */}
       <div className="flex-shrink-0 flex flex-col md:flex-row justify-between items-center gap-4">
         <div className="flex items-center gap-4 w-full md:w-auto">
@@ -125,7 +144,7 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
           {error}
         </div>
       )}
-      
+
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col flex-grow min-h-0">
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
@@ -193,7 +212,16 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
                       </div>
                     </td>
                     <td className="px-6 py-4 align-middle text-right">
-                        <ChevronRightIcon className="w-5 h-5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOperationToDelete(project);
+                        }}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" 
+                        title="Eliminar"
+                      >
+                        <TrashIcon className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -219,6 +247,16 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
           </div>
         )}
       </div>
+
+      <ConfirmationModal
+        isOpen={!!operationToDelete}
+        onClose={() => setOperationToDelete(null)}
+        onConfirm={handleDeleteOperation}
+        title="Confirm Deletion"
+        message={`Are you sure you want to delete the operation "${operationToDelete?.projectName}"? This action cannot be undone.`}
+        confirmButtonText="Delete"
+        isConfirming={isDeleting}
+      />
     </div>
   );
 };

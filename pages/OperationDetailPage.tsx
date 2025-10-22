@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Project, View, Note, TeamMember, Expense, Invoice, Payment, UploadedFile, Task, Column, BankAccount, Client, Currency, Commission, CommissionSnapshot, EmailMessage, FileSystemItem } from './DashboardPage';
+import { operationsService } from '../src/services/operationsService';
 import { ArrowLeftIcon } from '../components/icons/ArrowLeftIcon';
 import { ClipboardListIcon } from '../components/icons/ClipboardListIcon';
 import { TruckIcon } from '../components/icons/TruckIcon';
@@ -849,6 +850,8 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = (props) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [initialEditInvoiceId, setInitialEditInvoiceId] = useState<string | undefined>(undefined);
   const [initialViewInvoiceId, setInitialViewInvoiceId] = useState<string | undefined>(undefined);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (initialState) {
@@ -876,6 +879,20 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = (props) => {
           document.removeEventListener('mousedown', handleClickOutside);
       };
   }, []);
+
+  const handleDeleteOperation = async () => {
+    try {
+      setIsDeleting(true);
+      await operationsService.delete(project.id);
+      setActiveView('operations');
+    } catch (error) {
+      console.error('Error deleting operation:', error);
+      alert('Error al eliminar la operación');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
 
   const renderOverview = () => (
     <div className="space-y-6">
@@ -958,11 +975,23 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = (props) => {
                 </button>
                 {isMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 border border-gray-200">
-                    <button className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <PencilIcon className="w-4 h-4 text-gray-500"/> Edit Operation
+                    <button 
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        alert('Funcionalidad de edición en desarrollo');
+                      }}
+                      className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                        <PencilIcon className="w-4 h-4 text-gray-500"/> Editar Operación
                     </button>
-                    <button className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                        <TrashIcon className="w-4 h-4"/> Delete Operation
+                    <button 
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        setShowDeleteConfirm(true);
+                      }}
+                      className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                        <TrashIcon className="w-4 h-4"/> Eliminar Operación
                     </button>
                     </div>
                 )}
@@ -1119,6 +1148,17 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = (props) => {
             animation: pulse-strong 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
     `}</style>
+
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDeleteOperation}
+        title="Eliminar Operación"
+        message={`¿Estás seguro de que deseas eliminar la operación "${project.projectName}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        isLoading={isDeleting}
+      />
     </div>
   );
 };
