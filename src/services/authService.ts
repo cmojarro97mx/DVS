@@ -16,6 +16,19 @@ export const authService = {
     return response;
   },
 
+  async refresh(): Promise<AuthResponse> {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+
+    const response = await apiService.post<AuthResponse>('/auth/refresh', { refreshToken });
+    apiService.setAccessToken(response.accessToken);
+    localStorage.setItem('refreshToken', response.refreshToken);
+    localStorage.setItem('user', JSON.stringify(response.user));
+    return response;
+  },
+
   logout() {
     apiService.setAccessToken(null);
     localStorage.removeItem('refreshToken');
@@ -24,5 +37,9 @@ export const authService = {
 
   isAuthenticated(): boolean {
     return !!apiService.getAccessToken();
+  },
+
+  getRefreshToken(): string | null {
+    return localStorage.getItem('refreshToken');
   },
 };

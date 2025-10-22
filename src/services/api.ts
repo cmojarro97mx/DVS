@@ -3,6 +3,8 @@ const API_BASE_URL = '/api';
 class ApiService {
   private static instance: ApiService;
   private accessToken: string | null = null;
+  private isRefreshing: boolean = false;
+  private refreshPromise: Promise<void> | null = null;
 
   private constructor() {
     this.accessToken = localStorage.getItem('accessToken');
@@ -30,7 +32,8 @@ class ApiService {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    isRetry: boolean = false
   ): Promise<T> {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
@@ -47,19 +50,25 @@ class ApiService {
     });
 
     if (!response.ok) {
-      // Intentar extraer el mensaje de error del backend
       let errorMessage = 'Error en la solicitud';
       
       try {
         const errorData = await response.json();
-        // El backend de NestJS envía errores en el formato { message: string }
         errorMessage = errorData.message || errorData.error || errorMessage;
       } catch (e) {
-        // Si no se puede parsear el JSON, usar un mensaje genérico
         errorMessage = `Error ${response.status}: ${response.statusText}`;
       }
       
-      // Si el usuario fue eliminado o su sesión es inválida (401), cerrar sesión automáticamente
+      if (response.status === 401 && !isRetry && !endpoint.includes('/auth/')) {
+        try {
+          await this.refreshAccessToken();
+          return this.request<T>(endpoint, options, true);
+        } catch (refreshError) {
+          this.handleUnauthorized(errorMessage);
+          return Promise.reject(new Error(errorMessage));
+        }
+      }
+      
       if (response.status === 401) {
         this.handleUnauthorized(errorMessage);
         return Promise.reject(new Error(errorMessage));
@@ -69,6 +78,42 @@ class ApiService {
     }
 
     return response.json();
+  }
+
+  private async refreshAccessToken(): Promise<void> {
+    if (this.isRefreshing) {
+      return this.refreshPromise!;
+    }
+
+    this.isRefreshing = true;
+    this.refreshPromise = (async () => {
+      try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) {
+          throw new Error('No refresh token available');
+        }
+
+        const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Token refresh failed');
+        }
+
+        const data = await response.json();
+        this.setAccessToken(data.accessToken);
+        localStorage.setItem('refreshToken', data.refreshToken);
+        localStorage.setItem('user', JSON.stringify(data.user));
+      } finally {
+        this.isRefreshing = false;
+        this.refreshPromise = null;
+      }
+    })();
+
+    return this.refreshPromise;
   }
 
   private handleUnauthorized(errorMessage?: string) {

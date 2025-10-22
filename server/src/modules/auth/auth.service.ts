@@ -148,4 +148,54 @@ export class AuthService {
       },
     });
   }
+
+  async refreshTokens(refreshToken: string) {
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token es requerido');
+    }
+
+    try {
+      const payload = this.jwtService.verify(refreshToken);
+      
+      const storedToken = await this.prisma.refreshToken.findUnique({
+        where: { token: refreshToken },
+        include: { user: true },
+      });
+
+      if (!storedToken) {
+        throw new UnauthorizedException('Refresh token inválido');
+      }
+
+      if (new Date() > storedToken.expiresAt) {
+        await this.prisma.refreshToken.delete({ where: { id: storedToken.id } });
+        throw new UnauthorizedException('Refresh token expirado');
+      }
+
+      if (storedToken.user.status !== 'Active') {
+        throw new UnauthorizedException('Usuario inactivo');
+      }
+
+      await this.prisma.refreshToken.delete({ where: { id: storedToken.id } });
+
+      const tokens = await this.generateTokens(
+        storedToken.userId,
+        storedToken.user.email,
+        storedToken.user.organizationId,
+      );
+
+      return {
+        user: {
+          id: storedToken.user.id,
+          email: storedToken.user.email,
+          name: storedToken.user.name,
+          role: storedToken.user.role,
+          status: storedToken.user.status,
+          organizationId: storedToken.user.organizationId,
+        },
+        ...tokens,
+      };
+    } catch (error) {
+      throw new UnauthorizedException('Refresh token inválido o expirado');
+    }
+  }
 }

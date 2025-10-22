@@ -23,4 +23,10 @@ export class AuthController {
   ) {
     return this.authService.login(email, password);
   }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refresh(@Body('refreshToken') refreshToken: string) {
+    return this.authService.refreshTokens(refreshToken);
+  }
 }
