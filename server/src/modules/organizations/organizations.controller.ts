@@ -37,10 +37,11 @@ export class OrganizationsController {
   @Put('current')
   async updateCurrentOrganization(
     @Request() req,
-    @Body() updateDto: UpdateOrganizationDto,
+    @Body() updateDto: any,
   ) {
     console.log('🔵 UPDATE ORGANIZATION REQUEST RECEIVED');
-    console.log('📋 Request Body:', JSON.stringify(updateDto, null, 2));
+    console.log('📋 Raw req.body:', req.body);
+    console.log('📋 Request Body (updateDto):', JSON.stringify(updateDto, null, 2));
     console.log('👤 User Organization ID:', req.user.organizationId);
     
     const result = await this.organizationsService.updateOrganization(
