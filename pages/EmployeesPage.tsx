@@ -10,6 +10,7 @@ import { EditIcon } from '../components/icons/EditIcon';
 import { TrashIcon } from '../components/icons/TrashIcon';
 import { XIcon } from '../components/icons/XIcon';
 import { CalendarIcon } from '../components/icons/CalendarIcon';
+import { FilterIcon } from '../components/icons/FilterIcon';
 import { employeesService } from '../src/services/employeesService';
 
 // --- Local Components (to avoid creating new files) ---
@@ -272,81 +273,124 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
         }
     };
     
+    if (loading) {
+        return (
+            <div className="animate-fade-in space-y-6">
+                <Banner
+                    title="Employee Management"
+                    description="Administer your team, manage roles, and track employee information."
+                    icon={UsersIcon}
+                />
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+                    <p className="mt-4 text-gray-600">Loading employees...</p>
+                </div>
+            </div>
+        );
+    }
+    
     return (
-        <div className="animate-fade-in space-y-6">
+        <div className="animate-fade-in space-y-6 h-full flex flex-col">
             <Banner
                 title="Employee Management"
                 description="Administer your team, manage roles, and track employee information."
                 icon={UsersIcon}
             />
             
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            {/* Controls Bar */}
+            <div className="flex-shrink-0 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex items-center gap-4 w-full md:w-auto">
-                    <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
-                        {['All', 'Active', 'Inactive'].map(status => (
-                            <button key={status} onClick={() => setStatusFilter(status)} className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-colors ${statusFilter === status ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600 hover:text-gray-800'}`}>
-                                {status}
-                            </button>
-                        ))}
+                    <div className="relative flex-grow">
+                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <input 
+                            type="text" 
+                            placeholder="Search by name, role or email..." 
+                            className="pl-10 pr-4 py-2 w-full md:w-64 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 focus:ring-red-500 focus:border-red-500"
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                        />
                     </div>
-                    <div className="relative flex-grow md:flex-grow-0">
-                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input type="text" placeholder="Search employees..." className="pl-10 pr-4 py-2 w-full md:w-64 border border-gray-300 rounded-lg bg-white text-sm text-gray-900 focus:ring-blue-500 focus:border-blue-500" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                    <div className="relative">
+                        <FilterIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                        <select 
+                            value={statusFilter}
+                            onChange={e => setStatusFilter(e.target.value)}
+                            className="pl-10 pr-4 py-2 appearance-none border border-slate-300 rounded-lg text-sm bg-white text-slate-900 focus:ring-red-500 focus:border-red-500"
+                        >
+                            <option value="All">All Status</option>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
                     </div>
                 </div>
-                <button onClick={handleAddNew} className="w-full md:w-auto flex-shrink-0 flex items-center justify-center bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm">
+                <button 
+                    onClick={handleAddNew} 
+                    className="w-full md:w-auto flex-shrink-0 flex items-center justify-center bg-red-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors shadow-sm"
+                >
                     <PlusIcon className="w-5 h-5 mr-2" />
                     Add Employee
                 </button>
             </div>
 
 
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+            {/* Employees Table */}
+            <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 {filteredEmployees.length > 0 ? (
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead className="text-left bg-slate-50 text-xs text-slate-500 uppercase font-semibold">
+                        <table className="w-full">
+                            <thead className="bg-white border-b border-slate-300">
                                 <tr>
-                                    <th className="px-6 py-3">Employee</th>
-                                    <th className="px-6 py-3">Role</th>
-                                    <th className="px-6 py-3">Status</th>
-                                    <th className="px-6 py-3">Hire Date</th>
-                                    <th className="px-6 py-3 text-center">Actions</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 tracking-wider">Employee</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 tracking-wider">Role</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 tracking-wider">Status</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 tracking-wider">Hire Date</th>
+                                    <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 tracking-wider">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-200">
+                            <tbody className="bg-white divide-y divide-slate-200">
                                 {filteredEmployees.map(employee => (
-                                    <tr key={employee.id} className="hover:bg-slate-50/70">
-                                        <td className="px-6 py-3">
+                                    <tr key={employee.id} className="hover:bg-slate-50 transition-colors">
+                                        <td className="px-6 py-4 align-middle">
                                             <div className="flex items-center gap-3">
                                                 <EmployeeAvatar name={employee.name} />
                                                 <div>
                                                     <p className="font-bold text-slate-800">{employee.name}</p>
-                                                    <p className="text-slate-500">{employee.email}</p>
+                                                    <p className="text-sm text-slate-500">{employee.email}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-3 font-medium text-slate-700">{employee.role}</td>
-                                        <td className="px-6 py-3">
-                                            <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${employee.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>{employee.status}</span>
+                                        <td className="px-6 py-4 align-middle font-medium text-slate-700">{employee.role}</td>
+                                        <td className="px-6 py-4 align-middle">
+                                            <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${employee.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                                {employee.status}
+                                            </span>
                                         </td>
-                                        <td className="px-6 py-3">
+                                        <td className="px-6 py-4 align-middle">
                                             <div className="flex items-center gap-2 text-slate-600">
                                                 <CalendarIcon className="w-4 h-4 text-slate-400" />
-                                                <span>{employee.hireDate || 'N/A'}</span>
+                                                <span className="text-sm">{employee.hireDate || 'N/A'}</span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-3 text-center">
+                                        <td className="px-6 py-4 align-middle text-center">
                                             <div className="relative inline-block" ref={menuRef}>
-                                                <button onClick={() => setActiveMenu(activeMenu === employee.id ? null : employee.id)} className="p-2 text-slate-500 rounded-full hover:bg-slate-200">
+                                                <button 
+                                                    onClick={() => setActiveMenu(activeMenu === employee.id ? null : employee.id)} 
+                                                    className="p-2 text-slate-500 rounded-full hover:bg-slate-200 transition-colors"
+                                                >
                                                     <MoreVerticalIcon className="w-5 h-5" />
                                                 </button>
                                                 {activeMenu === employee.id && (
                                                     <div className="absolute right-0 mt-2 w-36 bg-white rounded-md shadow-xl py-1 z-10 border border-slate-200 text-left">
-                                                        <button onClick={() => handleEdit(employee)} className="w-full flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
+                                                        <button 
+                                                            onClick={() => handleEdit(employee)} 
+                                                            className="w-full flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
+                                                        >
                                                             <EditIcon className="w-4 h-4 mr-3 text-slate-500" /> Edit
                                                         </button>
-                                                        <button onClick={() => handleDeleteRequest(employee)} className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                                                        <button 
+                                                            onClick={() => handleDeleteRequest(employee)} 
+                                                            className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                                                        >
                                                             <TrashIcon className="w-4 h-4 mr-3" /> Delete
                                                         </button>
                                                     </div>
@@ -359,7 +403,7 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
                         </table>
                     </div>
                 ) : (
-                     <div className="text-center py-20 flex flex-col items-center justify-center">
+                    <div className="text-center py-20 flex flex-col items-center justify-center">
                         <div className="bg-slate-100 rounded-full p-5">
                             <UsersIcon className="w-12 h-12 text-slate-400" />
                         </div>
