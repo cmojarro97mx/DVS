@@ -15,7 +15,6 @@ import AllExpensesPage from './AllExpensesPage';
 import AllInvoicesPage from './AllInvoicesPage';
 import AllPaymentsPage from './AllPaymentsPage';
 import CalendarPage from './CalendarPage';
-import FilesManagerPage from './FilesManagerPage';
 import QuotationsPage from './QuotationsPage';
 import EmployeesPage from './EmployeesPage';
 import AdminPage from './AdminPage'; // Import new page
@@ -420,8 +419,7 @@ export type View =
   | 'ai-operation-creator'
   | 'company-hub'
   | 'email-hub'
-  | 'notifications-settings'
-  | 'file-manager';
+  | 'notifications-settings';
 
 const viewTitles: Record<View, string> = {
   dashboard: 'Dashboard',
@@ -435,7 +433,7 @@ const viewTitles: Record<View, string> = {
   quotations: 'Quotations',
   emails: 'Email Client',
   calendar: 'Calendar',
-  files: 'File Manager',
+  files: 'Gestor de Archivos',
   'finance-hub': 'Financial Hub',
   finance: 'Financial Overview',
   all_expenses: 'All Expenses',
@@ -452,8 +450,7 @@ const viewTitles: Record<View, string> = {
   'ai-operation-creator': 'AI Operation Creator',
   'company-hub': 'Empresa',
   'email-hub': 'Email & Calendario',
-  'notifications-settings': 'Configuración de Notificaciones',
-  'file-manager': 'Gestor de Archivos'
+  'notifications-settings': 'Configuración de Notificaciones'
 };
 
 
@@ -880,7 +877,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
           setActiveView={setActiveView}
         />;
       case 'files':
-        return <FilesManagerPage fileSystem={fileSystem} onFileSystemUpdate={setFileSystem} />;
+        return <FileManagerPage />;
       case 'integrations':
         return <IntegrationsPage 
                     setActiveView={setActiveView}
@@ -911,8 +908,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
         return <EmailHubPage setActiveView={setActiveView} />;
       case 'notifications-settings':
         return <NotificationsSettingsPage />;
-      case 'file-manager':
-        return <FileManagerPage />;
       default:
         return <div className="p-6">{viewTitles[activeView] || 'Not Implemented'}</div>;
     }

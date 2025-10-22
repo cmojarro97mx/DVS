@@ -287,8 +287,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                     <NavSection title="Herramientas" isSidebarOpen={false}>
                         <NavItem icon={CalendarIcon} label="Calendar" isActive={activeView === 'calendar'} onClick={() => setActiveView('calendar')} isSidebarOpen={false} />
-                        <NavItem icon={FolderIcon} label="Files" isActive={activeView === 'files'} onClick={() => setActiveView('files')} isSidebarOpen={false} />
-                        <NavItem icon={FolderOpenIcon} label="Gestor de Archivos" isActive={activeView === 'file-manager'} onClick={() => setActiveView('file-manager')} isSidebarOpen={false} />
+                        <NavItem icon={FolderOpenIcon} label="Gestor de Archivos" isActive={activeView === 'files'} onClick={() => setActiveView('files')} isSidebarOpen={false} />
                         <NavItem 
                             icon={MailIcon} 
                             label="Email & Calendario" 
