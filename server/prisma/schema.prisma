@@ -402,6 +402,7 @@ model Event {
   attendees       Json?
   color           String?
   allDay          Boolean   @default(false)
+  status          String    @default("scheduled")
   source          String    @default("local")
   googleEventId   String?
   googleCalendarId String?

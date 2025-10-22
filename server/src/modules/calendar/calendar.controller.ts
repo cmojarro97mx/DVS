@@ -8,9 +8,20 @@ export class CalendarController {
   constructor(private readonly calendarService: CalendarService) {}
 
   @Get()
-  findAll(@Request() req, @Query('emailAccountId') emailAccountId?: string) {
+  findAll(
+    @Request() req, 
+    @Query('emailAccountIds') emailAccountIds?: string,
+    @Query('includeLocal') includeLocal?: string,
+    @Query('status') status?: string
+  ) {
     const user = req.user as any;
-    return this.calendarService.findAll(user.userId, user.organizationId, emailAccountId);
+    const accountIdsArray = emailAccountIds ? emailAccountIds.split(',') : [];
+    const includeLocalBool = includeLocal === 'true';
+    return this.calendarService.findAll(user.userId, user.organizationId, {
+      emailAccountIds: accountIdsArray,
+      includeLocal: includeLocalBool,
+      status,
+    });
   }
 
   @Get(':id')

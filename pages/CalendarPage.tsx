@@ -149,7 +149,10 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
   const [selectedEvent, setSelectedEvent] = useState<UIEvent | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [eventToDelete, setEventToDelete] = useState<UIEvent | null>(null);
-  const [accountFilter, setAccountFilter] = useState<string>('all'); // 'all', 'local', or emailAccountId
+  
+  // New multi-source filtering state
+  const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
+  const [includeLocalEvents, setIncludeLocalEvents] = useState(true);
 
   useEffect(() => {
     loadAccounts();
@@ -157,7 +160,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
 
   useEffect(() => {
     loadEvents();
-  }, [accountFilter]);
+  }, [selectedAccountIds, includeLocalEvents]);
 
   const loadAccounts = async () => {
     try {
@@ -179,12 +182,17 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken');
-      let url = '/api/calendar';
       
-      // Add filter if not 'all'
-      if (accountFilter !== 'all') {
-        url += `?emailAccountId=${accountFilter}`;
+      // Build query parameters for multi-source filtering
+      const params = new URLSearchParams();
+      if (selectedAccountIds.length > 0) {
+        params.append('emailAccountIds', selectedAccountIds.join(','));
       }
+      if (includeLocalEvents) {
+        params.append('includeLocal', 'true');
+      }
+      
+      const url = `/api/calendar${params.toString() ? '?' + params.toString() : ''}`;
       
       const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` },
@@ -292,25 +300,10 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                   <button onClick={handleNextMonth} className="p-2 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"><ChevronRightIcon className="w-5 h-5" /></button>
               </div>
           </div>
-          <div className="flex items-center gap-3">
-              <select 
-                value={accountFilter} 
-                onChange={(e) => setAccountFilter(e.target.value)}
-                className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
-              >
-                <option value="all">Todos los eventos</option>
-                <option value="local">Eventos locales</option>
-                {emailAccounts.map(account => (
-                  <option key={account.id} value={account.id}>
-                    {account.email}
-                  </option>
-                ))}
-              </select>
-              <button onClick={() => openAddModal(new Date())} className="flex items-center bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 shadow-sm">
-                  <PlusIcon className="w-5 h-5 mr-2" />
-                  Crear Evento
-              </button>
-          </div>
+          <button onClick={() => openAddModal(new Date())} className="flex items-center bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 shadow-sm">
+              <PlusIcon className="w-5 h-5 mr-2" />
+              Crear Evento
+          </button>
         </header>
         
         <div className="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
@@ -374,19 +367,52 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
 
             <div className="lg:col-span-1 flex flex-col gap-6 min-h-0">
                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-                    <h3 className="text-base font-semibold text-slate-800 mb-3 flex items-center gap-2"><LinkIcon className="w-5 h-5 text-slate-500"/> Cuentas Vinculadas</h3>
-                    {emailAccounts.length > 0 ? emailAccounts.map(account => (
-                        <div key={account.id} className="flex items-center justify-between p-2">
-                            <div className="flex items-center gap-3">
-                                <ProviderIcon provider={account.provider} />
-                                <span className="font-semibold text-sm text-slate-800">{account.email}</span>
-                            </div>
-                            <span className="px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">Activa</span>
+                    <h3 className="text-base font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                        <LinkIcon className="w-5 h-5 text-slate-500"/> 
+                        Filtrar eventos por fuente
+                    </h3>
+                    
+                    {/* Local Events Checkbox */}
+                    <label className="flex items-center gap-3 p-2 hover:bg-white rounded-md cursor-pointer transition-colors">
+                        <input
+                            type="checkbox"
+                            checked={includeLocalEvents}
+                            onChange={(e) => setIncludeLocalEvents(e.target.checked)}
+                            className="w-4 h-4 text-red-600 border-slate-300 rounded focus:ring-red-500"
+                        />
+                        <span className="font-semibold text-sm text-slate-800">Eventos Locales</span>
+                    </label>
+                    
+                    {/* Email Accounts Checkboxes */}
+                    {emailAccounts.length > 0 ? (
+                        <div className="mt-2 space-y-1">
+                            <p className="text-xs font-medium text-slate-500 px-2 mb-1">Cuentas Vinculadas</p>
+                            {emailAccounts.map(account => (
+                                <label key={account.id} className="flex items-center gap-3 p-2 hover:bg-white rounded-md cursor-pointer transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedAccountIds.includes(account.id)}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                setSelectedAccountIds([...selectedAccountIds, account.id]);
+                                            } else {
+                                                setSelectedAccountIds(selectedAccountIds.filter(id => id !== account.id));
+                                            }
+                                        }}
+                                        className="w-4 h-4 text-red-600 border-slate-300 rounded focus:ring-red-500"
+                                    />
+                                    <ProviderIcon provider={account.provider} className="w-5 h-5" />
+                                    <span className="font-semibold text-sm text-slate-800 flex-grow">{account.email}</span>
+                                </label>
+                            ))}
                         </div>
-                    )) : (
-                        <div className="text-sm text-slate-500 p-2 text-center">No hay cuentas vinculadas.</div>
+                    ) : (
+                        <div className="text-sm text-slate-500 p-2 text-center mt-2">No hay cuentas vinculadas.</div>
                     )}
-                    <button onClick={() => setActiveView('integrations')} className="text-sm font-medium text-blue-600 hover:underline w-full text-center mt-2">Administrar integraciones</button>
+                    
+                    <button onClick={() => setActiveView('integrations')} className="text-sm font-medium text-blue-600 hover:underline w-full text-center mt-3">
+                        Administrar integraciones
+                    </button>
                 </div>
                 
                 <UpcomingEvents events={filteredEvents} currentDate={currentDate} onEdit={openEditModal} />
