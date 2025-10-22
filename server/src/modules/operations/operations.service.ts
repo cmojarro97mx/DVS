@@ -55,9 +55,11 @@ export class OperationsService {
   async create(data: any, organizationId: string, userId: string) {
     const { assignees, ...operationData } = data;
 
+    const cleanData = this.cleanOperationData(operationData);
+
     const operation = await this.prisma.operation.create({
       data: {
-        ...operationData,
+        ...cleanData,
         organizationId,
         createdById: userId,
       },
@@ -79,6 +81,25 @@ export class OperationsService {
     return this.findOne(operation.id, organizationId);
   }
 
+  private cleanOperationData(data: any) {
+    const cleanedData: any = {};
+    
+    for (const [key, value] of Object.entries(data)) {
+      if (value === '' || value === null || value === undefined) {
+        continue;
+      }
+      
+      const dateFields = ['startDate', 'deadline', 'etd', 'eta', 'pickupDate'];
+      if (dateFields.includes(key) && typeof value === 'string') {
+        cleanedData[key] = new Date(value);
+      } else {
+        cleanedData[key] = value;
+      }
+    }
+    
+    return cleanedData;
+  }
+
   async update(id: string, data: any, organizationId: string) {
     const existing = await this.prisma.operation.findFirst({
       where: { id, organizationId },
@@ -89,10 +110,11 @@ export class OperationsService {
     }
 
     const { assignees, ...operationData } = data;
+    const cleanData = this.cleanOperationData(operationData);
 
     const operation = await this.prisma.operation.update({
       where: { id },
-      data: operationData,
+      data: cleanData,
     });
 
     if (assignees !== undefined) {
