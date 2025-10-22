@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { TeamMember } from './DashboardPage';
 import { PlusIcon } from '../components/icons/PlusIcon';
@@ -11,10 +10,9 @@ import { EditIcon } from '../components/icons/EditIcon';
 import { TrashIcon } from '../components/icons/TrashIcon';
 import { XIcon } from '../components/icons/XIcon';
 import { CalendarIcon } from '../components/icons/CalendarIcon';
-import { FileTextIcon } from '../components/icons/FileTextIcon';
-import { NotesIcon } from '../components/icons/NotesIcon';
 import { EmailIcon } from '../components/icons/EmailIcon';
 import { PhoneIcon } from '../components/icons/PhoneIcon';
+import { ChevronRightIcon } from '../components/icons/ChevronRightIcon';
 import { employeesService } from '../src/services/employeesService';
 
 // --- Local Components (to avoid creating new files) ---
@@ -174,6 +172,93 @@ const EmployeeModal: React.FC<{
     );
 };
 
+// Employee Card Component (like HubCard)
+const EmployeeCard: React.FC<{
+    employee: TeamMember;
+    onEdit: () => void;
+    onDelete: () => void;
+}> = ({ employee, onEdit, onDelete }) => {
+    const [showMenu, setShowMenu] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setShowMenu(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    return (
+        <div className="w-full flex items-center p-4 bg-white rounded-xl border border-slate-200 transition-all duration-200 group hover:border-blue-500 hover:shadow-md hover:-translate-y-1 relative">
+            <EmployeeAvatar name={employee.name} />
+            <div className="ml-4 flex-grow min-w-0">
+                <h3 className="font-bold text-slate-800 truncate">{employee.name}</h3>
+                <p className="text-sm text-slate-600 truncate">{employee.role}</p>
+                <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
+                    <div className="flex items-center gap-1 truncate">
+                        <EmailIcon className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="truncate">{employee.email}</span>
+                    </div>
+                    {employee.phone && (
+                        <div className="flex items-center gap-1">
+                            <PhoneIcon className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span>{employee.phone}</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+            <div className="flex items-center gap-3 ml-4 flex-shrink-0">
+                <span className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full ${employee.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full mr-2 ${employee.status === 'Active' ? 'bg-green-500' : 'bg-gray-500'}`}></span>
+                    {employee.status === 'Active' ? 'Activo' : 'Inactivo'}
+                </span>
+                <div className="relative" ref={menuRef}>
+                    <button 
+                        onClick={() => setShowMenu(!showMenu)} 
+                        className="p-2 text-gray-500 rounded-full hover:bg-gray-100 transition-colors"
+                    >
+                        <MoreVerticalIcon className="w-5 h-5" />
+                    </button>
+                    {showMenu && (
+                        <div className="absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-xl py-1 z-50 border border-gray-200">
+                            <button 
+                                onClick={() => {
+                                    onEdit();
+                                    setShowMenu(false);
+                                }} 
+                                className="w-full flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                            >
+                                <EditIcon className="w-4 h-4 mr-3" /> Editar
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    onDelete();
+                                    setShowMenu(false);
+                                }} 
+                                className="w-full flex items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                            >
+                                <TrashIcon className="w-4 h-4 mr-3" /> Eliminar
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Employee Section Component (like FinanceSection)
+const EmployeeSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+    <div>
+        <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 px-2">{title}</h2>
+        <div className="space-y-4">
+            {children}
+        </div>
+    </div>
+);
 
 // --- Main Page Component ---
 interface EmployeesPageProps {}
@@ -186,10 +271,6 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
     const [employeeToDelete, setEmployeeToDelete] = useState<TeamMember | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
-    const [activeMenu, setActiveMenu] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'overview' | 'documents' | 'notes'>('overview');
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-    const menuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         loadData();
@@ -207,16 +288,6 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
         }
     };
 
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-                setActiveMenu(null);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
     const filteredEmployees = useMemo(() => {
         return teamMembers.filter(e => {
             const matchesStatus = statusFilter === 'All' || e.status === statusFilter;
@@ -231,6 +302,36 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
         });
     }, [teamMembers, searchQuery, statusFilter]);
 
+    // Group employees by department/role category
+    const groupedEmployees = useMemo(() => {
+        const groups: { [key: string]: TeamMember[] } = {
+            'Dirección y Gerencia': [],
+            'Operaciones': [],
+            'Ventas y Comercial': [],
+            'Logística': [],
+            'Finanzas y Administración': [],
+            'Otros': []
+        };
+
+        filteredEmployees.forEach(emp => {
+            if (['CEO', 'Gerente General', 'Director de Operaciones', 'Director Comercial', 'Gerente de Operaciones', 'Gerente de Ventas', 'Gerente Financiero', 'Gerente de RRHH', 'Gerente de Pricing', 'Gerente de Almacén', 'Gerente de Atención al Cliente'].includes(emp.role)) {
+                groups['Dirección y Gerencia'].push(emp);
+            } else if (['Coordinador de Operaciones', 'Coordinador de Importaciones', 'Coordinador de Exportaciones', 'Agente Aduanal'].includes(emp.role)) {
+                groups['Operaciones'].push(emp);
+            } else if (['Ejecutivo de Ventas', 'Ejecutivo de Cuentas', 'Especialista en Pricing', 'Analista de Pricing'].includes(emp.role)) {
+                groups['Ventas y Comercial'].push(emp);
+            } else if (['Coordinador de Tráfico', 'Despachador', 'Supervisor de Almacén', 'Coordinador Logístico', 'Analista de Logística'].includes(emp.role)) {
+                groups['Logística'].push(emp);
+            } else if (['Contador', 'Asistente Administrativo', 'Recepcionista', 'Servicio al Cliente'].includes(emp.role)) {
+                groups['Finanzas y Administración'].push(emp);
+            } else {
+                groups['Otros'].push(emp);
+            }
+        });
+
+        return groups;
+    }, [filteredEmployees]);
+
     const handleAddNew = () => {
         setEmployeeToEdit(null);
         setIsModalOpen(true);
@@ -239,7 +340,6 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
     const handleEdit = (employee: TeamMember) => {
         setEmployeeToEdit(employee);
         setIsModalOpen(true);
-        setActiveMenu(null);
     };
 
     const handleSave = async (employeeData: any) => {
@@ -269,7 +369,6 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
 
     const handleDeleteRequest = (employee: TeamMember) => {
         setEmployeeToDelete(employee);
-        setActiveMenu(null);
     };
 
     const confirmDelete = async () => {
@@ -288,312 +387,131 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
         return (
             <div className="animate-fade-in space-y-6">
                 <Banner
-                    title="Employee Management"
-                    description="Administer your team, manage roles, and track employee information."
+                    title="Gestión de Empleados"
+                    description="Administra tu equipo de trabajo y sus roles dentro de la organización."
                     icon={UsersIcon}
                 />
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
-                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
-                    <p className="mt-4 text-gray-600">Loading employees...</p>
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    <p className="mt-4 text-gray-600">Cargando empleados...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="animate-fade-in space-y-6 h-full flex flex-col">
-            {/* Header Banner con información general */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-md">
-                            <UsersIcon className="w-8 h-8 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Employee Management</h1>
-                            <p className="text-sm text-gray-500 mt-1">Gestiona tu equipo de trabajo</p>
-                        </div>
-                    </div>
-                </div>
+        <div className="animate-fade-in space-y-8">
+            <Banner
+                title="Gestión de Empleados"
+                description="Administra tu equipo de trabajo y sus roles dentro de la organización."
+                icon={UsersIcon}
+            />
 
-                {/* Stats Row - Responsive Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-4">
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
-                        <p className="text-xs text-blue-700 uppercase font-semibold mb-1">Total Empleados</p>
-                        <p className="text-2xl sm:text-3xl font-bold text-blue-900 mt-1">{teamMembers.length}</p>
+            {/* Controls Bar */}
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <div className="relative">
+                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input 
+                            type="text" 
+                            placeholder="Buscar por nombre, puesto o email..." 
+                            className="pl-10 pr-4 py-2.5 w-full sm:w-72 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                        />
                     </div>
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-                        <p className="text-xs text-green-700 uppercase font-semibold mb-1">Activos</p>
-                        <p className="text-2xl sm:text-3xl font-bold text-green-900 mt-1">
-                            {teamMembers.filter(e => e.status === 'Active').length}
-                        </p>
-                    </div>
-                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
-                        <p className="text-xs text-gray-700 uppercase font-semibold mb-1">Inactivos</p>
-                        <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">
-                            {teamMembers.filter(e => e.status === 'Inactive').length}
-                        </p>
-                    </div>
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
-                        <p className="text-xs text-purple-700 uppercase font-semibold mb-1">Departamentos</p>
-                        <p className="text-2xl sm:text-3xl font-bold text-purple-900 mt-1">
-                            {new Set(teamMembers.map(e => e.role)).size}
-                        </p>
-                    </div>
-                </div>
-
-                {/* Navigation Tabs */}
-                <div className="flex gap-4 sm:gap-6 mt-6 border-b border-gray-200 overflow-x-auto">
-                    <button
-                        onClick={() => setActiveTab('overview')}
-                        className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-all border-b-2 whitespace-nowrap ${
-                            activeTab === 'overview'
-                                ? 'border-blue-600 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                        }`}
+                    <select 
+                        value={statusFilter}
+                        onChange={e => setStatusFilter(e.target.value)}
+                        className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     >
-                        <UsersIcon className="w-5 h-5" />
-                        Vista General
-                    </button>
+                        <option value="All">Todos los estados</option>
+                        <option value="Active">Activos</option>
+                        <option value="Inactive">Inactivos</option>
+                    </select>
+                </div>
+                <button 
+                    onClick={handleAddNew} 
+                    className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg"
+                >
+                    <PlusIcon className="w-5 h-5" />
+                    Agregar Empleado
+                </button>
+            </div>
+
+            {/* Stats Summary */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5 border border-blue-200">
+                    <p className="text-xs text-blue-700 uppercase font-semibold mb-1">Total Empleados</p>
+                    <p className="text-3xl font-bold text-blue-900 mt-1">{teamMembers.length}</p>
+                </div>
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5 border border-green-200">
+                    <p className="text-xs text-green-700 uppercase font-semibold mb-1">Activos</p>
+                    <p className="text-3xl font-bold text-green-900 mt-1">
+                        {teamMembers.filter(e => e.status === 'Active').length}
+                    </p>
+                </div>
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border border-gray-200">
+                    <p className="text-xs text-gray-700 uppercase font-semibold mb-1">Inactivos</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">
+                        {teamMembers.filter(e => e.status === 'Inactive').length}
+                    </p>
+                </div>
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-5 border border-purple-200">
+                    <p className="text-xs text-purple-700 uppercase font-semibold mb-1">Departamentos</p>
+                    <p className="text-3xl font-bold text-purple-900 mt-1">
+                        {Object.values(groupedEmployees).filter(arr => arr.length > 0).length}
+                    </p>
                 </div>
             </div>
 
-            {/* Tab Content */}
-            {activeTab === 'overview' && (
-                <>
-                    {/* Controls Bar - Responsive */}
-                    <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4">
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
-                            <div className="relative flex-grow lg:flex-grow-0">
-                                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                <input 
-                                    type="text" 
-                                    placeholder="Buscar por nombre, puesto o email..." 
-                                    className="pl-10 pr-4 py-2.5 w-full lg:w-72 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                    value={searchQuery}
-                                    onChange={e => setSearchQuery(e.target.value)}
-                                />
-                            </div>
-                            <select 
-                                value={statusFilter}
-                                onChange={e => setStatusFilter(e.target.value)}
-                                className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                            >
-                                <option value="All">Todos los estados</option>
-                                <option value="Active">Activos</option>
-                                <option value="Inactive">Inactivos</option>
-                            </select>
-                        </div>
-                        <button 
-                            onClick={handleAddNew} 
-                            className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg"
-                        >
-                            <PlusIcon className="w-5 h-5" />
-                            <span className="hidden sm:inline">Agregar Empleado</span>
-                            <span className="sm:hidden">Agregar</span>
-                        </button>
+            {/* Employees Grouped by Department */}
+            {filteredEmployees.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-start">
+                    {Object.entries(groupedEmployees).map(([department, employees]) => (
+                        employees.length > 0 && (
+                            <EmployeeSection key={department} title={department}>
+                                {employees.map(employee => (
+                                    <EmployeeCard
+                                        key={employee.id}
+                                        employee={employee}
+                                        onEdit={() => handleEdit(employee)}
+                                        onDelete={() => handleDeleteRequest(employee)}
+                                    />
+                                ))}
+                            </EmployeeSection>
+                        )
+                    ))}
+                </div>
+            ) : (
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-16 text-center">
+                    <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-full p-6 w-20 h-20 mx-auto flex items-center justify-center">
+                        <UsersIcon className="w-10 h-10 text-gray-400" />
                     </div>
-
-                    {/* Employees List - Professional Design */}
-                    <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                        {filteredEmployees.length > 0 ? (
-                            <div className="overflow-x-auto">
-                                {/* Desktop Table View */}
-                                <div className="hidden lg:block overflow-x-auto">
-                                    <table className="w-full min-w-max">
-                                        <thead className="bg-gray-50 border-b border-gray-200">
-                                            <tr>
-                                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Empleado</th>
-                                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Puesto</th>
-                                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Contacto</th>
-                                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Estado</th>
-                                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap w-32">Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                            {filteredEmployees.map(employee => (
-                                                <tr key={employee.id} className="hover:bg-gray-50 transition-colors">
-                                                    <td className="px-6 py-4 align-middle">
-                                                        <div className="flex items-center gap-3 min-w-max">
-                                                            <EmployeeAvatar name={employee.name} />
-                                                            <div className="min-w-0">
-                                                                <p className="font-bold text-gray-800 text-base whitespace-nowrap">{employee.name}</p>
-                                                                <div className="flex items-center gap-1 text-sm text-gray-500 mt-1 whitespace-nowrap">
-                                                                    <CalendarIcon className="w-3.5 h-3.5 flex-shrink-0" />
-                                                                    <span>{employee.hireDate || 'N/A'}</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 align-middle">
-                                                        <p className="font-semibold text-gray-800 whitespace-nowrap">{employee.role}</p>
-                                                    </td>
-                                                    <td className="px-6 py-4 align-middle">
-                                                        <div className="space-y-1 min-w-max">
-                                                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                                <EmailIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                                                <span className="whitespace-nowrap">{employee.email}</span>
-                                                            </div>
-                                                            {employee.phone && (
-                                                                <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                                    <PhoneIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                                                    <span className="whitespace-nowrap">{employee.phone}</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 align-middle">
-                                                        <span className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${employee.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                                                            <span className={`w-1.5 h-1.5 rounded-full mr-2 ${employee.status === 'Active' ? 'bg-green-500' : 'bg-gray-500'}`}></span>
-                                                            {employee.status === 'Active' ? 'Activo' : 'Inactivo'}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-6 py-4 align-middle">
-                                                        <div className="flex justify-center">
-                                                            <div className="relative inline-block">
-                                                                <button 
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setActiveMenu(activeMenu === employee.id ? null : employee.id);
-                                                                    }} 
-                                                                    className="p-2 text-gray-500 rounded-full hover:bg-gray-100 transition-colors"
-                                                                >
-                                                                    <MoreVerticalIcon className="w-5 h-5" />
-                                                                </button>
-                                                                {activeMenu === employee.id && (
-                                                                    <div className="absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-xl py-1 z-50 border border-gray-200 text-left">
-                                                                        <button 
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                handleEdit(employee);
-                                                                            }} 
-                                                                            className="w-full flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
-                                                                        >
-                                                                            <EditIcon className="w-4 h-4 mr-3" /> Editar
-                                                                        </button>
-                                                                        <button 
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                handleDeleteRequest(employee);
-                                                                            }} 
-                                                                            className="w-full flex items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                                                                        >
-                                                                            <TrashIcon className="w-4 h-4 mr-3" /> Eliminar
-                                                                        </button>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                {/* Mobile Card View */}
-                                <div className="lg:hidden divide-y divide-gray-200">
-                                    {filteredEmployees.map(employee => (
-                                        <div key={employee.id} className="p-4 hover:bg-gray-50 transition-colors relative">
-                                            <div className="flex items-start justify-between mb-3">
-                                                <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                    <EmployeeAvatar name={employee.name} size="sm" />
-                                                    <div className="min-w-0 flex-1">
-                                                        <p className="font-bold text-gray-800 truncate">{employee.name}</p>
-                                                        <p className="text-sm text-gray-600 truncate">{employee.role}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex-shrink-0 ml-2">
-                                                    <button 
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setActiveMenu(activeMenu === employee.id ? null : employee.id);
-                                                        }} 
-                                                        className="p-2 text-gray-500 rounded-full hover:bg-gray-100"
-                                                    >
-                                                        <MoreVerticalIcon className="w-5 h-5" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            
-                                            {/* Dropdown Menu */}
-                                            {activeMenu === employee.id && (
-                                                <div className="absolute right-4 top-14 w-44 bg-white rounded-lg shadow-xl py-1 z-50 border border-gray-200">
-                                                    <button 
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleEdit(employee);
-                                                        }} 
-                                                        className="w-full flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
-                                                    >
-                                                        <EditIcon className="w-4 h-4 mr-3" /> Editar
-                                                    </button>
-                                                    <button 
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleDeleteRequest(employee);
-                                                        }} 
-                                                        className="w-full flex items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
-                                                    >
-                                                        <TrashIcon className="w-4 h-4 mr-3" /> Eliminar
-                                                    </button>
-                                                </div>
-                                            )}
-                                            
-                                            <div className="space-y-2 mb-3">
-                                                <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                    <EmailIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                                    <span className="truncate">{employee.email}</span>
-                                                </div>
-                                                {employee.phone && (
-                                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                        <PhoneIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                                        <span>{employee.phone}</span>
-                                                    </div>
-                                                )}
-                                                <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                    <CalendarIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                                    <span>{employee.hireDate || 'N/A'}</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full ${employee.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                                                    <span className={`w-1.5 h-1.5 rounded-full mr-2 ${employee.status === 'Active' ? 'bg-green-500' : 'bg-gray-500'}`}></span>
-                                                    {employee.status === 'Active' ? 'Activo' : 'Inactivo'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="text-center py-16 sm:py-20 flex flex-col items-center justify-center px-4">
-                                <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-full p-6">
-                                    <UsersIcon className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400" />
-                                </div>
-                                <h3 className="mt-6 text-lg sm:text-xl font-bold text-gray-800">No se encontraron empleados</h3>
-                                <p className="mt-2 text-sm sm:text-base text-gray-500 max-w-md">Tu búsqueda o filtro no devolvió resultados. Intenta con otros criterios.</p>
-                            </div>
-                        )}
-                    </div>
-
-                    <EmployeeModal 
-                        isOpen={isModalOpen}
-                        onClose={() => setIsModalOpen(false)}
-                        onSave={handleSave}
-                        employeeToEdit={employeeToEdit}
-                    />
-
-                    <ConfirmationModal
-                        isOpen={!!employeeToDelete}
-                        onClose={() => setEmployeeToDelete(null)}
-                        onConfirm={confirmDelete}
-                        title="Eliminar Empleado"
-                    >
-                        ¿Estás seguro de que deseas eliminar al empleado "{employeeToDelete?.name}"? Esta acción no se puede deshacer.
-                    </ConfirmationModal>
-                </>
+                    <h3 className="mt-6 text-xl font-bold text-gray-800">No se encontraron empleados</h3>
+                    <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">
+                        {searchQuery || statusFilter !== 'All' 
+                            ? 'Tu búsqueda o filtro no devolvió resultados. Intenta con otros criterios.'
+                            : 'Comienza agregando empleados a tu organización.'}
+                    </p>
+                </div>
             )}
+
+            <EmployeeModal 
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSave={handleSave}
+                employeeToEdit={employeeToEdit}
+            />
+
+            <ConfirmationModal
+                isOpen={!!employeeToDelete}
+                onClose={() => setEmployeeToDelete(null)}
+                onConfirm={confirmDelete}
+                title="Eliminar Empleado"
+            >
+                ¿Estás seguro de que deseas eliminar al empleado "{employeeToDelete?.name}"? Esta acción no se puede deshacer.
+            </ConfirmationModal>
         </div>
     );
 };
