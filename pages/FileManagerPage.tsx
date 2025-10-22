@@ -57,11 +57,11 @@ export default function FileManagerPage() {
 
   useEffect(() => {
     loadData();
-    
+
     const interval = setInterval(() => {
       loadStats();
     }, 30000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -72,10 +72,10 @@ export default function FileManagerPage() {
         api.get('/files/manager/all'),
         api.get('/files/manager/stats'),
       ]);
-      
+
       const files = Array.isArray(filesResponse) ? filesResponse : (filesResponse?.data || []);
       const stats = statsResponse?.data || statsResponse || {};
-      
+
       setFiles(files);
       setStats(stats);
     } catch (error) {
@@ -142,7 +142,7 @@ export default function FileManagerPage() {
         />
       );
     }
-    
+
     return (
       <div className="w-full h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t flex items-center justify-center">
         {getFileIcon(file.mimeType)}
@@ -229,17 +229,6 @@ export default function FileManagerPage() {
       </div>
     </a>
   );
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-2" />
-          <div className="text-gray-500">Cargando archivos...</div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="p-4 max-w-7xl mx-auto h-screen flex flex-col">
@@ -371,7 +360,14 @@ export default function FileManagerPage() {
       </div>
 
       <div className="flex-1 overflow-auto bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-        {filteredFiles.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-2" />
+              <div className="text-gray-500">Cargando archivos...</div>
+            </div>
+          </div>
+        ) : filteredFiles.length === 0 ? (
           <div className="text-center py-12">
             <Folder className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500">No se encontraron archivos</p>
