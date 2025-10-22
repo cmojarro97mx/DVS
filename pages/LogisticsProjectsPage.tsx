@@ -8,6 +8,7 @@ import { Banner } from '../components/Banner';
 import { CalendarIcon } from '../components/icons/CalendarIcon';
 import { ChevronRightIcon } from '../components/icons/ChevronRightIcon';
 import { FilterIcon } from '../components/icons/FilterIcon';
+import { TrashIcon } from '../components/icons/TrashIcon';
 import { operationsService } from '../src/services/operationsService';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 
@@ -252,10 +253,11 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
         isOpen={!!operationToDelete}
         onClose={() => setOperationToDelete(null)}
         onConfirm={handleDeleteOperation}
-        title="Confirm Deletion"
-        message={`Are you sure you want to delete the operation "${operationToDelete?.projectName}"? This action cannot be undone.`}
-        confirmButtonText="Delete"
-        isConfirming={isDeleting}
+        title="Eliminar Operación"
+        message={`¿Estás seguro de que deseas eliminar la operación "${operationToDelete?.projectName}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        isLoading={isDeleting}
       />
     </div>
   );
