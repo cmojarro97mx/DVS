@@ -11,10 +11,10 @@ export class BackblazeService {
   private endpoint: string;
 
   constructor() {
-    const keyId = process.env.B2_KEY_ID?.trim();
-    const appKey = process.env.B2_APP_KEY?.trim();
-    this.bucketName = (process.env.B2_BUCKET_NAME || '').trim();
-    this.endpoint = (process.env.B2_ENDPOINT || '').trim();
+    const keyId = process.env.BACKBLAZE_APPLICATION_KEY_ID?.trim();
+    const appKey = process.env.BACKBLAZE_APPLICATION_KEY?.trim();
+    this.bucketName = (process.env.BACKBLAZE_BUCKET_NAME || '').trim();
+    this.endpoint = (process.env.BACKBLAZE_ENDPOINT || '').trim();
 
     if (!keyId || !appKey || !this.bucketName || !this.endpoint) {
       throw new Error('Backblaze B2 credentials are not configured properly');

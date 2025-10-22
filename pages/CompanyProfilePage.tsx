@@ -182,9 +182,6 @@ const CompanyProfilePage: React.FC<CompanyProfilePageProps> = ({ setActiveView }
                 taxRegime: editedData.taxInfo.vatId,
             };
             
-            console.log('🟢 FRONTEND - Sending data to backend:', updateData);
-            console.log('🟢 FRONTEND - editedData:', editedData);
-            
             const updatedOrg = await organizationService.updateOrganization(updateData);
             
             const freshData: CompanyData = {

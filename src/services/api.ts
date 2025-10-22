@@ -44,19 +44,10 @@ class ApiService {
       headers['Authorization'] = `Bearer ${this.accessToken}`;
     }
 
-    const finalOptions = {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers,
-    };
-
-    console.log('🔶 REQUEST METHOD - Making HTTP request');
-    console.log('🔶 URL:', `${API_BASE_URL}${endpoint}`);
-    console.log('🔶 Method:', finalOptions.method);
-    console.log('🔶 Headers:', finalOptions.headers);
-    console.log('🔶 Body:', finalOptions.body);
-    console.log('🔶 Full options:', finalOptions);
-
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, finalOptions);
+    });
 
     if (!response.ok) {
       let errorMessage = 'Error en la solicitud';
@@ -151,11 +142,6 @@ class ApiService {
   }
 
   async put<T>(endpoint: string, data?: unknown): Promise<T> {
-    console.log('🔷 API SERVICE - PUT Request');
-    console.log('🔷 Endpoint:', endpoint);
-    console.log('🔷 Data received:', data);
-    console.log('🔷 Stringified body:', JSON.stringify(data));
-    
     return this.request<T>(endpoint, {
       method: 'PUT',
       body: JSON.stringify(data),
