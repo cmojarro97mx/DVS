@@ -39,10 +39,17 @@ export class OrganizationsController {
     @Request() req,
     @Body() updateDto: UpdateOrganizationDto,
   ) {
-    return this.organizationsService.updateOrganization(
+    console.log('🔵 UPDATE ORGANIZATION REQUEST RECEIVED');
+    console.log('📋 Request Body:', JSON.stringify(updateDto, null, 2));
+    console.log('👤 User Organization ID:', req.user.organizationId);
+    
+    const result = await this.organizationsService.updateOrganization(
       req.user.organizationId,
       updateDto,
     );
+    
+    console.log('✅ UPDATE SUCCESS - Result:', JSON.stringify(result, null, 2));
+    return result;
   }
 
   @Post('current/logo')

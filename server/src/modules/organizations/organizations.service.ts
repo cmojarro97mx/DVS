@@ -22,10 +22,16 @@ export class OrganizationsService {
   }
 
   async updateOrganization(organizationId: string, data: any) {
-    return this.prisma.organization.update({
+    console.log('🔧 SERVICE - Updating organization:', organizationId);
+    console.log('🔧 SERVICE - Data to update:', JSON.stringify(data, null, 2));
+    
+    const result = await this.prisma.organization.update({
       where: { id: organizationId },
       data,
     });
+    
+    console.log('🔧 SERVICE - Update completed:', JSON.stringify(result, null, 2));
+    return result;
   }
 
   async uploadLogo(organizationId: string, file: Express.Multer.File) {
