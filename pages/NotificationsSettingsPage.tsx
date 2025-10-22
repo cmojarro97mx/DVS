@@ -268,6 +268,29 @@ export default function NotificationsSettingsPage() {
           <li>• Solo recibirás notificaciones sobre eventos que te afecten directamente</li>
         </ul>
       </div>
+
+      <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
+        <h3 className="font-semibold text-green-800 mb-2">📱 Compatibilidad móvil</h3>
+        <ul className="text-sm text-green-700 space-y-1">
+          <li>• <strong>Android</strong>: Compatible con Chrome, Firefox, Edge</li>
+          <li>• <strong>iOS 16.4+</strong>: Compatible cuando agregas el sitio a la pantalla de inicio</li>
+          <li>• <strong>Escritorio</strong>: Compatible con todos los navegadores modernos (Chrome, Firefox, Edge, Safari)</li>
+        </ul>
+      </div>
+
+      <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <h3 className="font-semibold text-yellow-800 mb-2">⚠️ Importante para iOS</h3>
+        <p className="text-sm text-yellow-700">
+          En iOS (iPhone/iPad), necesitas agregar Nexxio a tu pantalla de inicio primero:
+        </p>
+        <ol className="text-sm text-yellow-700 space-y-1 mt-2 ml-4 list-decimal">
+          <li>Abre Safari y ve a Nexxio</li>
+          <li>Toca el botón "Compartir" (cuadrado con flecha)</li>
+          <li>Selecciona "Agregar a pantalla de inicio"</li>
+          <li>Abre la app desde la pantalla de inicio</li>
+          <li>Ahora podrás recibir notificaciones</li>
+        </ol>
+      </div>
     </div>
   );
 }
