@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 import { BackblazeService } from '../../common/backblaze.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class OperationsService {
   constructor(
     private prisma: PrismaService,
     private backblazeService: BackblazeService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async findAll(organizationId: string) {
@@ -82,6 +84,13 @@ export class OperationsService {
               userId: userId,
             },
           });
+
+          await this.notificationsService.sendNotificationToUser(userId, {
+            title: 'Nueva operación asignada',
+            body: `Se te ha asignado la operación: ${operation.reference || 'Sin referencia'}`,
+            url: `/operations/${operation.id}`,
+            data: { type: 'operation_assigned', operationId: operation.id },
+          });
         } else {
           console.warn(`User with ID ${userId} not found, skipping assignment`);
         }
@@ -113,6 +122,9 @@ export class OperationsService {
   async update(id: string, data: any, organizationId: string) {
     const existing = await this.prisma.operation.findFirst({
       where: { id, organizationId },
+      include: {
+        assignees: true,
+      },
     });
 
     if (!existing) {
@@ -128,6 +140,9 @@ export class OperationsService {
     });
 
     if (assignees !== undefined) {
+      const oldAssigneeIds = existing.assignees.map(a => a.userId);
+      const newAssigneeIds = assignees;
+      
       await this.prisma.operationAssignee.deleteMany({
         where: { operationId: id },
       });
@@ -143,6 +158,26 @@ export class OperationsService {
             }),
           ),
         );
+
+        const addedAssignees = newAssigneeIds.filter(id => !oldAssigneeIds.includes(id));
+        for (const userId of addedAssignees) {
+          await this.notificationsService.sendNotificationToUser(userId, {
+            title: 'Nueva operación asignada',
+            body: `Se te ha asignado la operación: ${operation.reference || 'Sin referencia'}`,
+            url: `/operations/${operation.id}`,
+            data: { type: 'operation_assigned', operationId: operation.id },
+          });
+        }
+      }
+
+      const allAssigneeIds = assignees.length > 0 ? assignees : oldAssigneeIds;
+      if (allAssigneeIds.length > 0 && Object.keys(cleanData).length > 0) {
+        await this.notificationsService.sendNotificationToUsers(allAssigneeIds, {
+          title: 'Operación actualizada',
+          body: `La operación ${operation.reference || 'Sin referencia'} ha sido actualizada`,
+          url: `/operations/${operation.id}`,
+          data: { type: 'operation_updated', operationId: operation.id },
+        });
       }
     }
 
