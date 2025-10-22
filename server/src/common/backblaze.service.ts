@@ -11,17 +11,17 @@ export class BackblazeService {
   private endpoint: string;
 
   constructor() {
-    const keyId = process.env.B2_KEY_ID;
-    const appKey = process.env.B2_APP_KEY;
-    this.bucketName = process.env.B2_BUCKET_NAME || '';
-    this.endpoint = process.env.B2_ENDPOINT || '';
+    const keyId = process.env.B2_KEY_ID?.trim();
+    const appKey = process.env.B2_APP_KEY?.trim();
+    this.bucketName = (process.env.B2_BUCKET_NAME || '').trim();
+    this.endpoint = (process.env.B2_ENDPOINT || '').trim();
 
     if (!keyId || !appKey || !this.bucketName || !this.endpoint) {
       throw new Error('Backblaze B2 credentials are not configured properly');
     }
 
     this.s3Client = new S3Client({
-      endpoint: this.endpoint,
+      endpoint: `https://${this.endpoint}`,
       region: 'us-west-000',
       credentials: {
         accessKeyId: keyId,
@@ -52,7 +52,7 @@ export class BackblazeService {
 
     await upload.done();
 
-    const url = `${this.endpoint}/file/${this.bucketName}/${key}`;
+    const url = `https://${this.endpoint}/file/${this.bucketName}/${key}`;
 
     return { url, key };
   }
@@ -81,7 +81,7 @@ export class BackblazeService {
 
     await upload.done();
 
-    const url = `${this.endpoint}/file/${this.bucketName}/${key}`;
+    const url = `https://${this.endpoint}/file/${this.bucketName}/${key}`;
 
     return { url, key };
   }
@@ -110,6 +110,6 @@ export class BackblazeService {
   }
 
   getPublicUrl(key: string): string {
-    return `${this.endpoint}/file/${this.bucketName}/${key}`;
+    return `https://${this.endpoint}/file/${this.bucketName}/${key}`;
   }
 }

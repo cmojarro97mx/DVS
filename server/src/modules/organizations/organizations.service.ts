@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
+import { BackblazeService } from '../../common/backblaze.service';
 
 @Injectable()
 export class OrganizationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private backblaze: BackblazeService,
+  ) {}
 
   async getOrganization(organizationId: string) {
     const organization = await this.prisma.organization.findUnique({
@@ -22,5 +26,16 @@ export class OrganizationsService {
       where: { id: organizationId },
       data,
     });
+  }
+
+  async uploadLogo(organizationId: string, file: Express.Multer.File) {
+    const { url } = await this.backblaze.uploadFile(file, organizationId);
+
+    const organization = await this.prisma.organization.update({
+      where: { id: organizationId },
+      data: { logo: url },
+    });
+
+    return organization;
   }
 }

@@ -123,7 +123,7 @@ const CompanyProfilePage: React.FC<CompanyProfilePageProps> = ({ setActiveView }
                     taxId: org.rfc || '',
                     vatId: org.taxRegime || ''
                 },
-                logo: null
+                logo: org.logo ? { file: null as any, preview: org.logo } : null
             };
             setCompanyData(data);
             setEditedData(data);
@@ -164,6 +164,18 @@ const CompanyProfilePage: React.FC<CompanyProfilePageProps> = ({ setActiveView }
         try {
             setIsSaving(true);
             setError('');
+            
+            if (editedData.logo && editedData.logo.file) {
+                const updatedOrg = await organizationService.uploadLogo(editedData.logo.file);
+                if (editedData.logo.preview && editedData.logo.preview.startsWith('blob:')) {
+                    URL.revokeObjectURL(editedData.logo.preview);
+                }
+                setEditedData(prev => ({
+                    ...prev,
+                    logo: { file: null as any, preview: updatedOrg.logo || '' }
+                }));
+            }
+            
             await organizationService.updateOrganization({
                 name: editedData.companyName,
                 email: editedData.email,

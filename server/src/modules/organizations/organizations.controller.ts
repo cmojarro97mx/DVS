@@ -1,4 +1,15 @@
-import { Controller, Get, Put, Body, UseGuards, Request } from '@nestjs/common';
+import { 
+  Controller, 
+  Get, 
+  Put, 
+  Post, 
+  Body, 
+  UseGuards, 
+  Request, 
+  UseInterceptors, 
+  UploadedFile 
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { OrganizationsService } from './organizations.service';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 
@@ -31,6 +42,18 @@ export class OrganizationsController {
     return this.organizationsService.updateOrganization(
       req.user.organizationId,
       updateDto,
+    );
+  }
+
+  @Post('current/logo')
+  @UseInterceptors(FileInterceptor('logo'))
+  async uploadLogo(
+    @Request() req,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.organizationsService.uploadLogo(
+      req.user.organizationId,
+      file,
     );
   }
 }
