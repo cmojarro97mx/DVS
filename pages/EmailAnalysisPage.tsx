@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Banner } from '../components/Banner';
 import { ChartPieIcon } from '../components/icons/ChartPieIcon';
@@ -9,7 +8,6 @@ import { CheckCircleIcon } from '../components/icons/CheckCircleIcon';
 import { EyeIcon } from '../components/icons/EyeIcon';
 import { EmailAvatar } from '../components/EmailAvatar';
 import { ClockIcon } from '../components/icons/ClockIcon';
-import { CalendarIcon } from '../components/icons/CalendarIcon';
 
 interface EmailAnalysisPageProps {
     setActiveView: (view: View) => void;
@@ -64,25 +62,28 @@ const StatCard: React.FC<{
     title: string; 
     value: string | number; 
     icon: React.ElementType;
-    gradient?: string;
+    color?: string;
     subtitle?: string;
-}> = ({ title, value, icon: Icon, gradient = 'from-blue-500 to-blue-600', subtitle }) => {
+}> = ({ title, value, icon: Icon, color = 'blue', subtitle }) => {
+    const colorClasses = {
+        blue: 'bg-blue-50 border-blue-200 text-blue-600',
+        green: 'bg-green-50 border-green-200 text-green-600',
+        orange: 'bg-orange-50 border-orange-200 text-orange-600',
+        purple: 'bg-purple-50 border-purple-200 text-purple-600',
+        slate: 'bg-slate-50 border-slate-200 text-slate-600',
+    };
+
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
-            <div className={`h-1 bg-gradient-to-r ${gradient}`}></div>
-            <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                    <div className={`p-3 rounded-xl bg-gradient-to-br ${gradient} shadow-sm`}>
-                        <Icon className="w-6 h-6 text-white" />
-                    </div>
-                </div>
-                <div className="space-y-1">
-                    <p className="text-sm font-medium text-slate-500">{title}</p>
-                    <p className="text-3xl font-bold text-slate-900">{value}</p>
-                    {subtitle && (
-                        <p className="text-xs text-slate-400">{subtitle}</p>
-                    )}
-                </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5 flex items-start gap-4">
+            <div className={`flex items-center justify-center w-12 h-12 rounded-lg flex-shrink-0 border ${colorClasses[color as keyof typeof colorClasses] || colorClasses.blue}`}>
+                <Icon className="w-6 h-6" />
+            </div>
+            <div className="flex-grow">
+                <p className="text-sm text-slate-500 font-medium">{title}</p>
+                <p className="text-3xl font-bold text-slate-800 mt-1">{value}</p>
+                {subtitle && (
+                    <p className="text-xs text-slate-400 mt-1">{subtitle}</p>
+                )}
             </div>
         </div>
     );
@@ -116,38 +117,30 @@ const EmailRow: React.FC<{
     return (
         <div
             onClick={onClick}
-            className={`group flex items-center gap-4 p-4 cursor-pointer border-b border-slate-50 transition-all duration-200 ${
-                email.unread 
-                    ? 'bg-blue-50/40 hover:bg-blue-50/60' 
-                    : 'bg-white hover:bg-slate-50'
+            className={`flex items-center gap-4 p-4 hover:bg-slate-50 cursor-pointer border-b border-slate-100 transition-colors ${
+                email.unread ? 'bg-blue-50/30' : 'bg-white'
             }`}
         >
             <EmailAvatar email={email.from} name={email.fromName || email.from} size="md" />
             
             <div className="flex-grow min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                    <span className={`font-semibold text-sm truncate ${email.unread ? 'text-slate-900' : 'text-slate-600'}`}>
+                    <span className={`font-semibold text-sm truncate ${email.unread ? 'text-slate-900' : 'text-slate-700'}`}>
                         {email.fromName || email.from}
                     </span>
-                    <div className="flex items-center gap-1.5">
-                        {email.hasAttachments && (
-                            <div className="bg-slate-100 p-1 rounded">
-                                <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                </svg>
-                            </div>
-                        )}
-                        {email.isReplied && (
-                            <div className="bg-green-100 p-1 rounded">
-                                <CheckCircleIcon className="w-3.5 h-3.5 text-green-600" />
-                            </div>
-                        )}
-                    </div>
+                    {email.hasAttachments && (
+                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                        </svg>
+                    )}
+                    {email.isReplied && (
+                        <CheckCircleIcon className="w-4 h-4 text-green-500" />
+                    )}
                 </div>
-                <p className={`text-sm truncate mb-1 ${email.unread ? 'font-medium text-slate-800' : 'text-slate-600'}`}>
+                <p className={`text-sm truncate ${email.unread ? 'font-medium text-slate-800' : 'text-slate-600'}`}>
                     {email.subject}
                 </p>
-                <p className="text-xs text-slate-400 truncate">{email.snippet}</p>
+                <p className="text-xs text-slate-500 truncate mt-1">{email.snippet}</p>
                 {email.to && (
                     <p className="text-xs text-slate-400 truncate mt-1">
                         Para: {getRecipients()}
@@ -155,10 +148,10 @@ const EmailRow: React.FC<{
                 )}
             </div>
             
-            <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                <span className="text-xs font-medium text-slate-500">{formatDate(email.date)}</span>
+            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                <span className="text-xs text-slate-500">{formatDate(email.date)}</span>
                 {email.unread && (
-                    <div className="w-2 h-2 bg-blue-500 rounded-full shadow-sm"></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                 )}
             </div>
         </div>
@@ -257,15 +250,13 @@ const EmailAnalysisPage: React.FC<EmailAnalysisPageProps> = ({ setActiveView }) 
         }
     };
 
+
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+            <div className="flex items-center justify-center h-96">
                 <div className="text-center">
-                    <div className="relative">
-                        <div className="animate-spin rounded-full h-16 w-16 border-4 border-slate-200 border-t-blue-600 mx-auto"></div>
-                        <ChartPieIcon className="w-8 h-8 text-blue-600 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
-                    </div>
-                    <p className="mt-6 text-slate-600 font-medium">Cargando análisis...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-4 text-slate-600">Cargando...</p>
                 </div>
             </div>
         );
@@ -273,33 +264,26 @@ const EmailAnalysisPage: React.FC<EmailAnalysisPageProps> = ({ setActiveView }) 
 
     if (accounts.length === 0) {
         return (
-            <div className="animate-fade-in min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+            <div className="animate-fade-in">
                 <Banner
                     title="Análisis de Correo"
                     description="Analiza tus correos electrónicos para obtener insights y métricas detalladas."
                     icon={ChartPieIcon}
                 />
-                <div className="mt-8 max-w-2xl mx-auto">
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-12 text-center">
-                            <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-2xl shadow-sm mb-6">
-                                <InboxIcon className="w-10 h-10 text-slate-400" />
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-2">No hay cuentas sincronizadas</h3>
-                            <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">
-                                Para comenzar a analizar tus correos, activa la sincronización de emails en al menos una cuenta de Gmail desde Integraciones.
-                            </p>
-                            <button
-                                onClick={() => setActiveView('integrations')}
-                                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-medium hover:shadow-lg hover:scale-105 transition-all duration-200"
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                </svg>
-                                Ir a Integraciones
-                            </button>
-                        </div>
+                <div className="mt-8 text-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl py-16">
+                    <div className="bg-slate-200/70 rounded-full p-4 mb-4 inline-block">
+                        <InboxIcon className="w-8 h-8 text-slate-400" />
                     </div>
+                    <h3 className="text-lg font-semibold text-slate-800">No hay cuentas con sincronización activa</h3>
+                    <p className="mt-2 text-sm text-slate-500 max-w-md mx-auto">
+                        Ve a Integraciones y activa la sincronización de emails en al menos una cuenta de Gmail.
+                    </p>
+                    <button
+                        onClick={() => setActiveView('integrations')}
+                        className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                        Ir a Integraciones
+                    </button>
                 </div>
             </div>
         );
@@ -308,160 +292,132 @@ const EmailAnalysisPage: React.FC<EmailAnalysisPageProps> = ({ setActiveView }) 
     const selectedAccountData = accounts.find(a => a.id === selectedAccount);
 
     return (
-        <div className="animate-fade-in min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 space-y-6">
+        <div className="animate-fade-in space-y-6">
             <Banner
                 title="Análisis de Correo"
                 description="Visualiza métricas y actividad de tus correos electrónicos sincronizados."
                 icon={ChartPieIcon}
             />
 
-            {/* Account Selector Card */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="bg-gradient-to-r from-slate-50 to-white p-6">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                        <div className="flex-grow max-w-2xl">
-                            <label className="block text-sm font-semibold text-slate-700 mb-3">
-                                Cuenta de Correo Activa
-                            </label>
-                            <select
-                                value={selectedAccount || ''}
-                                onChange={(e) => {
-                                    setSelectedAccount(e.target.value);
-                                    setPage(1);
-                                }}
-                                className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium text-slate-700 transition-all duration-200"
-                            >
-                                {accounts.map((account) => (
-                                    <option key={account.id} value={account.id}>
-                                        {account.email} • {account.totalMessagesInGmail.toLocaleString()} mensajes en Gmail
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        
-                        <div className="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200 shadow-sm">
-                            <div className="relative flex h-3 w-3">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500 shadow-sm"></span>
-                            </div>
-                            <span className="text-sm font-semibold text-green-700">Sincronización activa</span>
-                        </div>
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex-grow max-w-md">
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                            Cuenta de Correo Activa
+                        </label>
+                        <select
+                            value={selectedAccount || ''}
+                            onChange={(e) => {
+                                setSelectedAccount(e.target.value);
+                                setPage(1);
+                            }}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            {accounts.map((account) => (
+                                <option key={account.id} value={account.id}>
+                                    {account.email} (Total en Gmail: {account.totalMessagesInGmail} mensajes)
+                                </option>
+                            ))}
+                        </select>
                     </div>
-
-                    {selectedAccountData?.lastEmailSync && (
-                        <div className="mt-4 pt-4 border-t border-slate-100">
-                            <div className="flex items-center gap-2 text-sm text-slate-500">
-                                <ClockIcon className="w-4 h-4" />
-                                <span className="font-medium">
-                                    Última sincronización: {new Date(selectedAccountData.lastEmailSync).toLocaleString('es-ES', {
-                                        day: '2-digit',
-                                        month: 'short',
-                                        year: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                    })}
-                                </span>
-                            </div>
-                            <p className="text-xs text-slate-400 mt-2 ml-6">
-                                Los correos se sincronizan automáticamente cada 10 minutos
-                            </p>
-                        </div>
-                    )}
+                    
+                    <div className="ml-4 flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg border border-green-200">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-sm font-medium">Sincronización automática activa</span>
+                    </div>
                 </div>
+
+                {selectedAccountData?.lastEmailSync && (
+                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                        <ClockIcon className="w-4 h-4" />
+                        <span>
+                            Última sincronización: {new Date(selectedAccountData.lastEmailSync).toLocaleString('es-ES')}
+                        </span>
+                    </div>
+                )}
+                <p className="text-xs text-slate-400 mt-2">
+                    Los correos se sincronizan automáticamente cada 10 minutos en segundo plano
+                </p>
             </div>
 
-            {/* Sync Period Info */}
             {metrics && metrics.syncFromDate && (
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-sm border border-blue-100 overflow-hidden">
-                    <div className="p-6">
-                        <div className="flex items-start gap-4">
-                            <div className="flex-shrink-0">
-                                <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-sm">
-                                    <CalendarIcon className="w-6 h-6 text-white" />
-                                </div>
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-blue-100 p-2 rounded-lg">
+                                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
                             </div>
-                            <div className="flex-grow">
-                                <h3 className="text-base font-bold text-blue-900 mb-1">Período de Sincronización Configurado</h3>
-                                <p className="text-sm text-blue-700 mb-3">
-                                    Sincronizando correos desde <span className="font-semibold">{new Date(metrics.syncFromDate).toLocaleDateString('es-ES', { 
+                            <div>
+                                <h3 className="text-sm font-semibold text-blue-900">Período de Sincronización Configurado</h3>
+                                <p className="text-sm text-blue-700 mt-0.5">
+                                    Sincronizando correos desde {new Date(metrics.syncFromDate).toLocaleDateString('es-ES', { 
                                         year: 'numeric', 
                                         month: 'long', 
                                         day: 'numeric' 
-                                    })}</span> hasta hoy
+                                    })} hasta hoy
                                 </p>
-                                <div className="flex items-center gap-2 text-xs text-blue-600">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <span>
-                                        Solo se muestran correos desde la fecha configurada. Para cambiar el período, desactiva y vuelve a activar la sincronización.
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="text-right flex-shrink-0">
-                                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">Descargados</p>
-                                <p className="text-3xl font-bold text-blue-900">{metrics.downloadedMessages.toLocaleString()}</p>
                             </div>
                         </div>
+                        <div className="text-right">
+                            <p className="text-xs text-blue-600 font-medium">Correos descargados</p>
+                            <p className="text-2xl font-bold text-blue-900">{metrics.downloadedMessages.toLocaleString()}</p>
+                        </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-blue-200">
+                        <p className="text-xs text-blue-700">
+                            💡 <strong>Nota:</strong> Solo se muestran y sincronizan correos desde la fecha configurada. 
+                            Para cambiar el período, desactiva y vuelve a activar la sincronización en Integraciones.
+                        </p>
                     </div>
                 </div>
             )}
 
-            {/* Metrics Cards */}
             {metrics && (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatCard
                         title="Total en el Período"
                         value={metrics.downloadedMessages.toLocaleString()}
-                        subtitle={`${metrics.totalMessages.toLocaleString()} en total en Gmail`}
+                        subtitle={`(${metrics.totalMessages.toLocaleString()} en total en Gmail)`}
                         icon={InboxIcon}
-                        gradient="from-blue-500 to-blue-600"
+                        color="blue"
                     />
                     <StatCard
                         title="Contestados"
                         value={metrics.repliedMessages.toLocaleString()}
                         icon={CheckCircleIcon}
-                        gradient="from-purple-500 to-purple-600"
+                        color="purple"
                     />
                     <StatCard
                         title="Sin Contestar"
                         value={metrics.unrepliedMessages.toLocaleString()}
                         icon={PaperAirplaneIcon}
-                        gradient="from-orange-500 to-orange-600"
+                        color="orange"
                     />
                     <StatCard
                         title="No Leídos"
                         value={metrics.unreadMessages.toLocaleString()}
-                        icon={EyeIcon}
-                        gradient="from-slate-500 to-slate-600"
+                        icon={InboxIcon}
+                        color="slate"
                     />
                 </div>
             )}
 
-            {/* Email List */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="bg-gradient-to-r from-slate-50 to-white px-6 py-5 border-b border-slate-100">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h2 className="text-lg font-bold text-slate-900">Actividad de Correos</h2>
-                            <p className="text-sm text-slate-500 mt-1">
-                                Todos los correos sincronizados de esta cuenta
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg">
-                            <span className="text-sm font-semibold text-blue-700">{emails.length} correos</span>
-                        </div>
-                    </div>
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="p-6 border-b border-slate-200">
+                    <h2 className="text-lg font-semibold text-slate-800">Actividad de Correos</h2>
+                    <p className="text-sm text-slate-500 mt-1">
+                        Todos los correos sincronizados de esta cuenta
+                    </p>
                 </div>
 
-                <div className="divide-y divide-slate-50 max-h-[600px] overflow-y-auto">
+                <div className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
                     {emails.length === 0 ? (
-                        <div className="p-16 text-center">
-                            <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-100 rounded-2xl mb-4">
-                                <InboxIcon className="w-8 h-8 text-slate-400" />
-                            </div>
-                            <p className="text-slate-600 font-medium mb-1">No hay correos sincronizados aún</p>
-                            <p className="text-xs text-slate-400">
+                        <div className="p-12 text-center">
+                            <InboxIcon className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                            <p className="text-slate-500">No hay correos sincronizados aún</p>
+                            <p className="text-xs text-slate-400 mt-2">
                                 La sincronización automática está en progreso. Los correos aparecerán aquí pronto.
                             </p>
                         </div>
@@ -479,34 +435,24 @@ const EmailAnalysisPage: React.FC<EmailAnalysisPageProps> = ({ setActiveView }) 
                 </div>
 
                 {totalPages > 1 && (
-                    <div className="bg-slate-50 px-6 py-4 border-t border-slate-100">
-                        <div className="flex items-center justify-between">
-                            <button
-                                onClick={() => setPage(p => Math.max(1, p - 1))}
-                                disabled={page === 1}
-                                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium border-2 border-slate-200 rounded-xl hover:bg-white hover:shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-all duration-200"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                </svg>
-                                Anterior
-                            </button>
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold text-slate-700">
-                                    Página {page} de {totalPages}
-                                </span>
-                            </div>
-                            <button
-                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                disabled={page === totalPages}
-                                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium border-2 border-slate-200 rounded-xl hover:bg-white hover:shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-all duration-200"
-                            >
-                                Siguiente
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                            </button>
-                        </div>
+                    <div className="p-4 border-t border-slate-200 flex items-center justify-between">
+                        <button
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className="px-4 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Anterior
+                        </button>
+                        <span className="text-sm text-slate-600">
+                            Página {page} de {totalPages}
+                        </span>
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            disabled={page === totalPages}
+                            className="px-4 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Siguiente
+                        </button>
                     </div>
                 )}
             </div>
