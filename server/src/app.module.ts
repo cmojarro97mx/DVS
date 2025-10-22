@@ -21,6 +21,7 @@ import { GoogleCalendarModule } from './modules/google-calendar/google-calendar.
 import { GmailModule } from './modules/gmail/gmail.module';
 import { EmailStorageModule } from './modules/email-storage/email-storage.module';
 import { EmailSyncModule } from './modules/email-sync/email-sync.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PrismaService } from './common/prisma.service';
 
 @Module({
@@ -49,6 +50,7 @@ import { PrismaService } from './common/prisma.service';
     GmailModule,
     EmailStorageModule,
     EmailSyncModule,
+    NotificationsModule,
   ],
   providers: [PrismaService],
 })

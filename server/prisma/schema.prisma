@@ -30,6 +30,7 @@ model User {
   employee      Employee? @relation("EmployeeUser")
   events        Event[]
   emailAccounts EmailAccount[] @relation("UserEmailAccounts")
+  notificationSettings NotificationSettings? @relation("UserNotificationSettings")
   
   @@map("users")
 }
@@ -614,4 +615,22 @@ model Automation {
   updatedAt   DateTime  @updatedAt
   
   @@map("automations")
+}
+
+model NotificationSettings {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  user            User      @relation("UserNotificationSettings", fields: [userId], references: [id], onDelete: Cascade)
+  pushEnabled     Boolean   @default(true)
+  operationsEnabled Boolean @default(true)
+  tasksEnabled    Boolean   @default(true)
+  paymentsEnabled Boolean   @default(true)
+  invoicesEnabled Boolean   @default(true)
+  expensesEnabled Boolean   @default(true)
+  calendarEnabled Boolean   @default(true)
+  emailsEnabled   Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@map("notification_settings")
 }
