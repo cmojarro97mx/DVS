@@ -7,6 +7,7 @@ import EventModal from '../components/EventModal';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { CalendarDaysIcon } from '../components/icons/CalendarDaysIcon';
 import { Banner } from '../components/Banner';
+import EventPreviewModal from '../components/EventPreviewModal';
 import { PackageIcon } from '../components/icons/PackageIcon';
 import { GmailIcon } from '../components/icons/GmailIcon';
 import { GSuiteIcon } from '../components/icons/GSuiteIcon';
@@ -91,8 +92,8 @@ const EmptyDayIcon: React.FC<{ className?: string }> = ({ className = "w-6 h-6" 
 const UpcomingEvents: React.FC<{
   events: Array<UIEvent & { status?: string }>;
   currentDate: Date;
-  onEdit: (event: UIEvent) => void;
-}> = ({ events, currentDate, onEdit }) => {
+  onPreview: (event: UIEvent & { status?: string }) => void;
+}> = ({ events, currentDate, onPreview }) => {
     
     const upcomingEvents = useMemo(() => {
         const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -133,7 +134,7 @@ const UpcomingEvents: React.FC<{
                         const isCompleted = event.status === 'completed';
                         
                         return (
-                             <div key={event.id} onClick={() => onEdit(event)} className={`p-2 md:p-3 rounded-lg border-l-4 cursor-pointer transition-colors ${categoryStyle.bg} ${categoryStyle.border} ${isCompleted ? 'opacity-60' : ''}`}>
+                             <div key={event.id} onClick={() => onPreview(event)} className={`p-2 md:p-3 rounded-lg border-l-4 cursor-pointer transition-colors ${categoryStyle.bg} ${categoryStyle.border} ${isCompleted ? 'opacity-60' : ''}`}>
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="flex items-center gap-1.5 md:gap-2 flex-grow">
                                         <p className={`font-bold text-xs md:text-sm ${categoryStyle.text} ${isCompleted ? 'line-through' : ''}`}>{event.title}</p>
@@ -171,6 +172,8 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
   const [selectedEvent, setSelectedEvent] = useState<UIEvent | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [eventToDelete, setEventToDelete] = useState<UIEvent | null>(null);
+  const [previewEvent, setPreviewEvent] = useState<(UIEvent & { status?: string }) | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
@@ -318,10 +321,25 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (event: UIEvent) => {
-    setSelectedDate(null);
-    setSelectedEvent(event);
-    setIsModalOpen(true);
+  const openPreview = (event: UIEvent & { status?: string }) => {
+    setPreviewEvent(event);
+    setIsPreviewOpen(true);
+  };
+
+  const openEditFromPreview = () => {
+    if (previewEvent) {
+      setIsPreviewOpen(false);
+      setSelectedDate(null);
+      setSelectedEvent(previewEvent);
+      setIsModalOpen(true);
+    }
+  };
+
+  const handleDeleteFromPreview = () => {
+    if (previewEvent) {
+      setIsPreviewOpen(false);
+      setEventToDelete(previewEvent);
+    }
   };
   
   const handleSaveEvent = async (eventData: Omit<UIEvent, 'id'>, id?: string) => {
@@ -428,17 +446,23 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                         >
                             {day.getDate()}
                         </time>
-                        <div className="flex-grow min-h-0 space-y-0.5 md:space-y-1 overflow-y-auto">
+                        <div className="flex-grow min-h-0 space-y-0.5 md:space-y-1 overflow-y-auto max-h-24 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent hover:scrollbar-thumb-slate-400">
                             {dayEvents.length > 0 ? (
-                                dayEvents.slice(0, 2).map(event => {
+                                dayEvents.map(event => {
                                     const categoryStyle = EVENT_CATEGORIES[event.category] || EVENT_CATEGORIES['Other'];
                                     const isCompleted = event.status === 'completed';
                                     const isCancelled = event.status === 'cancelled';
+                                    const isDeleted = event.status === 'deleted';
                                     
                                     return (
-                                        <div key={event.id} onClick={(e) => { e.stopPropagation(); openEditModal(event); }} className={`w-full text-left px-1 py-0.5 md:p-1 rounded text-[9px] md:text-xs truncate flex items-center gap-1 ${categoryStyle.bg} ${categoryStyle.text} font-semibold transition-colors hover:brightness-95 ${(isCompleted || isCancelled) ? 'opacity-60' : ''}`} title={event.title}>
+                                        <div 
+                                            key={event.id} 
+                                            onClick={(e) => { e.stopPropagation(); openPreview(event); }} 
+                                            className={`w-full text-left px-1 py-0.5 md:p-1 rounded text-[9px] md:text-xs truncate flex items-center gap-1 ${categoryStyle.bg} ${categoryStyle.text} font-semibold transition-colors hover:brightness-95 ${(isCompleted || isCancelled || isDeleted) ? 'opacity-60' : ''}`} 
+                                            title={event.title}
+                                        >
                                             <div className={`w-1 h-1 md:w-1.5 md:h-1.5 rounded-full ${categoryStyle.dot} flex-shrink-0`}></div>
-                                            <span className={`truncate ${isCompleted || isCancelled ? 'line-through' : ''}`}>{event.title}</span>
+                                            <span className={`truncate ${(isCompleted || isCancelled || isDeleted) ? 'line-through' : ''}`}>{event.title}</span>
                                             {isCompleted && <CheckCircleIcon className="w-2.5 h-2.5 md:w-3 md:h-3 flex-shrink-0" />}
                                             {isCancelled && <XCircleIcon className="w-2.5 h-2.5 md:w-3 md:h-3 flex-shrink-0" />}
                                         </div>
@@ -448,11 +472,6 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                                 isCurrentMonth && <div className="hidden md:flex flex-grow flex-col items-center justify-center text-center text-slate-300 h-full p-1">
                                     <EmptyDayIcon className="w-4 h-4 md:w-5 md:h-5" />
                                     <span className="text-[8px] md:text-[9px] mt-1 font-medium text-slate-400">Sin eventos</span>
-                                </div>
-                            )}
-                            {dayEvents.length > 2 && (
-                                <div className="text-[9px] md:text-xs font-bold text-slate-500 pl-0.5 md:pl-1">
-                                    +{dayEvents.length - 2} más
                                 </div>
                             )}
                         </div>
@@ -587,10 +606,18 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                     )}
                 </div>
                 
-                <UpcomingEvents events={filteredEvents} currentDate={currentDate} onEdit={openEditModal} />
+                <UpcomingEvents events={filteredEvents} currentDate={currentDate} onPreview={openPreview} />
             </div>
         </div>
       </div>
+
+      <EventPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        onEdit={openEditFromPreview}
+        onDelete={handleDeleteFromPreview}
+        event={previewEvent}
+      />
 
       <EventModal 
         isOpen={isModalOpen} 
