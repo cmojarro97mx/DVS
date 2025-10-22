@@ -4,6 +4,7 @@ import { google } from 'googleapis';
 import { PrismaService } from '../../common/prisma.service';
 import { GoogleAuthService } from '../google-auth/google-auth.service';
 import { EmailStorageService } from '../email-storage/email-storage.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class EmailSyncService {
@@ -13,6 +14,7 @@ export class EmailSyncService {
     private prisma: PrismaService,
     private googleAuthService: GoogleAuthService,
     private emailStorageService: EmailStorageService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async syncEmailsForAccount(userId: string, accountId: string): Promise<{ synced: number; total: number }> {
@@ -135,7 +137,7 @@ export class EmailSyncService {
     const isStarred = message.labelIds?.includes('STARRED') || false;
     const isReplied = message.labelIds?.includes('SENT') || !!inReplyTo;
 
-    await this.prisma.emailMessage.create({
+    const emailMessage = await this.prisma.emailMessage.create({
       data: {
         gmailMessageId: messageId,
         threadId: message.threadId,
@@ -163,6 +165,30 @@ export class EmailSyncService {
         messageId: messageIdHeader,
       },
     });
+
+    const emailDate = emailMessage.date ? new Date(emailMessage.date) : null;
+    const now = new Date();
+    const recentThreshold = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    if (emailDate && emailDate > recentThreshold && (isUnread || isStarred)) {
+      const account = await this.prisma.emailAccount.findUnique({
+        where: { id: accountId },
+        select: { userId: true, email: true },
+      });
+
+      if (account) {
+        await this.notificationsService.sendNotificationToUser(account.userId, {
+          title: `Nuevo email ${isStarred ? '⭐ ' : ''}de ${this.extractName(from)}`,
+          body: subject || '(Sin asunto)',
+          url: '/email-analysis',
+          data: { 
+            type: 'new_email', 
+            emailId: emailMessage.id,
+            accountId,
+          },
+        });
+      }
+    }
   }
 
   private extractBodies(payload: any): { textBody: string; htmlBody: string } {
