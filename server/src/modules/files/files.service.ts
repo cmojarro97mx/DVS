@@ -192,12 +192,14 @@ export class FilesService {
     
     for (const email of emailMessages) {
       // Add HTML body file if exists
-      if (email.htmlBodyKey && email.htmlBodyUrl) {
+      if (email.htmlBodyKey) {
         htmlCount++;
+        // Generate URL from key if URL doesn't exist
+        const htmlUrl = email.htmlBodyUrl || this.backblaze.getPublicUrl(email.htmlBodyKey);
         emailFiles.push({
           id: `email-html-${email.id}`,
           name: `${email.subject || 'Sin asunto'}.html`,
-          url: email.htmlBodyUrl,
+          url: htmlUrl,
           storageKey: email.htmlBodyKey,
           size: 0, // Size not stored for HTML
           mimeType: 'text/html',
@@ -209,19 +211,19 @@ export class FilesService {
           operationReference: null,
           emailReference: `De: ${email.from}`,
         });
-      } else if (email.htmlBodyKey || email.htmlBodyUrl) {
-        skippedHtml++;
       }
 
       // Add attachments if exist
       if (email.attachmentsData && Array.isArray(email.attachmentsData)) {
         for (const attachment of email.attachmentsData as any[]) {
-          if (attachment.b2Key && attachment.b2Url) {
+          if (attachment.b2Key) {
             attachmentCount++;
+            // Generate URL from key if URL doesn't exist
+            const attachmentUrl = attachment.b2Url || this.backblaze.getPublicUrl(attachment.b2Key);
             emailFiles.push({
               id: `email-attachment-${email.id}-${attachment.filename}`,
               name: attachment.filename || 'attachment',
-              url: attachment.b2Url,
+              url: attachmentUrl,
               storageKey: attachment.b2Key,
               size: attachment.size || 0,
               mimeType: attachment.mimeType || 'application/octet-stream',
