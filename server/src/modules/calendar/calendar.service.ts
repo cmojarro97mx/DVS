@@ -1,8 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../common/prisma.service';
 
 @Injectable()
 export class CalendarService {
+  private readonly logger = new Logger(CalendarService.name);
+
   constructor(private prisma: PrismaService) {}
 
   async findAll(
@@ -145,5 +148,66 @@ export class CalendarService {
       completed,
       cancelled,
     };
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_3AM)
+  async cleanupOldDeletedEvents() {
+    try {
+      this.logger.log('Starting cleanup of old deleted/cancelled events...');
+      
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const result = await this.prisma.event.deleteMany({
+        where: {
+          status: {
+            in: ['deleted', 'cancelled'],
+          },
+          updatedAt: {
+            lt: thirtyDaysAgo,
+          },
+        },
+      });
+
+      this.logger.log(`Cleaned up ${result.count} old deleted/cancelled events`);
+      return { deleted: result.count };
+    } catch (error) {
+      this.logger.error('Error cleaning up old events:', error);
+      throw error;
+    }
+  }
+
+  async cleanupEventsForDisconnectedAccounts() {
+    try {
+      this.logger.log('Checking for events with disconnected accounts...');
+      
+      const disconnectedAccounts = await this.prisma.emailAccount.findMany({
+        where: {
+          status: 'disconnected',
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (disconnectedAccounts.length === 0) {
+        this.logger.log('No disconnected accounts found');
+        return { deleted: 0 };
+      }
+
+      const result = await this.prisma.event.deleteMany({
+        where: {
+          emailAccountId: {
+            in: disconnectedAccounts.map(a => a.id),
+          },
+        },
+      });
+
+      this.logger.log(`Deleted ${result.count} events from disconnected accounts`);
+      return { deleted: result.count };
+    } catch (error) {
+      this.logger.error('Error cleaning up events for disconnected accounts:', error);
+      throw error;
+    }
   }
 }

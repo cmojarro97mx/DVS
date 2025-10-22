@@ -146,8 +146,11 @@ export class GoogleAuthController {
   @UseGuards(JwtAuthGuard)
   async disconnect(@Req() req: Request, @Param('accountId') accountId: string) {
     const user = req.user as any;
-    await this.googleAuthService.disconnect(user.userId, accountId);
-    return { message: 'Google account disconnected successfully' };
+    const result = await this.googleAuthService.disconnect(user.userId, accountId);
+    return { 
+      message: 'Google account disconnected successfully',
+      eventsDeleted: result.eventsDeleted,
+    };
   }
 
   @Post('sync/gmail/enable')

@@ -349,45 +349,49 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
   };
 
   return (
-    <div className="animate-fade-in h-full flex flex-col space-y-6">
+    <div className="animate-fade-in h-full flex flex-col space-y-4 md:space-y-6">
       <Banner
           title="Calendario"
           description="Organiza fechas límite, envíos y reuniones con sincronización automática."
           icon={CalendarDaysIcon}
       />
       
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col flex-grow min-h-0">
-        <header className="flex justify-between items-center mb-6 flex-shrink-0">
-          <div className="flex items-center gap-4">
-              <span className="text-2xl font-bold text-slate-800 tracking-tight">{currentDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}</span>
-              <div className="flex items-center">
-                  <button onClick={handlePrevMonth} className="p-2 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"><ChevronLeftIcon className="w-5 h-5" /></button>
-                  <button onClick={handleNextMonth} className="p-2 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"><ChevronRightIcon className="w-5 h-5" /></button>
+      <div className="bg-white rounded-lg border border-slate-200 p-3 md:p-6 flex flex-col flex-grow min-h-0">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-3 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-4 w-full sm:w-auto">
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+                <span className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight capitalize">{currentDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}</span>
+                <div className="flex items-center">
+                    <button onClick={handlePrevMonth} className="p-1.5 md:p-2 rounded text-slate-600 hover:bg-slate-100 transition-colors"><ChevronLeftIcon className="w-4 h-4 md:w-5 md:h-5" /></button>
+                    <button onClick={handleNextMonth} className="p-1.5 md:p-2 rounded text-slate-600 hover:bg-slate-100 transition-colors"><ChevronRightIcon className="w-4 h-4 md:w-5 md:h-5" /></button>
+                </div>
               </div>
-              <button 
-                onClick={syncAllAccounts} 
-                disabled={syncing}
-                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50"
-              >
-                <RefreshIcon className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-                {syncing ? 'Sincronizando...' : 'Sincronizar'}
-              </button>
-              <span className="text-xs text-slate-400">
-                Última actualización: {lastUpdate.toLocaleTimeString('es-ES')}
-              </span>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button 
+                  onClick={syncAllAccounts} 
+                  disabled={syncing}
+                  className="flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 md:py-2 rounded text-xs md:text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50 border border-slate-200"
+                >
+                  <RefreshIcon className={`w-3.5 h-3.5 md:w-4 md:h-4 ${syncing ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">{syncing ? 'Sincronizando...' : 'Sincronizar'}</span>
+                </button>
+                <span className="text-[10px] md:text-xs text-slate-400">
+                  {lastUpdate.toLocaleTimeString('es-ES')}
+                </span>
+              </div>
           </div>
-          <button onClick={() => openAddModal(new Date())} className="flex items-center bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 shadow-sm">
-              <PlusIcon className="w-5 h-5 mr-2" />
+          <button onClick={() => openAddModal(new Date())} className="flex items-center bg-red-600 text-white px-3 md:px-4 py-2 rounded text-xs md:text-sm font-semibold hover:bg-red-700 w-full sm:w-auto justify-center">
+              <PlusIcon className="w-4 h-4 md:w-5 md:h-5 mr-1.5 md:mr-2" />
               Crear Evento
           </button>
         </header>
         
-        <div className="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
-            <div className="lg:col-span-2 flex flex-col">
-                <div className="grid grid-cols-7 text-center font-semibold text-sm text-slate-500 flex-shrink-0">
-                    {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => <div key={day} className="py-2 border-b-2 border-slate-200">{day}</div>)}
+        <div className="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-6 min-h-0">
+            <div className="lg:col-span-2 flex flex-col overflow-hidden">
+                <div className="grid grid-cols-7 text-center font-semibold text-[10px] md:text-sm text-slate-500 flex-shrink-0">
+                    {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => <div key={day} className="py-1.5 md:py-2 border-b border-slate-200">{day}</div>)}
                 </div>
-                <div className="grid grid-cols-7 grid-rows-6 flex-grow min-h-0 border-l border-slate-200">
+                <div className="grid grid-cols-7 auto-rows-fr flex-grow min-h-0 border-l border-slate-200 overflow-auto">
                     {daysInMonth.map((day, index) => {
                     const isToday = new Date().toDateString() === day.toDateString();
                     const isCurrentMonth = day.getMonth() === currentDate.getMonth();
@@ -402,41 +406,41 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                         <div
                         key={index}
                         onClick={() => openAddModal(day)}
-                        className={`relative p-2 flex flex-col group border-b border-r border-slate-200 cursor-pointer ${isCurrentMonth ? 'bg-white hover:bg-slate-50/50' : 'bg-slate-50/70'} transition-colors duration-200`}
+                        className={`relative p-1 md:p-2 flex flex-col group border-b border-r border-slate-200 cursor-pointer min-h-[60px] md:min-h-[80px] ${isCurrentMonth ? 'bg-white hover:bg-slate-50' : 'bg-slate-50'} transition-colors`}
                         >
                         <time
                             dateTime={day.toISOString()}
-                            className={`text-xs font-semibold self-end mb-1.5 flex items-center justify-center w-6 h-6 rounded-full ${
+                            className={`text-[10px] md:text-xs font-semibold self-end mb-1 flex items-center justify-center w-5 h-5 md:w-6 md:h-6 rounded-full ${
                             isToday ? 'bg-red-600 text-white' : isCurrentMonth ? 'text-slate-700' : 'text-slate-400'
                             }`}
                         >
                             {day.getDate()}
                         </time>
-                        <div className="flex-grow min-h-0 space-y-1 overflow-y-auto">
+                        <div className="flex-grow min-h-0 space-y-0.5 md:space-y-1 overflow-y-auto">
                             {dayEvents.length > 0 ? (
-                                dayEvents.slice(0, 3).map(event => {
+                                dayEvents.slice(0, 2).map(event => {
                                     const categoryStyle = EVENT_CATEGORIES[event.category] || EVENT_CATEGORIES['Other'];
                                     const isCompleted = event.status === 'completed';
                                     const isCancelled = event.status === 'cancelled';
                                     
                                     return (
-                                        <div key={event.id} onClick={(e) => { e.stopPropagation(); openEditModal(event); }} className={`w-full text-left p-1 rounded-md text-xs truncate flex items-center gap-1.5 ${categoryStyle.bg} ${categoryStyle.text} font-semibold transition-all duration-200 hover:shadow-md ${(isCompleted || isCancelled) ? 'opacity-60' : ''}`} title={event.title}>
-                                            <div className={`w-1.5 h-1.5 rounded-full ${categoryStyle.dot} flex-shrink-0`}></div>
+                                        <div key={event.id} onClick={(e) => { e.stopPropagation(); openEditModal(event); }} className={`w-full text-left px-1 py-0.5 md:p-1 rounded text-[9px] md:text-xs truncate flex items-center gap-1 ${categoryStyle.bg} ${categoryStyle.text} font-semibold transition-colors hover:brightness-95 ${(isCompleted || isCancelled) ? 'opacity-60' : ''}`} title={event.title}>
+                                            <div className={`w-1 h-1 md:w-1.5 md:h-1.5 rounded-full ${categoryStyle.dot} flex-shrink-0`}></div>
                                             <span className={`truncate ${isCompleted || isCancelled ? 'line-through' : ''}`}>{event.title}</span>
-                                            {isCompleted && <CheckCircleIcon className="w-3 h-3 flex-shrink-0" />}
-                                            {isCancelled && <XCircleIcon className="w-3 h-3 flex-shrink-0" />}
+                                            {isCompleted && <CheckCircleIcon className="w-2.5 h-2.5 md:w-3 md:h-3 flex-shrink-0" />}
+                                            {isCancelled && <XCircleIcon className="w-2.5 h-2.5 md:w-3 md:h-3 flex-shrink-0" />}
                                         </div>
                                     )
                                 })
                             ) : (
-                                isCurrentMonth && <div className="flex-grow flex flex-col items-center justify-center text-center text-slate-300 h-full p-1 opacity-70">
-                                    <EmptyDayIcon className="w-5 h-5" />
-                                    <span className="text-[9px] mt-1 font-semibold text-slate-400">Sin eventos</span>
+                                isCurrentMonth && <div className="hidden md:flex flex-grow flex-col items-center justify-center text-center text-slate-300 h-full p-1">
+                                    <EmptyDayIcon className="w-4 h-4 md:w-5 md:h-5" />
+                                    <span className="text-[8px] md:text-[9px] mt-1 font-medium text-slate-400">Sin eventos</span>
                                 </div>
                             )}
-                            {dayEvents.length > 3 && (
-                                <div className="text-xs font-bold text-slate-500 mt-1 pl-1">
-                                    +{dayEvents.length - 3} más
+                            {dayEvents.length > 2 && (
+                                <div className="text-[9px] md:text-xs font-bold text-slate-500 pl-0.5 md:pl-1">
+                                    +{dayEvents.length - 2} más
                                 </div>
                             )}
                         </div>
