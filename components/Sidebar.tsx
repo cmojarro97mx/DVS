@@ -173,13 +173,30 @@ const UserMenu: React.FC<{ onLogout: () => void, isSidebarOpen: boolean }> = ({ 
 
     if (!isSidebarOpen) {
         return (
-             <div className="w-full flex justify-center py-2 group/usermenu relative">
-                 <button className="p-2 rounded-full hover:bg-gray-100" title={userName}>
+             <div ref={menuRef} className="w-full flex justify-center py-2 relative">
+                 <button 
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="p-2 rounded-full hover:bg-gray-100 group/usermenu" 
+                    title={userName}
+                 >
                     <UserAvatar name={userName} className="w-9 h-9 text-sm" />
                  </button>
-                 <div className="absolute left-full ml-4 px-3 py-1.5 bg-gray-800 text-white text-xs font-semibold rounded-md whitespace-nowrap opacity-0 group-hover/usermenu:opacity-100 transition-opacity pointer-events-none z-50">
-                    {userName}
-                </div>
+                 {!isOpen && (
+                    <div className="absolute left-full ml-4 px-3 py-1.5 bg-gray-800 text-white text-xs font-semibold rounded-md whitespace-nowrap opacity-0 group-hover/usermenu:opacity-100 transition-opacity pointer-events-none z-50 top-1/2 -translate-y-1/2">
+                        {userName}
+                    </div>
+                 )}
+                 {isOpen && (
+                    <div className="absolute left-full ml-2 bg-white border border-gray-200 rounded-lg shadow-xl p-1 z-[60] min-w-[150px] top-0">
+                        <div className="px-3 py-2 border-b border-gray-100">
+                            <p className="text-sm font-bold text-gray-800 truncate">{userName}</p>
+                            <p className="text-xs text-gray-500">Admin</p>
+                        </div>
+                        <button onClick={() => { onLogout(); setIsOpen(false); }} className="flex items-center w-full px-3 py-2 text-sm text-red-600 rounded-md hover:bg-red-50 mt-1">
+                            <LogOutIcon className="w-5 h-5 mr-3"/> Log Out
+                        </button>
+                    </div>
+                 )}
             </div>
         );
     }
@@ -188,15 +205,15 @@ const UserMenu: React.FC<{ onLogout: () => void, isSidebarOpen: boolean }> = ({ 
         <div ref={menuRef} className="relative w-full p-2">
             <button onClick={() => setIsOpen(!isOpen)} className="flex items-center w-full group p-2 rounded-lg hover:bg-gray-100">
                 <UserAvatar name={userName} className="w-9 h-9 text-sm flex-shrink-0" />
-                <div className="ml-3 text-left min-w-0">
+                <div className="ml-3 text-left min-w-0 flex-1">
                     <p className="text-sm font-bold text-gray-800 truncate">{userName}</p>
                     <p className="text-xs text-gray-500">Admin</p>
                 </div>
-                <ChevronDownIcon className={`w-5 h-5 text-gray-400 ml-auto flex-shrink-0 group-hover:text-gray-600 transition-transform ${isOpen ? 'rotate-180' : ''}`}/>
+                <ChevronDownIcon className={`w-5 h-5 text-gray-400 ml-2 flex-shrink-0 group-hover:text-gray-600 transition-transform ${isOpen ? 'rotate-180' : ''}`}/>
             </button>
             {isOpen && (
-                 <div className="absolute bottom-full left-0 w-[calc(100%-1rem)] mb-2 bg-white border border-gray-200 rounded-lg shadow-xl p-1 z-10 mx-2">
-                    <button onClick={onLogout} className="flex items-center w-full px-3 py-2 text-sm text-red-600 rounded-md hover:bg-red-50">
+                 <div className="absolute bottom-full left-2 right-2 mb-2 bg-white border border-gray-200 rounded-lg shadow-xl p-1 z-[60]">
+                    <button onClick={() => { onLogout(); setIsOpen(false); }} className="flex items-center w-full px-3 py-2 text-sm text-red-600 rounded-md hover:bg-red-50">
                         <LogOutIcon className="w-5 h-5 mr-3"/> Log Out
                     </button>
                 </div>
@@ -239,8 +256,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     ];
 
     return (
-        <aside className={`fixed top-0 left-0 h-screen bg-white border-r border-slate-200 z-30 transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-20'} overflow-hidden`}>
-            <div className="flex flex-col h-full relative overflow-hidden">
+        <aside className={`fixed top-0 left-0 h-screen bg-white border-r border-slate-200 z-30 transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
+            <div className="flex flex-col h-full relative">
                  <div className="flex-shrink-0 h-16 border-b border-slate-200 flex items-center justify-center">
                     <button onClick={() => setActiveView('dashboard')} className="flex items-center gap-2" title="Go to Dashboard">
                        <ShipNowIcon className="w-8 h-8 text-red-600 flex-shrink-0" />
@@ -259,7 +276,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
 
 
-                <nav className="flex-grow p-2 overflow-y-auto sidebar-nav-scroll">
+                <nav className="flex-1 p-2 overflow-y-auto overflow-x-hidden sidebar-nav-scroll min-h-0">
                     <NavSection title="Análisis" isSidebarOpen={isSidebarOpen}>
                          <NavItem icon={DashboardIcon} label="Dashboard" isActive={activeView === 'dashboard'} onClick={() => setActiveView('dashboard')} isSidebarOpen={isSidebarOpen} />
                     </NavSection>
@@ -309,8 +326,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
             </div>
             <style>{`
+                .sidebar-nav-scroll {
+                    scrollbar-width: thin;
+                    scrollbar-color: #e2e8f0 transparent;
+                }
                 .sidebar-nav-scroll::-webkit-scrollbar {
-                    width: 4px;
+                    width: 6px;
                 }
                 .sidebar-nav-scroll::-webkit-scrollbar-track {
                     background: transparent;
