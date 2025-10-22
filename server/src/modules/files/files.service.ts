@@ -107,6 +107,8 @@ export class FilesService {
   }
 
   async getAllOrganizationFiles(organizationId: string) {
+    console.log('[FilesService] getAllOrganizationFiles - Starting');
+    
     // Get files from Files table
     const files = await this.prisma.file.findMany({
       where: { organizationId },
@@ -117,6 +119,7 @@ export class FilesService {
         createdAt: 'desc',
       },
     });
+    console.log('[FilesService] Found', files.length, 'general files');
 
     // Get operation documents
     const documents = await this.prisma.document.findMany({
@@ -135,6 +138,7 @@ export class FilesService {
         createdAt: 'desc',
       },
     });
+    console.log('[FilesService] Found', documents.length, 'operation documents');
 
     // Get email attachments and HTML content stored in Backblaze
     const emailMessages = await this.prisma.emailMessage.findMany({
@@ -164,6 +168,7 @@ export class FilesService {
         createdAt: 'desc',
       },
     });
+    console.log('[FilesService] Found', emailMessages.length, 'email messages with attachments/HTML');
 
     // Process email files
     const emailFiles = [];
@@ -211,6 +216,8 @@ export class FilesService {
         }
       }
     }
+    
+    console.log('[FilesService] Processed', emailFiles.length, 'email files (HTML + attachments)');
 
     // Transform to unified format
     const unifiedFiles = [
@@ -250,6 +257,7 @@ export class FilesService {
     // Sort by creation date
     unifiedFiles.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
+    console.log('[FilesService] Returning total of', unifiedFiles.length, 'unified files');
     return unifiedFiles;
   }
 
