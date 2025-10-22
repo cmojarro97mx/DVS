@@ -302,8 +302,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <NavSection title="Herramientas" isSidebarOpen={isSidebarOpen}>
                         <NavItem icon={CalendarIcon} label="Calendar" isActive={activeView === 'calendar'} onClick={() => setActiveView('calendar')} isSidebarOpen={isSidebarOpen} />
                         <NavItem icon={FolderIcon} label="Files" isActive={activeView === 'files'} onClick={() => setActiveView('files')} isSidebarOpen={isSidebarOpen} />
-                        <NavItem icon={LinkIcon} label="Conexiones" isActive={activeView === 'integrations'} onClick={() => setActiveView('integrations')} isSidebarOpen={isSidebarOpen} />
-                        <NavItem icon={AtSymbolIcon} label="Análisis de Correo" isActive={activeView === 'email-analysis'} onClick={() => setActiveView('email-analysis')} isSidebarOpen={isSidebarOpen} />
+                        <NavItem 
+                            icon={MailIcon} 
+                            label="Email & Calendario" 
+                            isActive={['email-hub', 'integrations', 'email-analysis'].includes(activeView)} 
+                            onClick={() => setActiveView('email-hub')} 
+                            isSidebarOpen={isSidebarOpen} 
+                        />
                     </NavSection>
 
                     <NavSection title="Administración" isSidebarOpen={isSidebarOpen}>
