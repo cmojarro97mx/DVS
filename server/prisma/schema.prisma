@@ -457,51 +457,66 @@ model Quotation {
 }
 
 model EmailAccount {
-  id              String    @id @default(uuid())
-  userId          String
-  user            User      @relation("UserEmailAccounts", fields: [userId], references: [id], onDelete: Cascade)
-  email           String
-  provider        String
-  status          String    @default("connected")
-  syncEmail       Boolean   @default(false)
-  syncCalendar    Boolean   @default(false)
-  accessToken     String?
-  refreshToken    String?
-  tokenExpiry     DateTime?
-  lastEmailSync   DateTime?
-  lastCalendarSync DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                    String    @id @default(uuid())
+  userId                String
+  user                  User      @relation("UserEmailAccounts", fields: [userId], references: [id], onDelete: Cascade)
+  email                 String
+  provider              String
+  status                String    @default("connected")
+  syncEmail             Boolean   @default(false)
+  syncCalendar          Boolean   @default(false)
+  accessToken           String?
+  refreshToken          String?
+  tokenExpiry           DateTime?
+  lastEmailSync         DateTime?
+  lastCalendarSync      DateTime?
+  totalMessagesInGmail  Int       @default(0)
+  syncedMessagesCount   Int       @default(0)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
   
-  emails          EmailMessage[]
+  emails                EmailMessage[]
   
   @@unique([userId, email])
   @@map("email_accounts")
 }
 
 model EmailMessage {
-  id          String    @id @default(uuid())
-  threadId    String?
-  accountId   String
-  account     EmailAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  folder      String    @default("inbox")
-  from        String
-  fromName    String?
-  to          Json
-  cc          Json?
-  bcc         Json?
-  subject     String
-  snippet     String?
-  body        String
-  htmlBody    String?
-  date        DateTime
-  unread      Boolean   @default(true)
-  starred     Boolean   @default(false)
-  attachments Json?
-  messageId   String?   @unique
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                  String    @id @default(uuid())
+  gmailMessageId      String
+  threadId            String?
+  accountId           String
+  account             EmailAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  folder              String    @default("inbox")
+  labels              Json?
+  from                String
+  fromName            String?
+  to                  Json
+  cc                  Json?
+  bcc                 Json?
+  subject             String
+  snippet             String?
+  body                String
+  htmlBodyKey         String?
+  htmlBodyUrl         String?
+  date                DateTime
+  unread              Boolean   @default(true)
+  starred             Boolean   @default(false)
+  isReplied           Boolean   @default(false)
+  inReplyTo           String?
+  references          String?
+  hasAttachments      Boolean   @default(false)
+  attachmentsKey      String?
+  attachmentsData     Json?
+  messageId           String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
   
+  @@unique([accountId, gmailMessageId])
+  @@index([accountId, date(sort: Desc)])
+  @@index([accountId, unread])
+  @@index([accountId, isReplied])
+  @@index([threadId])
   @@map("email_messages")
 }
 
