@@ -116,6 +116,7 @@ El backend proporciona endpoints REST completos para todos los módulos:
 - `POST /api/auth/register` - Registro de usuarios
 - `POST /api/auth/login` - Login con JWT
 - `POST /api/auth/refresh` - Renovar access token usando refresh token
+- `POST /api/auth/logout` - Cerrar sesión y eliminar refresh token del servidor
 
 ### Módulos Disponibles
 Todos los módulos tienen endpoints CRUD estándar (GET, POST, PUT, DELETE):
@@ -181,6 +182,19 @@ Esquema completo implementado con las siguientes tablas:
 9. Agregar tests unitarios y de integración
 
 ## Cambios Recientes
+
+**2025-10-22 (Madrugada)**
+- ✅ **Corrección de error 500 en login después de logout**:
+  - **Problema identificado**: Los refreshTokens se acumulaban en la base de datos sin eliminarse al hacer logout
+  - **Backend**:
+    - Nuevo endpoint `POST /api/auth/logout` que elimina el refreshToken del servidor
+    - Limpieza automática de todos los refreshTokens antiguos del usuario al hacer login
+    - Método `logout()` en AuthService con manejo de errores robusto e idempotente
+  - **Frontend**:
+    - `authService.logout()` ahora es asíncrono y llama al endpoint del servidor
+    - Garantiza sincronización entre cliente y servidor incluso si la petición falla
+    - AuthContext actualizado para manejar logout asíncrono
+  - ✅ **Problema resuelto**: Eliminado el error 500 al intentar login después de logout
 
 **2025-10-22 (Noche)**
 - ✅ **Sistema de Refresh Tokens completamente implementado**:
