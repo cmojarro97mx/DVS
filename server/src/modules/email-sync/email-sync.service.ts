@@ -483,7 +483,7 @@ export class EmailSyncService {
       select: {
         id: true,
         htmlBodyKey: true,
-        attachmentKeys: true,
+        attachmentsData: true,
       },
     });
 
@@ -501,9 +501,9 @@ export class EmailSyncService {
         keysToDelete.push(message.htmlBodyKey);
       }
       
-      if (message.attachmentKeys && Array.isArray(message.attachmentKeys)) {
-        const attachmentKeys = message.attachmentKeys as any[];
-        for (const attachment of attachmentKeys) {
+      if (message.attachmentsData && Array.isArray(message.attachmentsData)) {
+        const attachments = message.attachmentsData as any[];
+        for (const attachment of attachments) {
           if (attachment.key) {
             keysToDelete.push(attachment.key);
           }

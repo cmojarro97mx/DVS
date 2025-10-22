@@ -22,6 +22,9 @@ interface EmailAccount {
     lastEmailSync: string | null;
     totalMessagesInGmail: number;
     syncedMessagesCount: number;
+    syncFromDate: string | null;
+    detectedOldestEmailDate: string | null;
+    detectedNewestEmailDate: string | null;
 }
 
 interface EmailMetrics {
@@ -31,6 +34,9 @@ interface EmailMetrics {
     unrepliedMessages: number;
     unreadMessages: number;
     lastSync: string | null;
+    syncFromDate: string | null;
+    detectedOldestEmailDate: string | null;
+    detectedNewestEmailDate: string | null;
 }
 
 interface EmailMessage {
@@ -329,6 +335,40 @@ const EmailAnalysisPage: React.FC<EmailAnalysisPageProps> = ({ setActiveView }) 
                     Los correos se sincronizan automáticamente cada 10 minutos en segundo plano
                 </p>
             </div>
+
+            {metrics && metrics.syncFromDate && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-blue-100 p-2 rounded-lg">
+                                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold text-blue-900">Período de Sincronización Configurado</h3>
+                                <p className="text-sm text-blue-700 mt-0.5">
+                                    Sincronizando correos desde {new Date(metrics.syncFromDate).toLocaleDateString('es-ES', { 
+                                        year: 'numeric', 
+                                        month: 'long', 
+                                        day: 'numeric' 
+                                    })} hasta hoy
+                                </p>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-xs text-blue-600 font-medium">Correos descargados</p>
+                            <p className="text-2xl font-bold text-blue-900">{metrics.downloadedMessages.toLocaleString()}</p>
+                        </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-blue-200">
+                        <p className="text-xs text-blue-700">
+                            💡 <strong>Nota:</strong> Solo se muestran y sincronizan correos desde la fecha configurada. 
+                            Para cambiar el período, desactiva y vuelve a activar la sincronización en Integraciones.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {metrics && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">

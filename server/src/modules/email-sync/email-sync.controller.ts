@@ -41,6 +41,9 @@ export class EmailSyncController {
         lastEmailSync: true,
         totalMessagesInGmail: true,
         syncedMessagesCount: true,
+        syncFromDate: true,
+        detectedOldestEmailDate: true,
+        detectedNewestEmailDate: true,
       },
     });
     return accounts;
@@ -82,6 +85,9 @@ export class EmailSyncController {
       unrepliedMessages,
       unreadMessages,
       lastSync: account.lastEmailSync,
+      syncFromDate: account.syncFromDate,
+      detectedOldestEmailDate: account.detectedOldestEmailDate,
+      detectedNewestEmailDate: account.detectedNewestEmailDate,
     };
   }
 
