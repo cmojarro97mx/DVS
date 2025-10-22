@@ -363,14 +363,14 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
   };
 
   return (
-    <div className="animate-fade-in h-full flex flex-col space-y-4 md:space-y-6">
+    <div className="animate-fade-in h-full flex flex-col space-y-4 md:space-y-6 overflow-hidden">
       <Banner
           title="Calendario"
           description="Organiza fechas límite, envíos y reuniones con sincronización automática."
           icon={CalendarDaysIcon}
       />
       
-      <div className="bg-white rounded-lg border border-slate-200 p-3 md:p-6 flex flex-col flex-grow min-h-0">
+      <div className="bg-white rounded-lg border border-slate-200 p-3 md:p-6 flex flex-col flex-1 overflow-hidden">
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-3 flex-shrink-0">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-4 w-full sm:w-auto">
               <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
@@ -400,12 +400,12 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
           </button>
         </header>
         
-        <div className="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-6 min-h-0">
-            <div className="lg:col-span-2 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col lg:flex-row gap-3 md:gap-6 overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="grid grid-cols-7 text-center font-semibold text-[10px] md:text-sm text-slate-500 flex-shrink-0">
                     {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => <div key={day} className="py-1.5 md:py-2 border-b border-slate-200">{day}</div>)}
                 </div>
-                <div className="grid grid-cols-7 auto-rows-fr flex-grow min-h-0 border-l border-slate-200 overflow-auto">
+                <div className="grid grid-cols-7 flex-1 border-l border-slate-200 overflow-auto" style={{ gridAutoRows: 'minmax(80px, 1fr)' }}>
                     {daysInMonth.map((day, index) => {
                     const isToday = new Date().toDateString() === day.toDateString();
                     const isCurrentMonth = day.getMonth() === currentDate.getMonth();
@@ -420,7 +420,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                         <div
                         key={index}
                         onClick={() => openAddModal(day)}
-                        className={`relative p-1 md:p-2 flex flex-col group border-b border-r border-slate-200 cursor-pointer min-h-[60px] md:min-h-[80px] ${isCurrentMonth ? 'bg-white hover:bg-slate-50' : 'bg-slate-50'} transition-colors`}
+                        className={`relative p-1 md:p-2 flex flex-col group border-b border-r border-slate-200 cursor-pointer ${isCurrentMonth ? 'bg-white hover:bg-slate-50' : 'bg-slate-50'} transition-colors`}
                         >
                         <time
                             dateTime={day.toISOString()}
@@ -464,7 +464,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                 </div>
             </div>
 
-            <div className="lg:col-span-1 flex flex-col gap-3 md:gap-4 min-h-0">
+            <div className="lg:w-80 flex flex-col gap-3 md:gap-4 overflow-auto flex-shrink-0">
                 <div className="p-3 md:p-4 bg-slate-50 rounded-lg border border-slate-200">
                     <h3 className="text-sm md:text-base font-semibold text-slate-800 mb-3 flex items-center gap-2">
                         <LinkIcon className="w-4 h-4 md:w-5 md:h-5 text-slate-500"/> 
