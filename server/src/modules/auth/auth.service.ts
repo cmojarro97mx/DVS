@@ -11,12 +11,20 @@ export class AuthService {
   ) {}
 
   async register(email: string, password: string, name: string, organizationName: string) {
+    if (!email || !password || !name || !organizationName) {
+      throw new UnauthorizedException('Todos los campos son requeridos');
+    }
+
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
     });
 
     if (existingUser) {
-      throw new UnauthorizedException('Email already exists');
+      throw new UnauthorizedException('Ya existe una cuenta con este correo electrónico');
+    }
+
+    if (password.length < 6) {
+      throw new UnauthorizedException('La contraseña debe tener al menos 6 caracteres');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -79,13 +87,17 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('No existe una cuenta con este correo electrónico');
     }
 
     const passwordValid = await bcrypt.compare(password, user.password);
 
     if (!passwordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('La contraseña es incorrecta');
+    }
+
+    if (user.status !== 'Active') {
+      throw new UnauthorizedException('Esta cuenta está inactiva. Contacta al administrador');
     }
 
     const tokens = await this.generateTokens(user.id, user.email, user.organizationId);

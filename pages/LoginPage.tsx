@@ -24,10 +24,28 @@ const LoginPage: React.FC<LoginPageProps> = ({ onToggleView }) => {
     setError('');
     setIsLoading(true);
 
+    // Validaciones del frontend
+    if (!email || !password) {
+      setError('Por favor completa todos los campos');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!email.includes('@')) {
+      setError('Por favor ingresa un correo electrónico válido');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       await login(email, password);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed. Please check your credentials.');
+      // Extraer el mensaje de error del backend
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Error al iniciar sesión. Por favor verifica tus credenciales.');
+      }
     } finally {
       setIsLoading(false);
     }

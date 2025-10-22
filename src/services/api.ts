@@ -59,7 +59,7 @@ class ApiService {
     return response.json();
   }
 
-  private handleUnauthorized() {
+  private handleUnauthorized(errorMessage?: string) {
     // Limpiar tokens y datos de sesión
     this.setAccessToken(null);
     localStorage.removeItem('refreshToken');
@@ -68,6 +68,11 @@ class ApiService {
     // Redirigir al login solo si no estamos ya en la página de login/registro
     if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
       window.location.href = '/login';
+    }
+    
+    // Lanzar el error con el mensaje específico
+    if (errorMessage) {
+      throw new Error(errorMessage);
     }
   }
 
