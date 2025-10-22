@@ -123,7 +123,11 @@ export class GoogleAuthService {
     const userInfo = await oauth2.userinfo.get();
     const email = userInfo.data.email;
 
+    console.log(`[GoogleAuth] OAuth callback for userId: ${userId}`);
+    console.log(`[GoogleAuth] Email obtained from Google: ${email}`);
+
     if (!email) {
+      console.error('[GoogleAuth] Failed to retrieve email from Google OAuth');
       throw new Error('Could not retrieve email from Google');
     }
 
@@ -136,6 +140,7 @@ export class GoogleAuthService {
     });
 
     if (existingAccount) {
+      console.log(`[GoogleAuth] Updating existing account: ${existingAccount.id} with email: ${email}`);
       await this.prisma.emailAccount.update({
         where: { id: existingAccount.id },
         data: {
@@ -146,6 +151,7 @@ export class GoogleAuthService {
         },
       });
     } else {
+      console.log(`[GoogleAuth] Creating new EmailAccount for userId: ${userId} with email: ${email}`);
       await this.prisma.emailAccount.create({
         data: {
           userId,
@@ -159,6 +165,7 @@ export class GoogleAuthService {
           syncCalendar: false,
         },
       });
+      console.log(`[GoogleAuth] Successfully created EmailAccount with email: ${email}`);
     }
   }
 

@@ -59,6 +59,7 @@ The frontend uses React 19 with TypeScript, styled using Tailwind CSS, and bundl
         -   **Desktop**: Popup window for OAuth (500x600px) with automatic closure on success/error. Uses window.postMessage for communication.
         -   **Mobile**: Full-page redirect flow (detects iOS/Android devices) with seamless return to dashboard.
         -   **Security**: State-based CSRF protection with 10-minute expiry, secure token storage in PostgreSQL with unique constraint on (userId, email).
+        -   **Bug Fix (October 2025)**: Added comprehensive logging to OAuth callback to track email obtained from Google. Logs include userId, email from Google userinfo, and account creation/update events to help diagnose any email mismatch issues.
     -   **Endpoints**:
         -   Google Auth: `/api/google-auth/auth-url` (get OAuth URL), `/api/google-auth/callback` (OAuth callback), `/api/google-auth/status` (list all connected accounts), `/api/google-auth/disconnect/:accountId` (disconnect specific account), `/api/google-auth/sync/gmail/enable` (body: {accountId}), `/api/google-auth/sync/gmail/disable` (body: {accountId}), `/api/google-auth/sync/calendar/enable` (body: {accountId}), `/api/google-auth/sync/calendar/disable` (body: {accountId})
         -   Gmail: All endpoints support optional `accountId` query parameter. `/api/gmail/messages?accountId=xxx`, `/api/gmail/messages/send` (body: {accountId}), `/api/gmail/messages/:id/reply` (body: {accountId}), `/api/gmail/labels?accountId=xxx`
