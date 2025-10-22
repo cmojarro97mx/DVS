@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Res, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Query, Res, UseGuards, Req, Body, Param } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { GoogleAuthService } from './google-auth.service';
 import { Response, Request } from 'express';
@@ -20,9 +20,7 @@ export class GoogleAuthController {
   async getAuthUrl(@Req() req: Request) {
     try {
       const user = req.user as any;
-      console.log('Getting auth URL for user:', user.userId);
       const authUrl = await this.googleAuthService.getAuthorizationUrl(user.userId);
-      console.log('Generated auth URL successfully');
       return { url: authUrl };
     } catch (error) {
       console.error('Error generating auth URL:', error);
@@ -44,8 +42,6 @@ export class GoogleAuthController {
     try {
       await this.googleAuthService.handleCallback(code, state);
       
-      // Detectar si es un popup (viene de window.open) o redirección completa
-      // Enviamos una página HTML que cierra el popup o redirige
       res.send(`
         <!DOCTYPE html>
         <html>
@@ -87,12 +83,10 @@ export class GoogleAuthController {
             <p>Cerrando ventana...</p>
           </div>
           <script>
-            // Si es un popup, enviar mensaje al parent
             if (window.opener) {
               window.opener.postMessage({ type: 'oauth-success' }, '*');
               setTimeout(() => window.close(), 1000);
             } else {
-              // Si es redirección completa (móvil), redirigir al dashboard
               setTimeout(() => window.location.href = '/dashboard?oauth=success', 1000);
             }
           </script>
@@ -148,43 +142,43 @@ export class GoogleAuthController {
     return this.googleAuthService.getConnectionStatus(user.userId);
   }
 
-  @Get('disconnect')
+  @Post('disconnect/:accountId')
   @UseGuards(JwtAuthGuard)
-  async disconnect(@Req() req: Request) {
+  async disconnect(@Req() req: Request, @Param('accountId') accountId: string) {
     const user = req.user as any;
-    await this.googleAuthService.disconnect(user.userId);
+    await this.googleAuthService.disconnect(user.userId, accountId);
     return { message: 'Google account disconnected successfully' };
   }
 
   @Post('sync/gmail/enable')
   @UseGuards(JwtAuthGuard)
-  async enableGmailSync(@Req() req: Request) {
+  async enableGmailSync(@Req() req: Request, @Body('accountId') accountId: string) {
     const user = req.user as any;
-    await this.googleAuthService.enableGmailSync(user.userId);
+    await this.googleAuthService.enableGmailSync(user.userId, accountId);
     return { message: 'Gmail sync enabled successfully' };
   }
 
   @Post('sync/gmail/disable')
   @UseGuards(JwtAuthGuard)
-  async disableGmailSync(@Req() req: Request) {
+  async disableGmailSync(@Req() req: Request, @Body('accountId') accountId: string) {
     const user = req.user as any;
-    await this.googleAuthService.disableGmailSync(user.userId);
+    await this.googleAuthService.disableGmailSync(user.userId, accountId);
     return { message: 'Gmail sync disabled successfully' };
   }
 
   @Post('sync/calendar/enable')
   @UseGuards(JwtAuthGuard)
-  async enableCalendarSync(@Req() req: Request) {
+  async enableCalendarSync(@Req() req: Request, @Body('accountId') accountId: string) {
     const user = req.user as any;
-    await this.googleAuthService.enableCalendarSync(user.userId);
+    await this.googleAuthService.enableCalendarSync(user.userId, accountId);
     return { message: 'Calendar sync enabled successfully', syncing: true };
   }
 
   @Post('sync/calendar/disable')
   @UseGuards(JwtAuthGuard)
-  async disableCalendarSync(@Req() req: Request) {
+  async disableCalendarSync(@Req() req: Request, @Body('accountId') accountId: string) {
     const user = req.user as any;
-    await this.googleAuthService.disableCalendarSync(user.userId);
+    await this.googleAuthService.disableCalendarSync(user.userId, accountId);
     return { message: 'Calendar sync disabled successfully' };
   }
 }

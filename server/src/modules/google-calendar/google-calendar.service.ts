@@ -13,8 +13,8 @@ export class GoogleCalendarService {
     private prisma: PrismaService,
   ) {}
 
-  private async getCalendarClient(userId: string) {
-    const accessToken = await this.googleAuthService.getAccessToken(userId);
+  private async getCalendarClient(userId: string, accountId?: string) {
+    const accessToken = await this.googleAuthService.getAccessToken(userId, accountId);
     
     const oauth2Client = new google.auth.OAuth2();
     oauth2Client.setCredentials({ access_token: accessToken });
@@ -22,15 +22,15 @@ export class GoogleCalendarService {
     return google.calendar({ version: 'v3', auth: oauth2Client });
   }
 
-  async listCalendars(userId: string) {
-    const calendar = await this.getCalendarClient(userId);
+  async listCalendars(userId: string, accountId?: string) {
+    const calendar = await this.getCalendarClient(userId, accountId);
     
     const response = await calendar.calendarList.list();
     return response.data.items || [];
   }
 
-  async listEvents(userId: string, calendarId: string = 'primary', maxResults: number = 100) {
-    const calendar = await this.getCalendarClient(userId);
+  async listEvents(userId: string, accountId?: string, calendarId: string = 'primary', maxResults: number = 100) {
+    const calendar = await this.getCalendarClient(userId, accountId);
     
     const response = await calendar.events.list({
       calendarId,
@@ -43,8 +43,8 @@ export class GoogleCalendarService {
     return response.data.items || [];
   }
 
-  async getEvent(userId: string, eventId: string, calendarId: string = 'primary') {
-    const calendar = await this.getCalendarClient(userId);
+  async getEvent(userId: string, eventId: string, accountId?: string, calendarId: string = 'primary') {
+    const calendar = await this.getCalendarClient(userId, accountId);
     
     const response = await calendar.events.get({
       calendarId,
@@ -54,8 +54,8 @@ export class GoogleCalendarService {
     return response.data;
   }
 
-  async createEvent(userId: string, eventData: any, calendarId: string = 'primary') {
-    const calendar = await this.getCalendarClient(userId);
+  async createEvent(userId: string, eventData: any, accountId?: string, calendarId: string = 'primary') {
+    const calendar = await this.getCalendarClient(userId, accountId);
     
     const response = await calendar.events.insert({
       calendarId,
@@ -65,8 +65,8 @@ export class GoogleCalendarService {
     return response.data;
   }
 
-  async updateEvent(userId: string, eventId: string, eventData: any, calendarId: string = 'primary') {
-    const calendar = await this.getCalendarClient(userId);
+  async updateEvent(userId: string, eventId: string, eventData: any, accountId?: string, calendarId: string = 'primary') {
+    const calendar = await this.getCalendarClient(userId, accountId);
     
     const response = await calendar.events.update({
       calendarId,
@@ -77,8 +77,8 @@ export class GoogleCalendarService {
     return response.data;
   }
 
-  async deleteEvent(userId: string, eventId: string, calendarId: string = 'primary') {
-    const calendar = await this.getCalendarClient(userId);
+  async deleteEvent(userId: string, eventId: string, accountId?: string, calendarId: string = 'primary') {
+    const calendar = await this.getCalendarClient(userId, accountId);
     
     await calendar.events.delete({
       calendarId,
@@ -88,8 +88,8 @@ export class GoogleCalendarService {
     return { success: true };
   }
 
-  async syncEventsToCalendar(userId: string, events: any[], calendarId: string = 'primary') {
-    const calendar = await this.getCalendarClient(userId);
+  async syncEventsToCalendar(userId: string, events: any[], accountId?: string, calendarId: string = 'primary') {
+    const calendar = await this.getCalendarClient(userId, accountId);
     const results = [];
 
     for (const event of events) {
@@ -107,20 +107,29 @@ export class GoogleCalendarService {
     return results;
   }
 
-  async syncGoogleCalendarEvents(userId: string) {
+  async syncGoogleCalendarEvents(userId: string, accountId: string) {
     try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { calendarSyncEnabled: true, organizationId: true },
+      const account = await this.prisma.emailAccount.findFirst({
+        where: { 
+          id: accountId,
+          userId,
+          syncCalendar: true,
+        },
+        include: {
+          user: {
+            select: {
+              organizationId: true,
+            },
+          },
+        },
       });
 
-      if (!user?.calendarSyncEnabled) {
-        return { success: false, message: 'Calendar sync is not enabled' };
+      if (!account) {
+        return { success: false, message: 'Calendar sync is not enabled for this account' };
       }
 
-      const calendar = await this.getCalendarClient(userId);
+      const calendar = await this.getCalendarClient(userId, accountId);
       
-      // Obtener eventos de los próximos 60 días
       const timeMin = new Date();
       const timeMax = new Date();
       timeMax.setDate(timeMax.getDate() + 60);
@@ -139,9 +148,8 @@ export class GoogleCalendarService {
       let updated = 0;
 
       for (const gEvent of googleEvents) {
-        // Skip events without valid ID or start date - security requirement
         if (!gEvent.id || !gEvent.start) {
-          this.logger.warn(`Skipping event without ID or start date for user ${userId}`);
+          this.logger.warn(`Skipping event without ID or start date for account ${accountId}`);
           continue;
         }
 
@@ -160,21 +168,19 @@ export class GoogleCalendarService {
           googleEventId: gEvent.id,
           googleCalendarId: 'primary',
           userId,
-          organizationId: user.organizationId,
+          organizationId: account.user.organizationId,
         };
 
-        // Find existing event scoped by both userId and googleEventId to prevent cross-tenant overwrites
         const existingEvent = await this.prisma.event.findFirst({
           where: { 
             userId,
             googleEventId: gEvent.id,
-            organizationId: user.organizationId, // Additional organization scoping
+            organizationId: account.user.organizationId,
           },
         });
 
         if (existingEvent) {
-          // Double-check ownership before updating - defensive programming
-          if (existingEvent.userId === userId && existingEvent.organizationId === user.organizationId) {
+          if (existingEvent.userId === userId && existingEvent.organizationId === account.user.organizationId) {
             await this.prisma.event.update({
               where: { id: existingEvent.id },
               data: eventData,
@@ -191,11 +197,7 @@ export class GoogleCalendarService {
         }
       }
 
-      // Actualizar última sincronización
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { lastCalendarSync: new Date() },
-      });
+      await this.googleAuthService.updateLastSync(accountId, 'calendar');
 
       return {
         success: true,
@@ -212,26 +214,34 @@ export class GoogleCalendarService {
 
   @Cron(CronExpression.EVERY_5_MINUTES)
   async autoSyncCalendars() {
-    this.logger.log('Starting automatic calendar sync for all users...');
+    this.logger.log('Starting automatic calendar sync for all accounts...');
     
     try {
-      const users = await this.prisma.user.findMany({
+      const accounts = await this.prisma.emailAccount.findMany({
         where: {
-          AND: [
-            { googleRefreshToken: { not: null } },
-            { calendarSyncEnabled: true },
-          ],
+          provider: 'google',
+          status: 'connected',
+          syncCalendar: true,
+          refreshToken: { not: null },
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+            },
+          },
         },
       });
 
-      this.logger.log(`Found ${users.length} users with calendar sync enabled`);
+      this.logger.log(`Found ${accounts.length} accounts with calendar sync enabled`);
 
-      for (const user of users) {
+      for (const account of accounts) {
         try {
-          const result = await this.syncGoogleCalendarEvents(user.id);
-          this.logger.log(`Synced calendar for user ${user.email}: ${result.created} created, ${result.updated} updated`);
+          const result = await this.syncGoogleCalendarEvents(account.userId, account.id);
+          this.logger.log(`Synced calendar for ${account.email}: ${result.created} created, ${result.updated} updated`);
         } catch (error) {
-          this.logger.error(`Failed to sync calendar for user ${user.email}:`, error.message);
+          this.logger.error(`Failed to sync calendar for ${account.email}:`, error.message);
         }
       }
 

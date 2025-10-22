@@ -18,13 +18,6 @@ model User {
   avatar        String?
   organizationId String?
   organization  Organization? @relation(fields: [organizationId], references: [id])
-  googleAccessToken  String?
-  googleRefreshToken String?
-  googleTokenExpiry  DateTime?
-  gmailSyncEnabled   Boolean   @default(false)
-  calendarSyncEnabled Boolean  @default(false)
-  lastGmailSync      DateTime?
-  lastCalendarSync   DateTime?
   refreshTokens RefreshToken[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

@@ -12,14 +12,20 @@ interface IntegrationsPageProps {
     setActiveView: (view: View) => void;
 }
 
-interface GoogleConnectionStatus {
-    connected: boolean;
-    hasRefreshToken: boolean;
+interface GoogleAccount {
+    id: string;
+    email: string;
+    status: string;
+    gmailSyncEnabled: boolean;
+    calendarSyncEnabled: boolean;
     tokenExpiry: string | null;
-    gmailSyncEnabled?: boolean;
-    calendarSyncEnabled?: boolean;
     lastGmailSync?: string | null;
     lastCalendarSync?: string | null;
+}
+
+interface GoogleConnectionStatus {
+    connected: boolean;
+    accounts: GoogleAccount[];
 }
 
 const HubCard: React.FC<{
@@ -32,7 +38,7 @@ const HubCard: React.FC<{
 }> = ({ title, description, icon: Icon, onClick, isConnected, isLoading }) => (
     <button
         onClick={onClick}
-        disabled={isConnected || isLoading}
+        disabled={isLoading}
         className="w-full flex items-center p-4 bg-white rounded-xl border border-slate-200 transition-all duration-300 group hover:border-blue-400 hover:bg-blue-50/30 hover:-translate-y-0.5 disabled:bg-slate-50 disabled:cursor-not-allowed disabled:hover:border-slate-200 disabled:hover:-translate-y-0"
     >
         <div className={`p-3 rounded-lg border transition-colors ${isConnected ? 'bg-green-50 border-green-200' : 'bg-slate-100 group-hover:bg-blue-50 group-hover:border-blue-200'}`}>
@@ -46,32 +52,27 @@ const HubCard: React.FC<{
             <div className="px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">
                 Loading...
             </div>
-        ) : isConnected ? (
-             <div className="flex items-center gap-2 px-2.5 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full">
-                <CheckCircleIcon className="w-4 h-4"/>
-                Connected
-            </div>
         ) : (
             <div className="px-2.5 py-1 text-xs font-semibold text-slate-600 bg-slate-100 rounded-full border border-slate-200 group-hover:bg-blue-100 group-hover:text-blue-700 group-hover:border-blue-200 transition-colors">
-                Connect
+                {isConnected ? `${isConnected} account${isConnected === 1 ? '' : 's'}` : 'Connect'}
             </div>
         )}
     </button>
 );
 
 const ConnectedGoogleAccount: React.FC<{ 
-    status: GoogleConnectionStatus;
-    onDisconnect: () => void;
-    onToggleGmail: (enabled: boolean) => void;
-    onToggleCalendar: (enabled: boolean) => void;
-}> = ({ status, onDisconnect, onToggleGmail, onToggleCalendar }) => {
+    account: GoogleAccount;
+    onDisconnect: (accountId: string) => void;
+    onToggleGmail: (accountId: string, enabled: boolean) => void;
+    onToggleCalendar: (accountId: string, enabled: boolean) => void;
+}> = ({ account, onDisconnect, onToggleGmail, onToggleCalendar }) => {
     return (
         <div className="p-6 bg-white transition-colors hover:bg-slate-50/70 rounded-xl border border-slate-200">
             <div className="flex justify-between items-start">
                 <div className="flex items-center gap-3">
                     <GSuiteIcon className="w-10 h-10 flex-shrink-0" />
                     <div>
-                        <span className="font-bold text-lg text-slate-800">Google Workspace</span>
+                        <span className="font-bold text-lg text-slate-800">{account.email}</span>
                         <div className="flex items-center gap-1.5 mt-1">
                              <div className="w-2 h-2 rounded-full bg-green-500"></div>
                              <span className="text-xs font-semibold text-green-700">Connected</span>
@@ -79,7 +80,7 @@ const ConnectedGoogleAccount: React.FC<{
                     </div>
                 </div>
                  <button 
-                    onClick={onDisconnect}
+                    onClick={() => onDisconnect(account.id)}
                     className="text-sm font-medium text-slate-600 hover:text-red-600 bg-slate-100 hover:bg-red-50 px-3 py-1.5 rounded-md transition-colors"
                 >
                     Disconnect
@@ -96,13 +97,13 @@ const ConnectedGoogleAccount: React.FC<{
                         </div>
                     </div>
                     <button
-                        onClick={() => onToggleGmail(!status.gmailSyncEnabled)}
+                        onClick={() => onToggleGmail(account.id, !account.gmailSyncEnabled)}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            status.gmailSyncEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                            account.gmailSyncEnabled ? 'bg-blue-600' : 'bg-slate-300'
                         }`}
                     >
                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            status.gmailSyncEnabled ? 'translate-x-6' : 'translate-x-1'
+                            account.gmailSyncEnabled ? 'translate-x-6' : 'translate-x-1'
                         }`} />
                     </button>
                 </div>
@@ -115,24 +116,24 @@ const ConnectedGoogleAccount: React.FC<{
                         </div>
                     </div>
                     <button
-                        onClick={() => onToggleCalendar(!status.calendarSyncEnabled)}
+                        onClick={() => onToggleCalendar(account.id, !account.calendarSyncEnabled)}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            status.calendarSyncEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                            account.calendarSyncEnabled ? 'bg-blue-600' : 'bg-slate-300'
                         }`}
                     >
                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            status.calendarSyncEnabled ? 'translate-x-6' : 'translate-x-1'
+                            account.calendarSyncEnabled ? 'translate-x-6' : 'translate-x-1'
                         }`} />
                     </button>
                 </div>
-                {status.tokenExpiry && (
+                {account.tokenExpiry && (
                     <p className="text-xs text-slate-400 mt-3 pt-3 border-t">
-                        Token expires: {new Date(status.tokenExpiry).toLocaleString('es-ES')}
+                        Token expires: {new Date(account.tokenExpiry).toLocaleString('es-ES')}
                     </p>
                 )}
-                {status.lastCalendarSync && status.calendarSyncEnabled && (
+                {account.lastCalendarSync && account.calendarSyncEnabled && (
                     <p className="text-xs text-slate-400">
-                        Last calendar sync: {new Date(status.lastCalendarSync).toLocaleString('es-ES')}
+                        Last calendar sync: {new Date(account.lastCalendarSync).toLocaleString('es-ES')}
                     </p>
                 )}
             </div>
@@ -198,14 +199,11 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
             if (response.ok) {
                 const data = await response.json();
                 
-                // Detectar si es móvil
                 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
                 
                 if (isMobile) {
-                    // En móvil, usar redirección completa
                     window.location.href = data.url;
                 } else {
-                    // En escritorio, abrir popup pequeño
                     const width = 500;
                     const height = 600;
                     const left = (window.screen.width - width) / 2;
@@ -217,7 +215,6 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
                         `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no`
                     );
                     
-                    // Escuchar el mensaje del callback
                     const messageHandler = (event: MessageEvent) => {
                         if (event.data.type === 'oauth-success') {
                             popup?.close();
@@ -232,7 +229,6 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
                     
                     window.addEventListener('message', messageHandler);
                     
-                    // Limpiar si el popup se cierra manualmente
                     const checkPopup = setInterval(() => {
                         if (popup?.closed) {
                             clearInterval(checkPopup);
@@ -252,27 +248,22 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
         }
     };
 
-    const handleDisconnectGoogle = async () => {
-        if (!confirm('¿Estás seguro de que deseas desconectar tu cuenta de Google? Perderás el acceso a Gmail y Calendar.')) {
+    const handleDisconnectGoogle = async (accountId: string) => {
+        if (!confirm('¿Estás seguro de que deseas desconectar esta cuenta de Google? Perderás el acceso a Gmail y Calendar para esta cuenta.')) {
             return;
         }
 
         try {
             const token = localStorage.getItem('accessToken');
-            const response = await fetch('/api/google-auth/disconnect', {
+            const response = await fetch(`/api/google-auth/disconnect/${accountId}`, {
+                method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
             });
             
             if (response.ok) {
-                setGoogleStatus({ 
-                    connected: false, 
-                    hasRefreshToken: false, 
-                    tokenExpiry: null,
-                    gmailSyncEnabled: false,
-                    calendarSyncEnabled: false,
-                });
+                fetchGoogleStatus();
             }
         } catch (error) {
             console.error('Error disconnecting Google:', error);
@@ -280,7 +271,7 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
         }
     };
 
-    const handleToggleGmail = async (enabled: boolean) => {
+    const handleToggleGmail = async (accountId: string, enabled: boolean) => {
         try {
             const token = localStorage.getItem('accessToken');
             const endpoint = enabled ? '/api/google-auth/sync/gmail/enable' : '/api/google-auth/sync/gmail/disable';
@@ -289,11 +280,13 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
                 },
+                body: JSON.stringify({ accountId }),
             });
             
             if (response.ok) {
-                setGoogleStatus(prev => prev ? { ...prev, gmailSyncEnabled: enabled } : null);
+                fetchGoogleStatus();
             }
         } catch (error) {
             console.error('Error toggling Gmail sync:', error);
@@ -301,7 +294,7 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
         }
     };
 
-    const handleToggleCalendar = async (enabled: boolean) => {
+    const handleToggleCalendar = async (accountId: string, enabled: boolean) => {
         try {
             const token = localStorage.getItem('accessToken');
             const endpoint = enabled ? '/api/google-auth/sync/calendar/enable' : '/api/google-auth/sync/calendar/disable';
@@ -310,27 +303,28 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
                 },
+                body: JSON.stringify({ accountId }),
             });
             
             if (response.ok) {
-                setGoogleStatus(prev => prev ? { ...prev, calendarSyncEnabled: enabled } : null);
-                
-                // Si se habilitó, sincronizar inmediatamente
                 if (enabled) {
                     const syncResponse = await fetch('/api/google-calendar/sync-from-google', {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
                         },
+                        body: JSON.stringify({ accountId }),
                     });
                     
                     if (syncResponse.ok) {
                         const result = await syncResponse.json();
                         console.log('Calendar synced:', result);
-                        fetchGoogleStatus(); // Actualizar para mostrar lastCalendarSync
                     }
                 }
+                fetchGoogleStatus();
             }
         } catch (error) {
             console.error('Error toggling Calendar sync:', error);
@@ -339,6 +333,7 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
     };
 
     const isGoogleConnected = googleStatus?.connected || false;
+    const accountCount = googleStatus?.accounts?.length || 0;
 
     return (
         <>
@@ -357,7 +352,7 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
                             title="Gmail"
                             description="Sync emails from your Google account."
                             icon={GmailIcon}
-                            isConnected={isGoogleConnected}
+                            isConnected={accountCount}
                             isLoading={loading}
                             onClick={handleConnectGoogle}
                         />
@@ -365,7 +360,7 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
                             title="Google Calendar"
                             description="Sync events from your Google Calendar."
                             icon={GoogleCalendarIcon}
-                            isConnected={isGoogleConnected}
+                            isConnected={accountCount}
                             isLoading={loading}
                             onClick={handleConnectGoogle}
                         />
@@ -374,13 +369,18 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
                 
                 <div className="lg:col-span-2">
                     <IntegrationSection title="Connected Accounts">
-                        {isGoogleConnected && googleStatus ? (
-                            <ConnectedGoogleAccount 
-                                status={googleStatus}
-                                onDisconnect={handleDisconnectGoogle}
-                                onToggleGmail={handleToggleGmail}
-                                onToggleCalendar={handleToggleCalendar}
-                            />
+                        {isGoogleConnected && googleStatus?.accounts && googleStatus.accounts.length > 0 ? (
+                            <div className="space-y-4">
+                                {googleStatus.accounts.map((account) => (
+                                    <ConnectedGoogleAccount 
+                                        key={account.id}
+                                        account={account}
+                                        onDisconnect={handleDisconnectGoogle}
+                                        onToggleGmail={handleToggleGmail}
+                                        onToggleCalendar={handleToggleCalendar}
+                                    />
+                                ))}
+                            </div>
                         ) : (
                             <div className="text-center bg-slate-50/70 border-2 border-dashed border-slate-200 rounded-xl py-16 flex flex-col items-center justify-center">
                                 <div className="bg-slate-200/70 rounded-full p-4 mb-4">

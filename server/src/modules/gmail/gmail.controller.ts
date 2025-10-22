@@ -8,18 +8,20 @@ export class GmailController {
   constructor(private readonly gmailService: GmailService) {}
 
   @Get('profile')
-  async getProfile(@Request() req) {
-    return this.gmailService.getProfile(req.user.userId);
+  async getProfile(@Request() req, @Query('accountId') accountId?: string) {
+    return this.gmailService.getProfile(req.user.userId, accountId);
   }
 
   @Get('messages')
   async listMessages(
     @Request() req,
+    @Query('accountId') accountId?: string,
     @Query('maxResults') maxResults?: string,
     @Query('q') query?: string,
   ) {
     return this.gmailService.listMessages(
       req.user.userId,
+      accountId,
       maxResults ? parseInt(maxResults) : 50,
       query,
     );
@@ -29,8 +31,9 @@ export class GmailController {
   async getMessage(
     @Request() req,
     @Param('messageId') messageId: string,
+    @Query('accountId') accountId?: string,
   ) {
-    return this.gmailService.getMessage(req.user.userId, messageId);
+    return this.gmailService.getMessage(req.user.userId, messageId, accountId);
   }
 
   @Post('messages/send')
@@ -42,9 +45,10 @@ export class GmailController {
       body: string;
       cc?: string;
       bcc?: string;
+      accountId?: string;
     },
   ) {
-    return this.gmailService.sendMessage(req.user.userId, emailData);
+    return this.gmailService.sendMessage(req.user.userId, emailData, emailData.accountId);
   }
 
   @Post('messages/:messageId/reply')
@@ -55,38 +59,42 @@ export class GmailController {
       body: string;
       cc?: string;
       bcc?: string;
+      accountId?: string;
     },
   ) {
-    return this.gmailService.replyToMessage(req.user.userId, messageId, replyData);
+    return this.gmailService.replyToMessage(req.user.userId, messageId, replyData, replyData.accountId);
   }
 
   @Delete('messages/:messageId')
   async deleteMessage(
     @Request() req,
     @Param('messageId') messageId: string,
+    @Query('accountId') accountId?: string,
   ) {
-    return this.gmailService.deleteMessage(req.user.userId, messageId);
+    return this.gmailService.deleteMessage(req.user.userId, messageId, accountId);
   }
 
   @Put('messages/:messageId/read')
   async markAsRead(
     @Request() req,
     @Param('messageId') messageId: string,
+    @Query('accountId') accountId?: string,
   ) {
-    return this.gmailService.markAsRead(req.user.userId, messageId);
+    return this.gmailService.markAsRead(req.user.userId, messageId, accountId);
   }
 
   @Put('messages/:messageId/unread')
   async markAsUnread(
     @Request() req,
     @Param('messageId') messageId: string,
+    @Query('accountId') accountId?: string,
   ) {
-    return this.gmailService.markAsUnread(req.user.userId, messageId);
+    return this.gmailService.markAsUnread(req.user.userId, messageId, accountId);
   }
 
   @Get('labels')
-  async listLabels(@Request() req) {
-    return this.gmailService.listLabels(req.user.userId);
+  async listLabels(@Request() req, @Query('accountId') accountId?: string) {
+    return this.gmailService.listLabels(req.user.userId, accountId);
   }
 
   @Post('messages/:messageId/labels/:labelId')
@@ -94,8 +102,9 @@ export class GmailController {
     @Request() req,
     @Param('messageId') messageId: string,
     @Param('labelId') labelId: string,
+    @Query('accountId') accountId?: string,
   ) {
-    return this.gmailService.addLabel(req.user.userId, messageId, labelId);
+    return this.gmailService.addLabel(req.user.userId, messageId, labelId, accountId);
   }
 
   @Delete('messages/:messageId/labels/:labelId')
@@ -103,7 +112,8 @@ export class GmailController {
     @Request() req,
     @Param('messageId') messageId: string,
     @Param('labelId') labelId: string,
+    @Query('accountId') accountId?: string,
   ) {
-    return this.gmailService.removeLabel(req.user.userId, messageId, labelId);
+    return this.gmailService.removeLabel(req.user.userId, messageId, labelId, accountId);
   }
 }

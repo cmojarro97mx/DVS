@@ -39,21 +39,23 @@ The frontend uses React 19 with TypeScript, styled using Tailwind CSS, and bundl
     -   **Invoices**: All invoices are scoped to organizationId. Service validates that referenced clients, operations, and bank accounts belong to the same organization before create/update.
     -   **Payments**: All payments are scoped to organizationId. Service validates that referenced invoices, operations, and bank accounts belong to the same organization before create/update.
     -   **Expenses**: All expenses are scoped to organizationId and userId. Service validates that referenced operations and bank accounts belong to the same organization before create/update.
--   **Google Workspace Integration** (October 2025):
-    -   **Gmail API**: Full email management including sending, reading, replying, and labeling messages. OAuth tokens stored securely in User model.
-    -   **Google Calendar API**: Complete calendar management with support for listing calendars, creating/updating/deleting events, and syncing operation events to Google Calendar.
-        -   **Automatic Background Sync**: Cron job runs every 5 minutes to sync Google Calendar events for users with `calendarSyncEnabled = true`.
+-   **Google Workspace Integration - Multi-Account Architecture** (October 2025):
+    -   **Architecture Update**: Migrated from single-account (User model) to multi-account architecture using EmailAccount model. Each user can now connect multiple Google accounts independently.
+    -   **EmailAccount Model**: Stores OAuth tokens, sync settings, and metadata for each connected Google/email account. Fields include: userId, email, provider, status, accessToken, refreshToken, tokenExpiry, syncEmail, syncCalendar, lastEmailSync, lastCalendarSync.
+    -   **Gmail API**: Full email management including sending, reading, replying, and labeling messages. All operations support accountId parameter for multi-account access.
+    -   **Google Calendar API**: Complete calendar management with support for listing calendars, creating/updating/deleting events, and syncing operation events to Google Calendar. All operations support accountId parameter.
+        -   **Automatic Background Sync**: Cron job runs every 5 minutes to sync Google Calendar events for all EmailAccounts with `syncCalendar = true` and active refresh tokens.
         -   **Visual Indicators**: Synced events display a Google Calendar icon badge in the Calendar UI.
-        -   **Individual Toggles**: Users can enable/disable Gmail and Calendar sync independently from the Integrations page.
-        -   **Multi-Tenant Security (October 2025)**: Event sync enforces strict user and organization scoping with composite unique constraint `@@unique([userId, googleEventId])` in Prisma schema. Events without valid googleEventId are skipped and logged. All sync operations include organizationId validation and ownership verification before updates to prevent cross-tenant data leakage.
-    -   **OAuth Flow**: Secure OAuth 2.0 flow with automatic token refresh, state validation, and persistent storage of access/refresh tokens in database.
-        -   **Desktop**: Popup window for OAuth (600x700px) with automatic closure on success/error. Uses window.postMessage for communication.
+        -   **Individual Account Controls**: Each connected account has independent Gmail and Calendar sync toggles in the Integrations page.
+        -   **Multi-Tenant Security**: Event sync enforces strict user and organization scoping with composite unique constraint `@@unique([userId, googleEventId])` in Prisma schema. Events without valid googleEventId are skipped and logged. All sync operations include organizationId validation and ownership verification before updates to prevent cross-tenant data leakage.
+    -   **OAuth Flow**: Secure OAuth 2.0 flow with automatic token refresh, state validation, and persistent storage of access/refresh tokens in EmailAccount table.
+        -   **Desktop**: Popup window for OAuth (500x600px) with automatic closure on success/error. Uses window.postMessage for communication.
         -   **Mobile**: Full-page redirect flow (detects iOS/Android devices) with seamless return to dashboard.
-        -   **Security**: State-based CSRF protection with 10-minute expiry, secure token storage in PostgreSQL.
+        -   **Security**: State-based CSRF protection with 10-minute expiry, secure token storage in PostgreSQL with unique constraint on (userId, email).
     -   **Endpoints**:
-        -   Google Auth: `/api/google-auth/auth-url` (get OAuth URL), `/api/google-auth/callback` (OAuth callback), `/api/google-auth/status` (connection status), `/api/google-auth/disconnect` (disconnect account), `/api/google-auth/sync/gmail/enable`, `/api/google-auth/sync/gmail/disable`, `/api/google-auth/sync/calendar/enable`, `/api/google-auth/sync/calendar/disable`
-        -   Gmail: `/api/gmail/messages`, `/api/gmail/messages/send`, `/api/gmail/messages/:id/reply`, `/api/gmail/labels`
-        -   Calendar: `/api/google-calendar/calendars`, `/api/google-calendar/events`, `/api/google-calendar/sync-events`, `/api/google-calendar/sync-from-google`
+        -   Google Auth: `/api/google-auth/auth-url` (get OAuth URL), `/api/google-auth/callback` (OAuth callback), `/api/google-auth/status` (list all connected accounts), `/api/google-auth/disconnect/:accountId` (disconnect specific account), `/api/google-auth/sync/gmail/enable` (body: {accountId}), `/api/google-auth/sync/gmail/disable` (body: {accountId}), `/api/google-auth/sync/calendar/enable` (body: {accountId}), `/api/google-auth/sync/calendar/disable` (body: {accountId})
+        -   Gmail: All endpoints support optional `accountId` query parameter. `/api/gmail/messages?accountId=xxx`, `/api/gmail/messages/send` (body: {accountId}), `/api/gmail/messages/:id/reply` (body: {accountId}), `/api/gmail/labels?accountId=xxx`
+        -   Calendar: All endpoints support optional `accountId` query parameter. `/api/google-calendar/calendars?accountId=xxx`, `/api/google-calendar/events?accountId=xxx`, `/api/google-calendar/sync-events` (body: {accountId}), `/api/google-calendar/sync-from-google` (body: {accountId})
 -   **API Endpoints**: Comprehensive CRUD operations for all modules, including:
     -   Authentication and organization management
     -   Google OAuth flow with persistent connections

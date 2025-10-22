@@ -6,8 +6,8 @@ import { GoogleAuthService } from '../google-auth/google-auth.service';
 export class GmailService {
   constructor(private googleAuthService: GoogleAuthService) {}
 
-  private async getGmailClient(userId: string) {
-    const accessToken = await this.googleAuthService.getAccessToken(userId);
+  private async getGmailClient(userId: string, accountId?: string) {
+    const accessToken = await this.googleAuthService.getAccessToken(userId, accountId);
     
     const oauth2Client = new google.auth.OAuth2();
     oauth2Client.setCredentials({ access_token: accessToken });
@@ -15,15 +15,15 @@ export class GmailService {
     return google.gmail({ version: 'v1', auth: oauth2Client });
   }
 
-  async getProfile(userId: string) {
-    const gmail = await this.getGmailClient(userId);
+  async getProfile(userId: string, accountId?: string) {
+    const gmail = await this.getGmailClient(userId, accountId);
     
     const response = await gmail.users.getProfile({ userId: 'me' });
     return response.data;
   }
 
-  async listMessages(userId: string, maxResults: number = 50, query?: string) {
-    const gmail = await this.getGmailClient(userId);
+  async listMessages(userId: string, accountId?: string, maxResults: number = 50, query?: string) {
+    const gmail = await this.getGmailClient(userId, accountId);
     
     const response = await gmail.users.messages.list({
       userId: 'me',
@@ -34,8 +34,8 @@ export class GmailService {
     return response.data.messages || [];
   }
 
-  async getMessage(userId: string, messageId: string) {
-    const gmail = await this.getGmailClient(userId);
+  async getMessage(userId: string, messageId: string, accountId?: string) {
+    const gmail = await this.getGmailClient(userId, accountId);
     
     const response = await gmail.users.messages.get({
       userId: 'me',
@@ -52,8 +52,8 @@ export class GmailService {
     body: string;
     cc?: string;
     bcc?: string;
-  }) {
-    const gmail = await this.getGmailClient(userId);
+  }, accountId?: string) {
+    const gmail = await this.getGmailClient(userId, accountId);
     
     const email = this.createEmail(emailData);
     const encodedEmail = Buffer.from(email).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -72,10 +72,10 @@ export class GmailService {
     body: string;
     cc?: string;
     bcc?: string;
-  }) {
-    const gmail = await this.getGmailClient(userId);
+  }, accountId?: string) {
+    const gmail = await this.getGmailClient(userId, accountId);
     
-    const originalMessage = await this.getMessage(userId, messageId);
+    const originalMessage = await this.getMessage(userId, messageId, accountId);
     const headers = originalMessage.payload?.headers || [];
     
     const toHeader = headers.find(h => h.name?.toLowerCase() === 'from');
@@ -111,8 +111,8 @@ export class GmailService {
     return response.data;
   }
 
-  async deleteMessage(userId: string, messageId: string) {
-    const gmail = await this.getGmailClient(userId);
+  async deleteMessage(userId: string, messageId: string, accountId?: string) {
+    const gmail = await this.getGmailClient(userId, accountId);
     
     await gmail.users.messages.delete({
       userId: 'me',
@@ -122,8 +122,8 @@ export class GmailService {
     return { success: true };
   }
 
-  async markAsRead(userId: string, messageId: string) {
-    const gmail = await this.getGmailClient(userId);
+  async markAsRead(userId: string, messageId: string, accountId?: string) {
+    const gmail = await this.getGmailClient(userId, accountId);
     
     const response = await gmail.users.messages.modify({
       userId: 'me',
@@ -136,8 +136,8 @@ export class GmailService {
     return response.data;
   }
 
-  async markAsUnread(userId: string, messageId: string) {
-    const gmail = await this.getGmailClient(userId);
+  async markAsUnread(userId: string, messageId: string, accountId?: string) {
+    const gmail = await this.getGmailClient(userId, accountId);
     
     const response = await gmail.users.messages.modify({
       userId: 'me',
@@ -150,15 +150,15 @@ export class GmailService {
     return response.data;
   }
 
-  async listLabels(userId: string) {
-    const gmail = await this.getGmailClient(userId);
+  async listLabels(userId: string, accountId?: string) {
+    const gmail = await this.getGmailClient(userId, accountId);
     
     const response = await gmail.users.labels.list({ userId: 'me' });
     return response.data.labels || [];
   }
 
-  async addLabel(userId: string, messageId: string, labelId: string) {
-    const gmail = await this.getGmailClient(userId);
+  async addLabel(userId: string, messageId: string, labelId: string, accountId?: string) {
+    const gmail = await this.getGmailClient(userId, accountId);
     
     const response = await gmail.users.messages.modify({
       userId: 'me',
@@ -171,8 +171,8 @@ export class GmailService {
     return response.data;
   }
 
-  async removeLabel(userId: string, messageId: string, labelId: string) {
-    const gmail = await this.getGmailClient(userId);
+  async removeLabel(userId: string, messageId: string, labelId: string, accountId?: string) {
+    const gmail = await this.getGmailClient(userId, accountId);
     
     const response = await gmail.users.messages.modify({
       userId: 'me',

@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { google } from 'googleapis';
 import { PrismaService } from '../../common/prisma.service';
@@ -25,17 +25,14 @@ export class GoogleAuthService {
       this.getCallbackUrl(),
     );
 
-    // Clean up expired states every 5 minutes
     setInterval(() => this.cleanupExpiredStates(), 5 * 60 * 1000);
   }
 
   private getCallbackUrl(): string {
-    // Use GOOGLE_REDIRECT_URI if explicitly set, otherwise generate from Replit domain
     if (process.env.GOOGLE_REDIRECT_URI) {
       return process.env.GOOGLE_REDIRECT_URI;
     }
     
-    // Fallback to dynamic generation
     const domain = process.env.REPLIT_DEV_DOMAIN 
       ? `https://${process.env.REPLIT_DEV_DOMAIN}`
       : process.env.REPL_SLUG 
@@ -45,7 +42,6 @@ export class GoogleAuthService {
     return `${domain}/api/google-auth/callback`;
   }
 
-  // Public method to expose callback URL for configuration purposes
   getCallbackUrlPublic(): string {
     return this.getCallbackUrl();
   }
@@ -74,7 +70,6 @@ export class GoogleAuthService {
       throw new UnauthorizedException('OAuth state expired');
     }
 
-    // Consume the state (one-time use)
     this.oauthStates.delete(state);
     
     return stateData.userId;
@@ -92,8 +87,6 @@ export class GoogleAuthService {
 
   async getAuthorizationUrl(userId: string): Promise<string> {
     try {
-      console.log('Generating authorization URL for userId:', userId);
-      
       const scopes = [
         'https://www.googleapis.com/auth/gmail.readonly',
         'https://www.googleapis.com/auth/gmail.send',
@@ -105,7 +98,6 @@ export class GoogleAuthService {
       ];
 
       const secureState = this.generateSecureState(userId);
-      console.log('Generated secure state');
 
       const authUrl = this.oauth2Client.generateAuthUrl({
         access_type: 'offline',
@@ -114,7 +106,6 @@ export class GoogleAuthService {
         prompt: 'consent',
       });
 
-      console.log('Authorization URL generated successfully');
       return authUrl;
     } catch (error) {
       console.error('Error in getAuthorizationUrl:', error);
@@ -123,135 +114,250 @@ export class GoogleAuthService {
   }
 
   async handleCallback(code: string, state: string): Promise<void> {
-    // Validate state and get userId
     const userId = this.validateState(state);
 
     const { tokens } = await this.oauth2Client.getToken(code);
     
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        googleAccessToken: tokens.access_token,
-        googleRefreshToken: tokens.refresh_token,
-        googleTokenExpiry: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+    this.oauth2Client.setCredentials(tokens);
+    const oauth2 = google.oauth2({ version: 'v2', auth: this.oauth2Client });
+    const userInfo = await oauth2.userinfo.get();
+    const email = userInfo.data.email;
+
+    if (!email) {
+      throw new Error('Could not retrieve email from Google');
+    }
+
+    const existingAccount = await this.prisma.emailAccount.findFirst({
+      where: {
+        userId,
+        email,
+        provider: 'google',
       },
     });
+
+    if (existingAccount) {
+      await this.prisma.emailAccount.update({
+        where: { id: existingAccount.id },
+        data: {
+          accessToken: tokens.access_token,
+          refreshToken: tokens.refresh_token || existingAccount.refreshToken,
+          tokenExpiry: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+          status: 'connected',
+        },
+      });
+    } else {
+      await this.prisma.emailAccount.create({
+        data: {
+          userId,
+          email,
+          provider: 'google',
+          status: 'connected',
+          accessToken: tokens.access_token,
+          refreshToken: tokens.refresh_token,
+          tokenExpiry: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+          syncEmail: false,
+          syncCalendar: false,
+        },
+      });
+    }
   }
 
   async getConnectionStatus(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+    const accounts = await this.prisma.emailAccount.findMany({
+      where: {
+        userId,
+        provider: 'google',
+      },
       select: {
-        googleAccessToken: true,
-        googleRefreshToken: true,
-        googleTokenExpiry: true,
-        gmailSyncEnabled: true,
-        calendarSyncEnabled: true,
-        lastGmailSync: true,
+        id: true,
+        email: true,
+        status: true,
+        syncEmail: true,
+        syncCalendar: true,
+        tokenExpiry: true,
+        lastEmailSync: true,
         lastCalendarSync: true,
       },
     });
 
     return {
-      connected: !!user?.googleAccessToken,
-      hasRefreshToken: !!user?.googleRefreshToken,
-      tokenExpiry: user?.googleTokenExpiry,
-      gmailSyncEnabled: user?.gmailSyncEnabled || false,
-      calendarSyncEnabled: user?.calendarSyncEnabled || false,
-      lastGmailSync: user?.lastGmailSync,
-      lastCalendarSync: user?.lastCalendarSync,
+      connected: accounts.length > 0,
+      accounts: accounts.map(account => ({
+        id: account.id,
+        email: account.email,
+        status: account.status,
+        gmailSyncEnabled: account.syncEmail,
+        calendarSyncEnabled: account.syncCalendar,
+        tokenExpiry: account.tokenExpiry,
+        lastGmailSync: account.lastEmailSync,
+        lastCalendarSync: account.lastCalendarSync,
+      })),
     };
   }
 
-  async disconnect(userId: string): Promise<void> {
-    await this.prisma.user.update({
-      where: { id: userId },
+  async disconnect(userId: string, accountId: string): Promise<void> {
+    const account = await this.prisma.emailAccount.findFirst({
+      where: {
+        id: accountId,
+        userId,
+      },
+    });
+
+    if (!account) {
+      throw new NotFoundException('Email account not found');
+    }
+
+    await this.prisma.emailAccount.delete({
+      where: { id: accountId },
+    });
+  }
+
+  async enableGmailSync(userId: string, accountId: string): Promise<void> {
+    const account = await this.prisma.emailAccount.findFirst({
+      where: {
+        id: accountId,
+        userId,
+      },
+    });
+
+    if (!account) {
+      throw new NotFoundException('Email account not found');
+    }
+
+    await this.prisma.emailAccount.update({
+      where: { id: accountId },
       data: {
-        googleAccessToken: null,
-        googleRefreshToken: null,
-        googleTokenExpiry: null,
-        gmailSyncEnabled: false,
-        calendarSyncEnabled: false,
-        lastGmailSync: null,
-        lastCalendarSync: null,
+        syncEmail: true,
       },
     });
   }
 
-  async enableGmailSync(userId: string): Promise<void> {
-    await this.prisma.user.update({
-      where: { id: userId },
+  async disableGmailSync(userId: string, accountId: string): Promise<void> {
+    const account = await this.prisma.emailAccount.findFirst({
+      where: {
+        id: accountId,
+        userId,
+      },
+    });
+
+    if (!account) {
+      throw new NotFoundException('Email account not found');
+    }
+
+    await this.prisma.emailAccount.update({
+      where: { id: accountId },
       data: {
-        gmailSyncEnabled: true,
+        syncEmail: false,
       },
     });
   }
 
-  async disableGmailSync(userId: string): Promise<void> {
-    await this.prisma.user.update({
-      where: { id: userId },
+  async enableCalendarSync(userId: string, accountId: string): Promise<void> {
+    const account = await this.prisma.emailAccount.findFirst({
+      where: {
+        id: accountId,
+        userId,
+      },
+    });
+
+    if (!account) {
+      throw new NotFoundException('Email account not found');
+    }
+
+    await this.prisma.emailAccount.update({
+      where: { id: accountId },
       data: {
-        gmailSyncEnabled: false,
+        syncCalendar: true,
       },
     });
   }
 
-  async enableCalendarSync(userId: string): Promise<void> {
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        calendarSyncEnabled: true,
+  async disableCalendarSync(userId: string, accountId: string): Promise<void> {
+    const account = await this.prisma.emailAccount.findFirst({
+      where: {
+        id: accountId,
+        userId,
       },
     });
-    // Trigger initial sync
-    // This will be handled by the calendar service
+
+    if (!account) {
+      throw new NotFoundException('Email account not found');
+    }
+
+    await this.prisma.emailAccount.update({
+      where: { id: accountId },
+      data: {
+        syncCalendar: false,
+      },
+    });
   }
 
-  async disableCalendarSync(userId: string): Promise<void> {
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        calendarSyncEnabled: false,
-      },
-    });
-  }
+  async getAccessToken(userId: string, accountId?: string): Promise<string> {
+    let account;
+    
+    if (accountId) {
+      account = await this.prisma.emailAccount.findFirst({
+        where: {
+          id: accountId,
+          userId,
+        },
+      });
+    } else {
+      account = await this.prisma.emailAccount.findFirst({
+        where: {
+          userId,
+          provider: 'google',
+          status: 'connected',
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+    }
 
-  async getAccessToken(userId: string): Promise<string> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        googleAccessToken: true,
-        googleRefreshToken: true,
-        googleTokenExpiry: true,
-      },
-    });
-
-    if (!user?.googleAccessToken) {
+    if (!account?.accessToken) {
       throw new Error('User not connected to Google');
     }
 
-    if (user.googleTokenExpiry && new Date() >= user.googleTokenExpiry) {
-      if (!user.googleRefreshToken) {
+    if (account.tokenExpiry && new Date() >= account.tokenExpiry) {
+      if (!account.refreshToken) {
         throw new Error('Refresh token not available');
       }
 
       this.oauth2Client.setCredentials({
-        refresh_token: user.googleRefreshToken,
+        refresh_token: account.refreshToken,
       });
 
       const { credentials } = await this.oauth2Client.refreshAccessToken();
       
-      await this.prisma.user.update({
-        where: { id: userId },
+      await this.prisma.emailAccount.update({
+        where: { id: account.id },
         data: {
-          googleAccessToken: credentials.access_token,
-          googleTokenExpiry: credentials.expiry_date ? new Date(credentials.expiry_date) : null,
+          accessToken: credentials.access_token,
+          tokenExpiry: credentials.expiry_date ? new Date(credentials.expiry_date) : null,
         },
       });
 
       return credentials.access_token;
     }
 
-    return user.googleAccessToken;
+    return account.accessToken;
+  }
+
+  async getEmailAccountById(accountId: string) {
+    return this.prisma.emailAccount.findUnique({
+      where: { id: accountId },
+    });
+  }
+
+  async updateLastSync(accountId: string, type: 'email' | 'calendar') {
+    const updateData = type === 'email' 
+      ? { lastEmailSync: new Date() }
+      : { lastCalendarSync: new Date() };
+
+    await this.prisma.emailAccount.update({
+      where: { id: accountId },
+      data: updateData,
+    });
   }
 }
