@@ -27,7 +27,8 @@ export default defineConfig(({ mode }) => {
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.DATABASE_URL': JSON.stringify(env.DATABASE_URL)
+        'process.env.DATABASE_URL': JSON.stringify(env.DATABASE_URL),
+        'import.meta.env.VITE_GOOGLE_MAPS_KEY': JSON.stringify(process.env.GOOGLE_MAPS_KEY)
       },
       resolve: {
         alias: {

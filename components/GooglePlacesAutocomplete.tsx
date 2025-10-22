@@ -36,7 +36,8 @@ export const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> =
 
         // Load Google Maps API
         const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBrT2YRXxLLOXOJW9jKEWLdMDnvqLRGIXg&libraries=places&callback=initGoogleMaps`;
+        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_KEY || '';
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initGoogleMaps`;
         script.async = true;
         script.defer = true;
         
