@@ -10,9 +10,6 @@ import { EditIcon } from '../components/icons/EditIcon';
 import { TrashIcon } from '../components/icons/TrashIcon';
 import { XIcon } from '../components/icons/XIcon';
 import { CalendarIcon } from '../components/icons/CalendarIcon';
-import { FilterIcon } from '../components/icons/FilterIcon';
-import { ClipboardListIcon } from '../components/icons/ClipboardListIcon';
-import { ChartBarIcon } from '../components/icons/ChartBarIcon';
 import { employeesService } from '../src/services/employeesService';
 
 // --- Local Components (to avoid creating new files) ---
@@ -180,7 +177,6 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [activeMenu, setActiveMenu] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'performance'>('overview');
     const menuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -213,7 +209,7 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
         return teamMembers.filter(e => {
             const matchesStatus = statusFilter === 'All' || e.status === statusFilter;
             if (!matchesStatus) return false;
-            
+
             const lowercasedQuery = searchQuery.toLowerCase().trim();
             if (lowercasedQuery === '') return true;
 
@@ -233,7 +229,7 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
         setIsModalOpen(true);
         setActiveMenu(null);
     };
-    
+
     const handleSave = async (employeeData: any) => {
         try {
             const userData: any = {
@@ -242,11 +238,11 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
                 role: employeeData.role,
                 status: employeeData.status,
             };
-            
+
             if (employeeData.phone) {
                 userData.phone = employeeData.phone;
             }
-            
+
             if (employeeToEdit) {
                 await employeesService.update(employeeToEdit.id, userData);
             } else {
@@ -258,12 +254,12 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
             console.error('Error saving employee:', error);
         }
     };
-    
+
     const handleDeleteRequest = (employee: TeamMember) => {
         setEmployeeToDelete(employee);
         setActiveMenu(null);
     };
-    
+
     const confirmDelete = async () => {
         if(employeeToDelete) {
             try {
@@ -275,7 +271,7 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
             }
         }
     };
-    
+
     if (loading) {
         return (
             <div className="animate-fade-in space-y-6">
@@ -291,7 +287,7 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
             </div>
         );
     }
-    
+
     return (
         <div className="animate-fade-in space-y-6 h-full flex flex-col">
             {/* Header Banner con información general */}
@@ -334,7 +330,7 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
                     </div>
                 </div>
 
-                {/* Navigation Tabs */}
+                {/* Navigation Tabs (Only Overview is kept) */}
                 <div className="flex gap-6 mt-6 border-b border-gray-200">
                     <button
                         onClick={() => setActiveTab('overview')}
@@ -347,31 +343,9 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
                         <UsersIcon className="w-5 h-5" />
                         Overview
                     </button>
-                    <button
-                        onClick={() => setActiveTab('tasks')}
-                        className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
-                            activeTab === 'tasks'
-                                ? 'border-blue-600 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                        }`}
-                    >
-                        <ClipboardListIcon className="w-5 h-5" />
-                        Tasks
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('performance')}
-                        className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
-                            activeTab === 'performance'
-                                ? 'border-blue-600 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                        }`}
-                    >
-                        <ChartBarIcon className="w-5 h-5" />
-                        Performance
-                    </button>
                 </div>
             </div>
-            
+
             {/* Tab Content */}
             {activeTab === 'overview' && (
                 <>
@@ -389,7 +363,7 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
                         />
                     </div>
                     <div className="relative">
-                        <FilterIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path></svg>
                         <select 
                             value={statusFilter}
                             onChange={e => setStatusFilter(e.target.value)}
@@ -490,7 +464,7 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
                     </div>
                 )}
             </div>
-            
+
             <EmployeeModal 
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
@@ -509,23 +483,7 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
                 </>
             )}
 
-            {/* Tasks Tab */}
-            {activeTab === 'tasks' && (
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center">
-                    <ClipboardListIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-800">Employee Tasks</h3>
-                    <p className="text-sm text-gray-500 mt-2">Task management coming soon</p>
-                </div>
-            )}
-
-            {/* Performance Tab */}
-            {activeTab === 'performance' && (
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center">
-                    <ChartBarIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-800">Performance Metrics</h3>
-                    <p className="text-sm text-gray-500 mt-2">Performance tracking coming soon</p>
-                </div>
-            )}
+            {/* Removed Tasks and Performance Tabs */}
         </div>
     );
 };
