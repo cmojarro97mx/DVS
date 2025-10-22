@@ -147,9 +147,7 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
 
     const handleConnectGoogle = async () => {
         try {
-            console.log('Attempting to connect to Google...');
             const token = localStorage.getItem('accessToken');
-            console.log('Token exists:', !!token);
             
             const response = await fetch('/api/google-auth/auth-url', {
                 headers: {
@@ -157,13 +155,52 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
                 },
             });
             
-            console.log('Response status:', response.status);
-            console.log('Response ok:', response.ok);
-            
             if (response.ok) {
                 const data = await response.json();
-                console.log('Received auth URL, redirecting...');
-                window.location.href = data.url;
+                
+                // Detectar si es móvil
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                
+                if (isMobile) {
+                    // En móvil, usar redirección completa
+                    window.location.href = data.url;
+                } else {
+                    // En escritorio, abrir popup
+                    const width = 600;
+                    const height = 700;
+                    const left = (window.screen.width - width) / 2;
+                    const top = (window.screen.height - height) / 2;
+                    
+                    const popup = window.open(
+                        data.url,
+                        'Google OAuth',
+                        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+                    );
+                    
+                    // Escuchar el mensaje del callback
+                    const messageHandler = (event: MessageEvent) => {
+                        if (event.data.type === 'oauth-success') {
+                            popup?.close();
+                            fetchGoogleStatus();
+                            window.removeEventListener('message', messageHandler);
+                        } else if (event.data.type === 'oauth-error') {
+                            popup?.close();
+                            alert('Error al conectar con Google. Por favor intenta de nuevo.');
+                            window.removeEventListener('message', messageHandler);
+                        }
+                    };
+                    
+                    window.addEventListener('message', messageHandler);
+                    
+                    // Limpiar si el popup se cierra manualmente
+                    const checkPopup = setInterval(() => {
+                        if (popup?.closed) {
+                            clearInterval(checkPopup);
+                            window.removeEventListener('message', messageHandler);
+                            fetchGoogleStatus();
+                        }
+                    }, 1000);
+                }
             } else {
                 const errorData = await response.text();
                 console.error('Error response:', errorData);

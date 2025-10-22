@@ -43,8 +43,11 @@ The frontend uses React 19 with TypeScript, styled using Tailwind CSS, and bundl
     -   **Gmail API**: Full email management including sending, reading, replying, and labeling messages. OAuth tokens stored securely in User model.
     -   **Google Calendar API**: Complete calendar management with support for listing calendars, creating/updating/deleting events, and syncing operation events to Google Calendar.
     -   **OAuth Flow**: Secure OAuth 2.0 flow with automatic token refresh, state validation, and persistent storage of access/refresh tokens in database.
+        -   **Desktop**: Popup window for OAuth (600x700px) with automatic closure on success/error. Uses window.postMessage for communication.
+        -   **Mobile**: Full-page redirect flow (detects iOS/Android devices) with seamless return to dashboard.
+        -   **Security**: State-based CSRF protection with 10-minute expiry, secure token storage in PostgreSQL.
     -   **Endpoints**:
-        -   Google Auth: `/api/google-auth/authorize`, `/api/google-auth/callback`, `/api/google-auth/status`, `/api/google-auth/disconnect`
+        -   Google Auth: `/api/google-auth/auth-url` (get OAuth URL), `/api/google-auth/callback` (OAuth callback), `/api/google-auth/status` (connection status), `/api/google-auth/disconnect` (disconnect account)
         -   Gmail: `/api/gmail/messages`, `/api/gmail/messages/send`, `/api/gmail/messages/:id/reply`, `/api/gmail/labels`
         -   Calendar: `/api/google-calendar/calendars`, `/api/google-calendar/events`, `/api/google-calendar/sync-events`
 -   **API Endpoints**: Comprehensive CRUD operations for all modules, including:
