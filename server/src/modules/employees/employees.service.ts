@@ -57,6 +57,16 @@ export class EmployeesService {
       throw new NotFoundException(`Employee with ID ${id} not found`);
     }
     
+    // Verificar si es el primer empleado de la organización
+    const firstEmployee = await this.prisma.employee.findFirst({
+      where: { organizationId },
+      orderBy: { createdAt: 'asc' },
+    });
+    
+    if (firstEmployee && firstEmployee.id === id) {
+      throw new NotFoundException(`Cannot delete the first employee of the organization`);
+    }
+    
     await this.prisma.employee.delete({
       where: { id },
     });

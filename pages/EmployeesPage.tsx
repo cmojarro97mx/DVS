@@ -175,7 +175,8 @@ const EmployeeCard: React.FC<{
     employee: TeamMember;
     onEdit: () => void;
     onDelete: () => void;
-}> = ({ employee, onEdit, onDelete }) => {
+    isFirstEmployee?: boolean;
+}> = ({ employee, onEdit, onDelete, isFirstEmployee = false }) => {
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -241,10 +242,18 @@ const EmployeeCard: React.FC<{
                             <button 
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    onDelete();
-                                    setShowMenu(false);
+                                    if (!isFirstEmployee) {
+                                        onDelete();
+                                        setShowMenu(false);
+                                    }
                                 }} 
-                                className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                                disabled={isFirstEmployee}
+                                className={`w-full flex items-center px-4 py-2 text-sm ${
+                                    isFirstEmployee 
+                                        ? 'text-gray-400 cursor-not-allowed' 
+                                        : 'text-red-600 hover:bg-red-50'
+                                }`}
+                                title={isFirstEmployee ? 'No se puede eliminar el primer empleado de la organización' : 'Eliminar'}
                             >
                                 <TrashIcon className="w-4 h-4 mr-3" /> Eliminar
                             </button>
@@ -278,6 +287,7 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
     const [employeeToDelete, setEmployeeToDelete] = useState<TeamMember | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
+    const [firstEmployeeId, setFirstEmployeeId] = useState<string | null>(null);
 
     useEffect(() => {
         loadData();
@@ -288,6 +298,14 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
             setLoading(true);
             const employeesData = await employeesService.getAll();
             setTeamMembers(employeesData as any);
+            
+            // Identificar el primer empleado (el más antiguo)
+            if (employeesData.length > 0) {
+                const sortedByDate = [...employeesData].sort((a, b) => 
+                    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                );
+                setFirstEmployeeId(sortedByDate[0].id);
+            }
         } catch (error) {
             console.error('Error loading employees data:', error);
         } finally {
@@ -484,6 +502,7 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
                                         employee={employee}
                                         onEdit={() => handleEdit(employee)}
                                         onDelete={() => handleDeleteRequest(employee)}
+                                        isFirstEmployee={employee.id === firstEmployeeId}
                                     />
                                 ))}
                             </EmployeeSection>
