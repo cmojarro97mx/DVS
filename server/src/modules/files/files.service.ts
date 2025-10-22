@@ -190,27 +190,29 @@ export class FilesService {
       });
     }
     
+    // Generate signed URLs for all email files in parallel
+    const urlPromises = [];
     for (const email of emailMessages) {
       // Add HTML body file if exists
       if (email.htmlBodyKey) {
         htmlCount++;
-        // Generate URL from key if URL doesn't exist
-        const htmlUrl = email.htmlBodyUrl || this.backblaze.getPublicUrl(email.htmlBodyKey);
-        emailFiles.push({
-          id: `email-html-${email.id}`,
-          name: `${email.subject || 'Sin asunto'}.html`,
-          url: htmlUrl,
-          storageKey: email.htmlBodyKey,
-          size: 0, // Size not stored for HTML
-          mimeType: 'text/html',
-          preview: null,
-          createdAt: email.createdAt,
-          updatedAt: email.updatedAt,
-          source: 'emails' as const,
-          folder: null,
-          operationReference: null,
-          emailReference: `De: ${email.from}`,
-        });
+        urlPromises.push(
+          this.backblaze.getSignedUrl(email.htmlBodyKey, 7200).then((url) => ({
+            id: `email-html-${email.id}`,
+            name: `${email.subject || 'Sin asunto'}.html`,
+            url,
+            storageKey: email.htmlBodyKey,
+            size: 0,
+            mimeType: 'text/html',
+            preview: null,
+            createdAt: email.createdAt,
+            updatedAt: email.updatedAt,
+            source: 'emails' as const,
+            folder: null,
+            operationReference: null,
+            emailReference: `De: ${email.from}`,
+          }))
+        );
       }
 
       // Add attachments if exist
@@ -218,29 +220,33 @@ export class FilesService {
         for (const attachment of email.attachmentsData as any[]) {
           if (attachment.b2Key) {
             attachmentCount++;
-            // Generate URL from key if URL doesn't exist
-            const attachmentUrl = attachment.b2Url || this.backblaze.getPublicUrl(attachment.b2Key);
-            emailFiles.push({
-              id: `email-attachment-${email.id}-${attachment.filename}`,
-              name: attachment.filename || 'attachment',
-              url: attachmentUrl,
-              storageKey: attachment.b2Key,
-              size: attachment.size || 0,
-              mimeType: attachment.mimeType || 'application/octet-stream',
-              preview: null,
-              createdAt: email.createdAt,
-              updatedAt: email.updatedAt,
-              source: 'emails' as const,
-              folder: null,
-              operationReference: null,
-              emailReference: `De: ${email.from}`,
-            });
+            urlPromises.push(
+              this.backblaze.getSignedUrl(attachment.b2Key, 7200).then((url) => ({
+                id: `email-attachment-${email.id}-${attachment.filename}`,
+                name: attachment.filename || 'attachment',
+                url,
+                storageKey: attachment.b2Key,
+                size: attachment.size || 0,
+                mimeType: attachment.mimeType || 'application/octet-stream',
+                preview: null,
+                createdAt: email.createdAt,
+                updatedAt: email.updatedAt,
+                source: 'emails' as const,
+                folder: null,
+                operationReference: null,
+                emailReference: `De: ${email.from}`,
+              }))
+            );
           } else {
             skippedAttachments++;
           }
         }
       }
     }
+    
+    // Wait for all signed URLs to be generated
+    const emailFilesResolved = await Promise.all(urlPromises);
+    emailFiles.push(...emailFilesResolved);
     
     console.log('[FilesService] Email files breakdown:', {
       htmlFiles: htmlCount,
