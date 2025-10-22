@@ -372,21 +372,25 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
       
       <div className="bg-white rounded-lg border border-slate-200 p-3 md:p-6 flex flex-col flex-1 overflow-hidden">
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-3 flex-shrink-0">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-4 w-full sm:w-auto">
-              <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
-                <span className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight capitalize">{currentDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}</span>
-                <div className="flex items-center">
-                    <button onClick={handlePrevMonth} className="p-1.5 md:p-2 rounded text-slate-600 hover:bg-slate-100 transition-colors"><ChevronLeftIcon className="w-4 h-4 md:w-5 md:h-5" /></button>
-                    <button onClick={handleNextMonth} className="p-1.5 md:p-2 rounded text-slate-600 hover:bg-slate-100 transition-colors"><ChevronRightIcon className="w-4 h-4 md:w-5 md:h-5" /></button>
-                </div>
-              </div>
-              <span className="text-[10px] md:text-xs text-slate-400">
-                Última actualización: {lastUpdate.toLocaleTimeString('es-ES')}
-              </span>
+          <div className="flex items-center gap-3 md:gap-4">
+            <span className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight capitalize">
+              {currentDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}
+            </span>
+            <div className="flex items-center gap-1">
+              <button onClick={handlePrevMonth} className="p-1.5 md:p-2 rounded text-slate-600 hover:bg-slate-100 transition-colors">
+                <ChevronLeftIcon className="w-4 h-4 md:w-5 md:h-5" />
+              </button>
+              <button onClick={handleNextMonth} className="p-1.5 md:p-2 rounded text-slate-600 hover:bg-slate-100 transition-colors">
+                <ChevronRightIcon className="w-4 h-4 md:w-5 md:h-5" />
+              </button>
+            </div>
+            <span className="hidden sm:inline text-[10px] md:text-xs text-slate-400">
+              Última actualización: {lastUpdate.toLocaleTimeString('es-ES')}
+            </span>
           </div>
           <button onClick={() => openAddModal(new Date())} className="flex items-center bg-red-600 text-white px-3 md:px-4 py-2 rounded text-xs md:text-sm font-semibold hover:bg-red-700 w-full sm:w-auto justify-center">
-              <PlusIcon className="w-4 h-4 md:w-5 md:h-5 mr-1.5 md:mr-2" />
-              Crear Evento
+            <PlusIcon className="w-4 h-4 md:w-5 md:h-5 mr-1.5 md:mr-2" />
+            Crear Evento
           </button>
         </header>
         
