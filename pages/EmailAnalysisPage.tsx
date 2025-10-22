@@ -63,7 +63,8 @@ const StatCard: React.FC<{
     value: string | number; 
     icon: React.ElementType;
     color?: string;
-}> = ({ title, value, icon: Icon, color = 'blue' }) => {
+    subtitle?: string;
+}> = ({ title, value, icon: Icon, color = 'blue', subtitle }) => {
     const colorClasses = {
         blue: 'bg-blue-50 border-blue-200 text-blue-600',
         green: 'bg-green-50 border-green-200 text-green-600',
@@ -80,6 +81,9 @@ const StatCard: React.FC<{
             <div className="flex-grow">
                 <p className="text-sm text-slate-500 font-medium">{title}</p>
                 <p className="text-3xl font-bold text-slate-800 mt-1">{value}</p>
+                {subtitle && (
+                    <p className="text-xs text-slate-400 mt-1">{subtitle}</p>
+                )}
             </div>
         </div>
     );
@@ -371,18 +375,13 @@ const EmailAnalysisPage: React.FC<EmailAnalysisPageProps> = ({ setActiveView }) 
             )}
 
             {metrics && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatCard
-                        title="Total en Gmail"
-                        value={metrics.totalMessages.toLocaleString()}
+                        title="Total en el Período"
+                        value={metrics.downloadedMessages.toLocaleString()}
+                        subtitle={`(${metrics.totalMessages.toLocaleString()} en total en Gmail)`}
                         icon={InboxIcon}
                         color="blue"
-                    />
-                    <StatCard
-                        title="Mensajes Descargados"
-                        value={metrics.downloadedMessages.toLocaleString()}
-                        icon={EyeIcon}
-                        color="green"
                     />
                     <StatCard
                         title="Contestados"
