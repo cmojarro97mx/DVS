@@ -115,7 +115,7 @@ const AIOperationCreatorPage: React.FC<AIOperationCreatorPageProps> = ({ setActi
     
     return (
         <div className="animate-fade-in space-y-6">
-            <button onClick={() => setActiveView('ai-agents')} className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-900"><ArrowLeftIcon className="w-4 h-4 mr-2" /> Back to AI Agents</button>
+            <button onClick={() => setActiveView('email-hub')} className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-900"><ArrowLeftIcon className="w-4 h-4 mr-2" /> Volver a Email & Calendario</button>
             
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex justify-between items-start">

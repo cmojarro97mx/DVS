@@ -16,6 +16,7 @@ import { FolderIcon } from './icons/FolderIcon';
 import { LinkIcon } from './icons/LinkIcon';
 import { CompanyIcon } from './icons/CompanyIcon';
 import { AtSymbolIcon } from './icons/AtSymbolIcon';
+import { MailIcon } from './icons/MailIcon';
 import { CoinsIcon } from './icons/CoinsIcon';
 import { InvoicesIcon } from './icons/InvoicesIcon';
 import { PaymentsIcon } from './icons/PaymentsIcon';
@@ -305,7 +306,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <NavItem 
                             icon={MailIcon} 
                             label="Email & Calendario" 
-                            isActive={['email-hub', 'integrations', 'email-analysis'].includes(activeView)} 
+                            isActive={['email-hub', 'integrations', 'email-analysis', 'ai-operation-creator'].includes(activeView)} 
                             onClick={() => setActiveView('email-hub')} 
                             isSidebarOpen={isSidebarOpen} 
                         />
@@ -315,7 +316,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <NavItem 
                             icon={CompanyIcon} 
                             label="Empresa" 
-                            isActive={['company-hub', 'company-profile', 'employees', 'ai-operation-creator'].includes(activeView)} 
+                            isActive={['company-hub', 'company-profile', 'employees'].includes(activeView)} 
                             onClick={() => setActiveView('company-hub')} 
                             isSidebarOpen={isSidebarOpen} 
                         />

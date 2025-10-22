@@ -4,6 +4,7 @@ import { View } from './DashboardPage';
 import { MailIcon } from '../components/icons/MailIcon';
 import { LinkIcon } from '../components/icons/LinkIcon';
 import { AtSymbolIcon } from '../components/icons/AtSymbolIcon';
+import { CpuChipIcon } from '../components/icons/CpuChipIcon';
 import { Banner } from '../components/Banner';
 import { ChevronRightIcon } from '../components/icons/ChevronRightIcon';
 
@@ -67,6 +68,15 @@ const EmailHubPage: React.FC<EmailHubPageProps> = ({ setActiveView }) => {
                         description="Visualiza métricas y actividad de tus correos electrónicos sincronizados."
                         icon={AtSymbolIcon}
                         onClick={() => setActiveView('email-analysis')}
+                    />
+                </EmailSection>
+
+                <EmailSection title="Automatización">
+                    <HubCard
+                        title="AI Operation Creator"
+                        description="Crea y actualiza operaciones automáticamente desde correos electrónicos."
+                        icon={CpuChipIcon}
+                        onClick={() => setActiveView('ai-operation-creator')}
                     />
                 </EmailSection>
 
