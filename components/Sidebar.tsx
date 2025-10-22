@@ -26,6 +26,7 @@ import { DocumentMagnifyingGlassIcon } from '../components/icons/DocumentMagnify
 import { ChartPieIcon } from './icons/ChartPieIcon';
 import { UsersIcon } from './icons/UsersIcon';
 import { CpuChipIcon } from './icons/CpuChipIcon';
+import { BellIcon } from './icons/BellIcon';
 
 
 interface SidebarProps {
@@ -301,6 +302,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             label="Empresa" 
                             isActive={['company-hub', 'company-profile', 'employees', 'clients', 'create-client', 'client-detail'].includes(activeView)} 
                             onClick={() => setActiveView('company-hub')} 
+                            isSidebarOpen={false} 
+                        />
+                        <NavItem 
+                            icon={BellIcon} 
+                            label="Notificaciones" 
+                            isActive={activeView === 'notifications-settings'} 
+                            onClick={() => setActiveView('notifications-settings')} 
                             isSidebarOpen={false} 
                         />
                     </NavSection>
