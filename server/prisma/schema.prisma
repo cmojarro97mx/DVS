@@ -67,6 +67,8 @@ model Organization {
   bankAccounts    BankAccount[]
   fileFolders     FileFolder[]  @relation("OrganizationFileFolders")
   files           File[]        @relation("OrganizationFiles")
+  tasks           Task[]
+  notes           Note[]
   
   @@map("organizations")
 }
@@ -222,18 +224,20 @@ model Column {
 }
 
 model Task {
-  id          String    @id @default(uuid())
-  title       String
-  description String?
-  priority    String    @default("Medium")
-  dueDate     DateTime?
-  columnId    String
-  column      Column    @relation(fields: [columnId], references: [id], onDelete: Cascade)
-  operationId String?
-  operation   Operation? @relation(fields: [operationId], references: [id], onDelete: Cascade)
-  order       Int       @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id             String        @id @default(uuid())
+  title          String
+  description    String?
+  priority       String        @default("Medium")
+  dueDate        DateTime?
+  columnId       String
+  column         Column        @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  operationId    String?
+  operation      Operation?    @relation(fields: [operationId], references: [id], onDelete: Cascade)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  order          Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
   
   assignees   TaskAssignee[]
   
@@ -253,17 +257,19 @@ model TaskAssignee {
 }
 
 model Note {
-  id          String    @id @default(uuid())
-  content     String
-  author      String
-  operationId String?
-  operation   Operation? @relation(fields: [operationId], references: [id], onDelete: Cascade)
-  userId      String?
-  user        User?     @relation(fields: [userId], references: [id])
-  attachmentUrl String?
+  id             String        @id @default(uuid())
+  content        String
+  author         String
+  operationId    String?
+  operation      Operation?    @relation(fields: [operationId], references: [id], onDelete: Cascade)
+  userId         String?
+  user           User?         @relation(fields: [userId], references: [id])
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  attachmentUrl  String?
   attachmentName String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
   
   @@map("notes")
 }

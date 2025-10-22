@@ -5,9 +5,10 @@ import { PrismaService } from '../../common/prisma.service';
 export class TasksService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(operationId?: string) {
+  async findAll(organizationId: string, operationId?: string) {
     return this.prisma.task.findMany({
       where: {
+        organizationId,
         ...(operationId && { operationId }),
       },
       include: {
@@ -28,9 +29,12 @@ export class TasksService {
     });
   }
 
-  async findOne(id: string) {
-    const task = await this.prisma.task.findUnique({
-      where: { id },
+  async findOne(id: string, organizationId: string) {
+    const task = await this.prisma.task.findFirst({
+      where: { 
+        id,
+        organizationId,
+      },
       include: {
         assignees: {
           include: {
@@ -52,11 +56,14 @@ export class TasksService {
     return task;
   }
 
-  async create(data: any) {
+  async create(data: any, organizationId: string) {
     const { assignees, ...taskData } = data;
 
     const task = await this.prisma.task.create({
-      data: taskData,
+      data: {
+        ...taskData,
+        organizationId,
+      },
     });
 
     if (assignees && assignees.length > 0) {
@@ -72,16 +79,21 @@ export class TasksService {
       );
     }
 
-    return this.findOne(task.id);
+    return this.findOne(task.id, organizationId);
   }
 
-  async update(id: string, data: any) {
-    const existing = await this.prisma.task.findUnique({ where: { id } });
+  async update(id: string, data: any, organizationId: string) {
+    const existing = await this.prisma.task.findFirst({ 
+      where: { 
+        id,
+        organizationId,
+      } 
+    });
     if (!existing) {
       throw new NotFoundException(`Task with ID ${id} not found`);
     }
 
-    const { assignees, ...taskData } = data;
+    const { assignees, organizationId: _, ...taskData } = data;
 
     const task = await this.prisma.task.update({
       where: { id },
@@ -107,11 +119,16 @@ export class TasksService {
       }
     }
 
-    return this.findOne(id);
+    return this.findOne(id, organizationId);
   }
 
-  async remove(id: string) {
-    const existing = await this.prisma.task.findUnique({ where: { id } });
+  async remove(id: string, organizationId: string) {
+    const existing = await this.prisma.task.findFirst({ 
+      where: { 
+        id,
+        organizationId,
+      } 
+    });
     if (!existing) {
       throw new NotFoundException(`Task with ID ${id} not found`);
     }

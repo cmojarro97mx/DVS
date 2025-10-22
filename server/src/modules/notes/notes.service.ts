@@ -5,9 +5,10 @@ import { PrismaService } from '../../common/prisma.service';
 export class NotesService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(userId?: string, operationId?: string) {
+  async findAll(organizationId: string, userId?: string, operationId?: string) {
     return this.prisma.note.findMany({
       where: {
+        organizationId,
         ...(userId && { userId }),
         ...(operationId && { operationId }),
       },
@@ -15,37 +16,55 @@ export class NotesService {
     });
   }
 
-  async findOne(id: string) {
-    const note = await this.prisma.note.findUnique({ where: { id } });
+  async findOne(id: string, organizationId: string) {
+    const note = await this.prisma.note.findFirst({ 
+      where: { 
+        id,
+        organizationId,
+      } 
+    });
     if (!note) {
       throw new NotFoundException(`Note with ID ${id} not found`);
     }
     return note;
   }
 
-  async create(data: any, userId: string) {
+  async create(data: any, userId: string, organizationId: string) {
     return this.prisma.note.create({
       data: {
         ...data,
         userId,
+        organizationId,
       },
     });
   }
 
-  async update(id: string, data: any) {
-    const existing = await this.prisma.note.findUnique({ where: { id } });
+  async update(id: string, data: any, organizationId: string) {
+    const existing = await this.prisma.note.findFirst({ 
+      where: { 
+        id,
+        organizationId,
+      } 
+    });
     if (!existing) {
       throw new NotFoundException(`Note with ID ${id} not found`);
     }
     
+    const { organizationId: _, userId: __, ...updateData } = data;
+    
     return this.prisma.note.update({ 
       where: { id }, 
-      data 
+      data: updateData 
     });
   }
 
-  async remove(id: string) {
-    const existing = await this.prisma.note.findUnique({ where: { id } });
+  async remove(id: string, organizationId: string) {
+    const existing = await this.prisma.note.findFirst({ 
+      where: { 
+        id,
+        organizationId,
+      } 
+    });
     if (!existing) {
       throw new NotFoundException(`Note with ID ${id} not found`);
     }

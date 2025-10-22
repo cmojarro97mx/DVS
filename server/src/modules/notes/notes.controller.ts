@@ -9,26 +9,26 @@ export class NotesController {
 
   @Get()
   findAll(@Query('operationId') operationId?: string, @Request() req?) {
-    return this.notesService.findAll(req?.user?.userId, operationId);
+    return this.notesService.findAll(req.user.organizationId, req?.user?.userId, operationId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.notesService.findOne(id);
+  findOne(@Param('id') id: string, @Request() req) {
+    return this.notesService.findOne(id, req.user.organizationId);
   }
 
   @Post()
   create(@Body() createData: any, @Request() req) {
-    return this.notesService.create(createData, req.user.userId);
+    return this.notesService.create(createData, req.user.userId, req.user.organizationId);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() updateData: any) {
-    return this.notesService.update(id, updateData);
+  update(@Param('id') id: string, @Body() updateData: any, @Request() req) {
+    return this.notesService.update(id, updateData, req.user.organizationId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.notesService.remove(id);
+  remove(@Param('id') id: string, @Request() req) {
+    return this.notesService.remove(id, req.user.organizationId);
   }
 }
