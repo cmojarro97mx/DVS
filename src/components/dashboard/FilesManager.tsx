@@ -1,14 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { filesService, FileItem, FileFolder } from '../src/services/filesService';
-import { Banner } from '../components/Banner';
-import { FolderOpenIcon } from '../components/icons/FolderOpenIcon';
-import { FolderIcon } from '../components/icons/FolderIcon';
-import { UploadCloudIcon } from '../components/icons/UploadCloudIcon';
-import { FolderPlusIcon } from '../components/icons/FolderPlusIcon';
-import { TrashIcon } from '../components/icons/TrashIcon';
-import { ConfirmationModal } from '../components/ConfirmationModal';
+import { filesService, FileItem, FileFolder } from '../../services/filesService';
 
-export default function FilesManagerPage() {
+export default function FilesManager() {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [folders, setFolders] = useState<FileFolder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string | undefined>(undefined);
@@ -16,9 +9,6 @@ export default function FilesManagerPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [itemToDelete, setItemToDelete] = useState<{ type: 'file' | 'folder'; id: string; name: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -27,16 +17,11 @@ export default function FilesManagerPage() {
   }, []);
 
   const loadFiles = async () => {
-    setIsLoading(true);
-    setError('');
     try {
       const data = await filesService.getAllFiles();
       setFiles(data);
     } catch (error) {
       console.error('Error loading files:', error);
-      setError('Error al cargar archivos');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -58,7 +43,6 @@ export default function FilesManagerPage() {
 
   const handleFiles = async (fileList: File[]) => {
     setIsUploading(true);
-    setError('');
     try {
       for (const file of fileList) {
         await filesService.uploadFile(file, selectedFolder);
@@ -66,7 +50,7 @@ export default function FilesManagerPage() {
       await loadFiles();
     } catch (error) {
       console.error('Error uploading files:', error);
-      setError('Error al subir archivos. Por favor intente nuevamente.');
+      alert('Error al subir archivos. Por favor intente nuevamente.');
     } finally {
       setIsUploading(false);
     }
@@ -90,19 +74,19 @@ export default function FilesManagerPage() {
   };
 
   const handleDeleteFile = async (id: string) => {
-    try {
-      await filesService.deleteFile(id);
-      await loadFiles();
-      setItemToDelete(null);
-    } catch (error) {
-      console.error('Error deleting file:', error);
-      setError('Error al eliminar el archivo.');
+    if (confirm('¿Está seguro de eliminar este archivo?')) {
+      try {
+        await filesService.deleteFile(id);
+        await loadFiles();
+      } catch (error) {
+        console.error('Error deleting file:', error);
+        alert('Error al eliminar el archivo.');
+      }
     }
   };
 
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return;
-    setError('');
     try {
       await filesService.createFolder(newFolderName, selectedFolder);
       setNewFolderName('');
@@ -110,22 +94,23 @@ export default function FilesManagerPage() {
       await loadFolders();
     } catch (error) {
       console.error('Error creating folder:', error);
-      setError('Error al crear la carpeta.');
+      alert('Error al crear la carpeta.');
     }
   };
 
   const handleDeleteFolder = async (id: string) => {
-    try {
-      await filesService.deleteFolder(id);
-      await loadFolders();
-      await loadFiles();
-      if (selectedFolder === id) {
-        setSelectedFolder(undefined);
+    if (confirm('¿Está seguro de eliminar esta carpeta y todos sus archivos?')) {
+      try {
+        await filesService.deleteFolder(id);
+        await loadFolders();
+        await loadFiles();
+        if (selectedFolder === id) {
+          setSelectedFolder(undefined);
+        }
+      } catch (error) {
+        console.error('Error deleting folder:', error);
+        alert('Error al eliminar la carpeta.');
       }
-      setItemToDelete(null);
-    } catch (error) {
-      console.error('Error deleting folder:', error);
-      setError('Error al eliminar la carpeta.');
     }
   };
 
@@ -153,87 +138,75 @@ export default function FilesManagerPage() {
     : files.filter(f => !f.folderId);
 
   return (
-    <div className="animate-fade-in space-y-6">
-      <Banner
-        title="File Manager"
-        description="Almacenamiento seguro en la nube con Backblaze B2"
-        icon={FolderOpenIcon}
-      />
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-800">
-              {selectedFolder 
-                ? folders.find(f => f.id === selectedFolder)?.name || 'Carpeta' 
-                : 'Todos los archivos'}
-            </h2>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowNewFolderModal(true)}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                <FolderPlusIcon className="w-5 h-5" /> Nueva Carpeta
-              </button>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-                disabled={isUploading}
-              >
-                <UploadCloudIcon className="w-5 h-5" />
-                {isUploading ? 'Subiendo...' : 'Subir Archivos'}
-              </button>
-            </div>
+    <div className="h-full flex flex-col bg-gray-50">
+      <div className="bg-white border-b px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Gestión de Archivos</h1>
+            <p className="text-sm text-gray-600 mt-1">
+              Almacenamiento seguro en la nube con Backblaze B2
+            </p>
           </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            onChange={handleFileSelect}
-            className="hidden"
-          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowNewFolderModal(true)}
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              📁 Nueva Carpeta
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={isUploading}
+            >
+              {isUploading ? '⏳ Subiendo...' : '📤 Subir Archivos'}
+            </button>
+          </div>
         </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+      </div>
 
-        <div className="flex h-[600px]">
-          <div className="w-64 border-r p-4">
+      <div className="flex-1 overflow-auto p-6">
+        <div className="flex gap-6 h-full">
+          <div className="w-64 bg-white rounded-lg shadow p-4">
             <h3 className="font-semibold text-gray-700 mb-3">Carpetas</h3>
             <div className="space-y-1">
               <button
                 onClick={() => setSelectedFolder(undefined)}
-                className={`w-full text-left px-3 py-2 rounded transition-colors flex items-center gap-2 ${
+                className={`w-full text-left px-3 py-2 rounded transition-colors ${
                   !selectedFolder ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'
                 }`}
               >
-                <FolderIcon className="w-4 h-4" /> Todos los archivos
+                📂 Todos los archivos
               </button>
               {folders.map(folder => (
                 <div key={folder.id} className="group relative">
                   <button
                     onClick={() => setSelectedFolder(folder.id)}
-                    className={`w-full text-left px-3 py-2 rounded transition-colors flex items-center gap-2 ${
+                    className={`w-full text-left px-3 py-2 rounded transition-colors ${
                       selectedFolder === folder.id ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'
                     }`}
                   >
-                    <FolderIcon className="w-4 h-4" /> {folder.name}
+                    📁 {folder.name}
                   </button>
                   <button
-                    onClick={() => setItemToDelete({ type: 'folder', id: folder.id, name: folder.name })}
-                    className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 p-1"
+                    onClick={() => handleDeleteFolder(folder.id)}
+                    className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700"
                   >
-                    <TrashIcon className="w-4 h-4" />
+                    🗑️
                   </button>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="flex-1">
+          <div className="flex-1 bg-white rounded-lg shadow">
             <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -242,27 +215,20 @@ export default function FilesManagerPage() {
                 isDragging ? 'bg-blue-50 border-4 border-dashed border-blue-400' : ''
               }`}
             >
-              {isLoading ? (
+              {isDragging ? (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Cargando...</p>
-                  </div>
-                </div>
-              ) : isDragging ? (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <UploadCloudIcon className="w-16 h-16 text-blue-400 mx-auto" />
-                    <p className="text-xl font-semibold text-blue-600 mt-4">
+                    <div className="text-6xl mb-4">📤</div>
+                    <p className="text-xl font-semibold text-blue-600">
                       Suelta los archivos aquí
                     </p>
                   </div>
                 </div>
               ) : filteredFiles.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
-                  <div className="text-center text-gray-400 p-10 border-2 border-dashed border-gray-300 rounded-xl">
-                    <UploadCloudIcon className="w-16 h-16 text-gray-300 mx-auto" />
-                    <p className="text-lg mt-4">No hay archivos</p>
+                  <div className="text-center text-gray-400">
+                    <div className="text-6xl mb-4">📂</div>
+                    <p className="text-lg">No hay archivos</p>
                     <p className="text-sm mt-2">Arrastra archivos aquí o haz clic en "Subir Archivos"</p>
                   </div>
                 </div>
@@ -271,15 +237,15 @@ export default function FilesManagerPage() {
                   {filteredFiles.map(file => (
                     <div
                       key={file.id}
-                      className="border rounded-lg p-4 hover:shadow-lg transition-shadow group bg-white"
+                      className="border rounded-lg p-4 hover:shadow-lg transition-shadow group"
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="text-4xl">{getFileIcon(file.mimeType)}</div>
                         <button
-                          onClick={() => setItemToDelete({ type: 'file', id: file.id, name: file.name })}
-                          className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 p-1"
+                          onClick={() => handleDeleteFile(file.id)}
+                          className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700"
                         >
-                          <TrashIcon className="w-4 h-4" />
+                          🗑️
                         </button>
                       </div>
                       <h4 className="font-medium text-sm text-gray-900 truncate mb-1" title={file.name}>
@@ -335,23 +301,6 @@ export default function FilesManagerPage() {
           </div>
         </div>
       )}
-
-      <ConfirmationModal
-        isOpen={!!itemToDelete}
-        onClose={() => setItemToDelete(null)}
-        onConfirm={() => {
-          if (itemToDelete?.type === 'file') {
-            handleDeleteFile(itemToDelete.id);
-          } else if (itemToDelete?.type === 'folder') {
-            handleDeleteFolder(itemToDelete.id);
-          }
-        }}
-        title={`Eliminar ${itemToDelete?.type === 'file' ? 'archivo' : 'carpeta'}`}
-      >
-        ¿Estás seguro de que deseas eliminar "{itemToDelete?.name}"?
-        {itemToDelete?.type === 'folder' && ' Todos los archivos en esta carpeta también serán eliminados.'}
-        {' '}Esta acción no se puede deshacer.
-      </ConfirmationModal>
     </div>
   );
 }

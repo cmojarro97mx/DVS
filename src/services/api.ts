@@ -154,3 +154,4 @@ class ApiService {
 }
 
 export const apiService = ApiService.getInstance();
+export const api = apiService;

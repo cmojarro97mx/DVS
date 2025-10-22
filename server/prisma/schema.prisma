@@ -66,6 +66,7 @@ model Organization {
   operations      Operation[]
   bankAccounts    BankAccount[]
   fileFolders     FileFolder[]  @relation("OrganizationFileFolders")
+  files           File[]        @relation("OrganizationFiles")
   
   @@map("organizations")
 }
@@ -491,16 +492,19 @@ model FileFolder {
 }
 
 model File {
-  id          String    @id @default(uuid())
-  name        String
-  url         String
-  size        Int
-  mimeType    String
-  folderId    String?
-  folder      FileFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  preview     String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id              String        @id @default(uuid())
+  name            String
+  url             String
+  storageKey      String
+  size            Int
+  mimeType        String
+  folderId        String?
+  folder          FileFolder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  organizationId  String
+  organization    Organization  @relation("OrganizationFiles", fields: [organizationId], references: [id], onDelete: Cascade)
+  preview         String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
   
   @@map("files")
 }

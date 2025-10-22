@@ -12,12 +12,7 @@ export class FilesService {
   async findAll(organizationId: string) {
     return this.prisma.file.findMany({
       where: {
-        folder: {
-          OR: [
-            { organizationId },
-            { organizationId: null },
-          ],
-        },
+        organizationId,
       },
       include: {
         folder: true,
@@ -32,12 +27,7 @@ export class FilesService {
     const file = await this.prisma.file.findFirst({
       where: {
         id,
-        folder: {
-          OR: [
-            { organizationId },
-            { organizationId: null },
-          ],
-        },
+        organizationId,
       },
       include: {
         folder: true,
@@ -75,9 +65,11 @@ export class FilesService {
       data: {
         name: file.originalname,
         url,
+        storageKey: key,
         size: file.size,
         mimeType: file.mimetype,
         folderId: folderId || null,
+        organizationId,
       },
       include: {
         folder: true,
@@ -90,14 +82,7 @@ export class FilesService {
   async remove(id: string, organizationId: string) {
     const file = await this.findOne(id, organizationId);
 
-    const urlParts = file.url.split('/');
-    const key = urlParts.slice(urlParts.indexOf(organizationId)).join('/');
-
-    try {
-      await this.backblaze.deleteFile(key);
-    } catch (error) {
-      console.error('Error deleting file from Backblaze:', error);
-    }
+    await this.backblaze.deleteFile(file.storageKey);
 
     return this.prisma.file.delete({ where: { id } });
   }
