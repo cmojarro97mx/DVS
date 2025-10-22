@@ -241,16 +241,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onLogout,
 }) => {
     
-    const financeSubItems = [
-        { label: 'Financial Hub', view: 'finance-hub' as View, icon: ChartPieIcon },
-        { label: 'Quotations', view: 'quotations' as View, icon: CoinsIcon },
-        { label: 'All Invoices', view: 'all_invoices' as View, icon: InvoicesIcon },
-        { label: 'All Payments', view: 'all_payments' as View, icon: PaymentsIcon },
-        { label: 'All Expenses', view: 'all_expenses' as View, icon: ExpensesIcon },
-        { label: 'Bank Accounts', view: 'bank_accounts' as View, icon: BuildingLibraryIcon },
-        { label: 'Bank Reconciliation', view: 'bank-reconciliation' as View, icon: DocumentMagnifyingGlassIcon },
-    ];
-    
     const companySubItems = [
         { label: 'Company Profile', view: 'company-profile' as View, icon: CompanyIcon },
         { label: 'Employees', view: 'employees' as View, icon: UsersIcon },
@@ -288,15 +278,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </NavSection>
                     
                     <NavSection title="Finanzas" isSidebarOpen={isSidebarOpen}>
-                        <CollapsibleNavItem 
+                        <NavItem 
                             icon={CurrencyDollarOutlineIcon} 
                             label="Finance" 
-                            isSidebarOpen={isSidebarOpen}
-                            setIsSidebarOpen={setIsSidebarOpen}
-                            activeView={activeView}
-                            setActiveView={setActiveView}
-                            mainView='finance-hub'
-                            subItems={financeSubItems}
+                            isActive={['finance-hub', 'quotations', 'all_invoices', 'all_payments', 'all_expenses', 'bank_accounts', 'bank-reconciliation', 'finance'].includes(activeView)} 
+                            onClick={() => setActiveView('finance-hub')} 
+                            isSidebarOpen={isSidebarOpen} 
                         />
                     </NavSection>
 
