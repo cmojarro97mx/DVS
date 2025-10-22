@@ -461,64 +461,108 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
             </div>
 
             <div className="xl:w-80 flex flex-col gap-4 min-h-0 overflow-y-auto flex-shrink-0">
-                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 flex-shrink-0">
-                    <h3 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                        <LinkIcon className="w-4 h-4 text-slate-500"/> 
-                        Filtrar eventos por fuente
-                    </h3>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-shrink-0 overflow-hidden">
+                    <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+                        <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <LinkIcon className="w-4 h-4 text-slate-600"/> 
+                            Filtros de eventos
+                        </h3>
+                    </div>
                     
-                    <label className="flex items-center gap-2 p-2.5 hover:bg-white rounded cursor-pointer transition-colors">
-                        <input
-                            type="checkbox"
-                            checked={includeLocalEvents}
-                            onChange={(e) => setIncludeLocalEvents(e.target.checked)}
-                            className="w-4 h-4 text-red-600 border-slate-300 rounded focus:ring-red-500 focus:ring-1 flex-shrink-0"
-                        />
-                        <span className="font-semibold text-sm text-slate-800">Eventos Locales</span>
-                    </label>
+                    <div className="p-4 space-y-3">
+                        <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer transition-all hover:bg-slate-100 group">
+                            <div className="relative flex-shrink-0">
+                                <input
+                                    type="checkbox"
+                                    checked={includeLocalEvents}
+                                    onChange={(e) => setIncludeLocalEvents(e.target.checked)}
+                                    className="peer sr-only"
+                                />
+                                <div className="w-5 h-5 bg-white border-2 border-slate-300 rounded peer-checked:bg-red-600 peer-checked:border-red-600 transition-all flex items-center justify-center">
+                                    {includeLocalEvents && (
+                                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 flex-grow">
+                                <CalendarDaysIcon className="w-5 h-5 text-slate-600 group-hover:text-slate-700" />
+                                <span className="font-semibold text-sm text-slate-800">Eventos Locales</span>
+                            </div>
+                        </label>
+                        
+                        {emailAccounts.length > 0 ? (
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2 px-1 pt-2">
+                                    <div className="h-px bg-slate-200 flex-grow"></div>
+                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Cuentas sincronizadas</p>
+                                    <div className="h-px bg-slate-200 flex-grow"></div>
+                                </div>
+                                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                                    {emailAccounts.map(account => (
+                                        <label key={account.id} className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg cursor-pointer transition-all hover:border-slate-300 hover:shadow-sm group">
+                                            <div className="relative flex-shrink-0">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedAccountIds.includes(account.id)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setSelectedAccountIds([...selectedAccountIds, account.id]);
+                                                        } else {
+                                                            setSelectedAccountIds(selectedAccountIds.filter(id => id !== account.id));
+                                                        }
+                                                    }}
+                                                    className="peer sr-only"
+                                                />
+                                                <div className="w-5 h-5 bg-white border-2 border-slate-300 rounded peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all flex items-center justify-center">
+                                                    {selectedAccountIds.includes(account.id) && (
+                                                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <ProviderIcon provider={account.provider} className="w-6 h-6 flex-shrink-0" />
+                                            <div className="flex-grow min-w-0">
+                                                <span className="font-semibold text-sm text-slate-800 block truncate">{account.email}</span>
+                                                {account.calendarSyncEnabled && (
+                                                    <div className="flex items-center gap-1 mt-0.5">
+                                                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                                                        <span className="text-xs text-green-600 font-medium">Sincronizado</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center py-6 px-3">
+                                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <LinkIcon className="w-6 h-6 text-slate-400" />
+                                </div>
+                                <p className="text-sm font-medium text-slate-600 mb-2">Sin cuentas vinculadas</p>
+                                <p className="text-xs text-slate-500 mb-3">Conecta tu cuenta de Google para sincronizar eventos</p>
+                                <button
+                                    onClick={() => setActiveView('integrations')}
+                                    className="text-blue-600 hover:text-blue-700 text-sm font-semibold"
+                                >
+                                    Vincular cuenta →
+                                </button>
+                            </div>
+                        )}
+                    </div>
                     
-                    {emailAccounts.length > 0 ? (
-                        <div className="mt-3 space-y-1 max-h-64 overflow-y-auto">
-                            <p className="text-xs font-medium text-slate-500 px-2 mb-2">Cuentas Vinculadas</p>
-                            {emailAccounts.map(account => (
-                                <label key={account.id} className="flex items-center gap-2.5 p-2.5 hover:bg-white rounded cursor-pointer transition-colors group">
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedAccountIds.includes(account.id)}
-                                        onChange={(e) => {
-                                            if (e.target.checked) {
-                                                setSelectedAccountIds([...selectedAccountIds, account.id]);
-                                            } else {
-                                                setSelectedAccountIds(selectedAccountIds.filter(id => id !== account.id));
-                                            }
-                                        }}
-                                        className="w-4 h-4 text-red-600 border-slate-300 rounded focus:ring-red-500 focus:ring-1 flex-shrink-0"
-                                    />
-                                    <ProviderIcon provider={account.provider} className="w-5 h-5 flex-shrink-0" />
-                                    <div className="flex-grow min-w-0">
-                                        <span className="font-semibold text-sm text-slate-800 block truncate">{account.email}</span>
-                                        {account.calendarSyncEnabled && (
-                                            <span className="text-xs text-green-600">✓ Sincronización activa</span>
-                                        )}
-                                    </div>
-                                </label>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-sm text-slate-500 p-3 text-center mt-2">
-                            <p className="mb-2">No hay cuentas vinculadas.</p>
-                            <button
-                                onClick={() => setActiveView('integrations')}
-                                className="text-blue-600 hover:text-blue-700 text-sm font-medium underline"
-                            >
-                                Vincular cuenta de Google
-                            </button>
-                        </div>
-                    )}
-                    
-                    <button onClick={() => setActiveView('integrations')} className="text-sm font-medium text-blue-600 hover:underline w-full text-center mt-3 py-1">
-                        Administrar integraciones
-                    </button>
+                    <div className="border-t border-slate-200 bg-slate-50 px-4 py-3">
+                        <button 
+                            onClick={() => setActiveView('integrations')} 
+                            className="w-full flex items-center justify-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors"
+                        >
+                            <CogIcon className="w-4 h-4" />
+                            Administrar integraciones
+                        </button>
+                    </div>
                 </div>
                 
                 <UpcomingEvents events={filteredEvents} currentDate={currentDate} onEdit={openEditModal} />
