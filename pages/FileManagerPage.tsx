@@ -91,7 +91,7 @@ export default function FileManagerPage() {
     });
   };
 
-  const filteredFiles = files.filter((file) => {
+  const filteredFiles = (files || []).filter((file) => {
     const matchesSearch = file.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSource = filterSource === 'all' || file.source === filterSource;
     const matchesType = filterType === 'all' || file.mimeType.includes(filterType);
