@@ -114,12 +114,10 @@ const IntegrationSection: React.FC<{ title: string; children: React.ReactNode }>
 const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) => {
     const [googleStatus, setGoogleStatus] = useState<GoogleConnectionStatus | null>(null);
     const [loading, setLoading] = useState(true);
-    const [callbackUrl, setCallbackUrl] = useState('');
 
 
     useEffect(() => {
         fetchGoogleStatus();
-        fetchCallbackUrl();
         
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('oauth') === 'success') {
@@ -127,18 +125,6 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
             window.history.replaceState({}, document.title, window.location.pathname);
         }
     }, []);
-
-    const fetchCallbackUrl = async () => {
-        try {
-            const response = await fetch('/api/google-auth/callback-url');
-            if (response.ok) {
-                const data = await response.json();
-                setCallbackUrl(data.callbackUrl);
-            }
-        } catch (error) {
-            console.error('Error fetching callback URL:', error);
-        }
-    };
 
     const fetchGoogleStatus = async () => {
         try {
@@ -260,30 +246,6 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
                     description="Connect your favorite tools to streamline your workflow. Link your Google account to sync emails and calendar events automatically."
                     icon={LinkIcon}
                 />
-
-            {callbackUrl && (
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-                    <div className="flex items-start gap-3">
-                        <div className="bg-blue-500 rounded-lg p-2 flex-shrink-0">
-                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <h3 className="text-sm font-semibold text-blue-900 mb-1">Configuración de Google OAuth</h3>
-                            <p className="text-xs text-blue-800 mb-3">
-                                Si obtienes un error 403, debes configurar este Redirect URI en Google Cloud Console:
-                            </p>
-                            <div className="bg-white rounded-lg p-3 border border-blue-200">
-                                <code className="text-xs text-blue-900 break-all">{callbackUrl}</code>
-                            </div>
-                            <p className="text-xs text-blue-700 mt-2">
-                                📝 Pasos: Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client → Authorized redirect URIs
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                 <div className="lg:col-span-1">
