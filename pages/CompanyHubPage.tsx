@@ -2,7 +2,7 @@ import React from 'react';
 import { View } from './DashboardPage';
 import { CompanyIcon } from '../components/icons/CompanyIcon';
 import { UsersIcon } from '../components/icons/UsersIcon';
-import { BoltIcon } from '../components/icons/BoltIcon';
+import { CogIcon } from '../components/icons/CogIcon';
 import { Banner } from '../components/Banner';
 import { ChevronRightIcon } from '../components/icons/ChevronRightIcon';
 
@@ -69,8 +69,8 @@ const CompanyHubPage: React.FC<CompanyHubPageProps> = ({ setActiveView }) => {
                     />
                     <HubCard
                         title="Automatización"
-                        description="Configure automated workflows and processes."
-                        icon={BoltIcon}
+                        description="Configura flujos de trabajo y procesos automatizados."
+                        icon={CogIcon}
                         onClick={() => setActiveView('automation')}
                     />
                 </CompanySection>
