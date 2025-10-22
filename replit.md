@@ -55,13 +55,14 @@ The frontend uses React 19 with TypeScript, styled using Tailwind CSS, and bundl
         -   **Automatic Background Sync**: Cron job runs every 10 minutes to sync emails for all EmailAccounts with `syncEmail = true` and active refresh tokens. System operates fully automatically without manual intervention.
         -   **Email Analysis Page**: UI with account selector, real-time metrics display (total messages, downloaded, replied, unreplied), and comprehensive email listing with date, subject, recipients, thread chain, and full HTML content rendering. Metrics auto-refresh every 30 seconds.
         -   **Sync Control & Data Management** (October 2025 - Phase 1):
-            -   **Discovery System**: Automatically detects email date range (oldest/newest messages) and total message count when user activates email sync.
-            -   **Configuration Wizard**: Interactive UI wizard that appears before first sync activation, allowing users to select sync start date with preset options (3 months, 6 months, 1 year, 2 years, all, custom).
-            -   **Estimated Impact Display**: Shows approximate number of messages and storage size to be synced based on selected date range.
-            -   **Filtered Synchronization**: Email sync respects `syncFromDate` setting, using Gmail query parameter `after:YYYY/MM/DD` to download only emails from specified date forward.
+            -   **Discovery System**: Automatically detects email date range (oldest/newest messages) and total message count when user activates email sync using temporal queries (before:YYYY) instead of pagination.
+            -   **Configuration Wizard**: Compact, professional UI wizard with horizontal scrollable card selector appearing before first sync activation. Preset options: Current Month, 3 months, 6 months, 1 year, 2 years, all, custom date.
+            -   **Estimated Impact Display**: Shows real-time approximate number of messages and storage size to be synced based on selected date range.
+            -   **Filtered Synchronization**: Email sync respects `syncFromDate` setting, using Gmail query parameter `after:YYYY/MM/DD` to download only emails from specified date forward. Sync configuration persists in DB and automatic background sync (every 10 min) respects the configured date range.
+            -   **Automatic Storage Cleanup**: When user reduces sync date range (e.g., 1 year → 1 month), system automatically deletes messages outside new range from PostgreSQL and Backblaze B2, reclaiming storage space and reducing costs. Cleanup runs before applying new settings.
             -   **EmailAccount Extensions**: New fields include `syncFromDate`, `detectedOldestEmailDate`, `detectedNewestEmailDate`, `estimatedTotalMessages`, `storageUsageBytes`, `pendingInitialSync` for sync control and monitoring.
-            -   **API Endpoints**: `GET /api/email-sync/accounts/:id/discovery` (detect date range), `POST /api/email-sync/accounts/:id/settings` (configure sync parameters).
-            -   **Cost Optimization**: Prevents unnecessary download of years-old emails, reducing storage costs and sync time significantly.
+            -   **API Endpoints**: `GET /api/email-sync/accounts/:id/discovery` (detect date range), `POST /api/email-sync/accounts/:id/settings` (configure sync parameters, triggers cleanup if reducing range).
+            -   **Cost Optimization**: Prevents unnecessary download of years-old emails and automatically removes outdated data, reducing storage costs and sync time significantly.
         -   **Security**: All email data scoped to userId via EmailAccount relationship. Signed URLs prevent unauthorized access to Backblaze content.
     -   **OAuth Flow**: Secure OAuth 2.0 flow with automatic token refresh, state validation, and persistent storage of access/refresh tokens in EmailAccount table.
         -   **Desktop**: Popup window for OAuth (500x600px) with automatic closure on success/error. Uses window.postMessage for communication.
