@@ -1,5 +1,16 @@
+
 #!/bin/bash
-export DATABASE_URL="postgresql://neondb_owner:npg_fK01vAmLVObW@ep-holy-glitter-adsfdor9-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require"
-export JWT_SECRET="nexxio-super-secret-key-change-in-production-2024"
-export PORT=3001
+
+# Install dependencies if needed
+if [ ! -d "node_modules" ]; then
+  npm install
+fi
+
+# Run Prisma migrations
+npx prisma migrate deploy
+
+# Generate Prisma client
+npx prisma generate
+
+# Start the NestJS server in development mode
 npm run start:dev
