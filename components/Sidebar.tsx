@@ -187,7 +187,7 @@ const UserMenu: React.FC<{ onLogout: () => void, isSidebarOpen: boolean }> = ({ 
                     </div>
                  )}
                  {isOpen && (
-                    <div className="absolute left-full ml-2 bg-white border border-gray-200 rounded-lg shadow-xl p-1 z-[60] min-w-[150px] top-0">
+                    <div className="absolute left-full ml-2 bottom-0 bg-white border border-gray-200 rounded-lg shadow-xl p-1 z-[60] min-w-[180px]">
                         <div className="px-3 py-2 border-b border-gray-100">
                             <p className="text-sm font-bold text-gray-800 truncate">{userName}</p>
                             <p className="text-xs text-gray-500">Admin</p>
