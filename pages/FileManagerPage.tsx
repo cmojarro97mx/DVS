@@ -61,14 +61,23 @@ export default function FileManagerPage() {
         api.get('/files/manager/all'),
         api.get('/files/manager/stats'),
       ]);
-      console.log('[FileManager] Files received:', filesResponse.data.length);
-      console.log('[FileManager] First file sample:', filesResponse.data[0]);
-      console.log('[FileManager] Stats received:', statsResponse.data);
-      setFiles(filesResponse.data);
-      setStats(statsResponse.data);
+      console.log('[FileManager] Files response structure:', filesResponse);
+      console.log('[FileManager] Files data:', filesResponse?.data);
+      console.log('[FileManager] Stats response:', statsResponse);
+      
+      const files = filesResponse?.data || [];
+      const stats = statsResponse?.data || {};
+      
+      console.log('[FileManager] Files count:', files.length);
+      if (files.length > 0) {
+        console.log('[FileManager] First file sample:', files[0]);
+      }
+      
+      setFiles(files);
+      setStats(stats);
     } catch (error) {
       console.error('[FileManager] Error loading files:', error);
-      console.error('[FileManager] Error details:', error.message, error.response?.data);
+      console.error('[FileManager] Error details:', error?.message, error?.response?.data);
     } finally {
       setLoading(false);
     }
