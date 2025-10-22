@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, Request, Query } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { NotesService } from './notes.service';
 
@@ -8,8 +8,8 @@ export class NotesController {
   constructor(private readonly notesService: NotesService) {}
 
   @Get()
-  findAll() {
-    return this.notesService.findAll();
+  findAll(@Query('operationId') operationId?: string, @Request() req?) {
+    return this.notesService.findAll(req?.user?.userId, operationId);
   }
 
   @Get(':id')
@@ -18,8 +18,8 @@ export class NotesController {
   }
 
   @Post()
-  create(@Body() createData: any) {
-    return this.notesService.create(createData);
+  create(@Body() createData: any, @Request() req) {
+    return this.notesService.create(createData, req.user.userId);
   }
 
   @Put(':id')
