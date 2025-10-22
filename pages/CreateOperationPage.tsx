@@ -195,7 +195,7 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
         startDate: new Date().toISOString().split('T')[0], 
         deadline: '', 
         status: 'Planning', 
-        assignees: teamMembers.length > 0 ? [teamMembers[0].name] : [], 
+        assignees: teamMembers.length > 0 ? [teamMembers[0].id] : [], 
         currency: 'USD',
         clientId: '',
         operationType: '', insurance: '', shippingMode: '', courrier: '',
@@ -495,7 +495,7 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
                                             </FormField>
                                             <FormField label="Assigned To" id="assignees" required className="md:col-span-2" error={errors.assignees}>
                                                 <Select name="assignees" value={formData.assignees} onChange={handleChange} required hasError={!!errors.assignees} multiple>
-                                                    {teamMembers.map(member => <option key={member.id} value={member.name}>{member.name}</option>)}
+                                                    {teamMembers.map(member => <option key={member.id} value={member.id}>{member.name}</option>)}
                                                 </Select>
                                             </FormField>
                                         </>)}
@@ -528,9 +528,26 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
                                     </div>
                                 </div>
                             </div>
+                            {saveError && (
+                                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                                    {saveError}
+                                </div>
+                            )}
                             <div className="flex justify-between gap-4 pt-4 mt-8 border-t border-gray-200">
-                                <div>{currentStep > 0 && (<button type="button" onClick={prevStep} className="px-6 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Previous</button>)}</div>
-                                <div>{currentStep < STEPS.length - 1 ? (<button type="button" onClick={nextStep} className="px-6 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors">Next</button>) : (<button type="submit" className="px-6 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors">Save Operation</button>)}</div>
+                                <div>{currentStep > 0 && (<button type="button" onClick={prevStep} disabled={isSaving} className="px-6 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>)}</div>
+                                <div>{currentStep < STEPS.length - 1 ? (<button type="button" onClick={nextStep} disabled={isSaving} className="px-6 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Next</button>) : (
+                                    <button type="submit" disabled={isSaving} className="px-6 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                                        {isSaving ? (
+                                            <>
+                                                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                Saving...
+                                            </>
+                                        ) : 'Save Operation'}
+                                    </button>
+                                )}</div>
                             </div>
                         </form>
                     </div>

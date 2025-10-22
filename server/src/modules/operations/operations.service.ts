@@ -66,16 +66,22 @@ export class OperationsService {
     });
 
     if (assignees && assignees.length > 0) {
-      await Promise.all(
-        assignees.map((assigneeName: string) =>
-          this.prisma.operationAssignee.create({
+      for (const userId of assignees) {
+        const userExists = await this.prisma.user.findUnique({
+          where: { id: userId },
+        });
+
+        if (userExists) {
+          await this.prisma.operationAssignee.create({
             data: {
               operationId: operation.id,
-              userId: assigneeName,
+              userId: userId,
             },
-          }),
-        ),
-      );
+          });
+        } else {
+          console.warn(`User with ID ${userId} not found, skipping assignment`);
+        }
+      }
     }
 
     return this.findOne(operation.id, organizationId);
