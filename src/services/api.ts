@@ -47,32 +47,41 @@ class ApiService {
     });
 
     if (!response.ok) {
-      // Si el usuario fue eliminado o su sesión es inválida (401), cerrar sesión automáticamente
-      if (response.status === 401) {
-        this.handleUnauthorized();
+      // Intentar extraer el mensaje de error del backend
+      let errorMessage = 'Error en la solicitud';
+      
+      try {
+        const errorData = await response.json();
+        // El backend de NestJS envía errores en el formato { message: string }
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch (e) {
+        // Si no se puede parsear el JSON, usar un mensaje genérico
+        errorMessage = `Error ${response.status}: ${response.statusText}`;
       }
       
-      const error = await response.json().catch(() => ({ message: 'Request failed' }));
-      throw new Error(error.message || `HTTP ${response.status}`);
+      // Si el usuario fue eliminado o su sesión es inválida (401), cerrar sesión automáticamente
+      if (response.status === 401) {
+        this.handleUnauthorized(errorMessage);
+        return Promise.reject(new Error(errorMessage));
+      }
+      
+      throw new Error(errorMessage);
     }
 
     return response.json();
   }
 
   private handleUnauthorized(errorMessage?: string) {
-    // Limpiar tokens y datos de sesión
-    this.setAccessToken(null);
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    // Limpiar tokens y datos de sesión solo si no estamos en login/registro
+    // (para permitir que se muestren los errores de autenticación)
+    const isAuthPage = window.location.pathname.includes('/login') || 
+                       window.location.pathname.includes('/register');
     
-    // Redirigir al login solo si no estamos ya en la página de login/registro
-    if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
+    if (!isAuthPage) {
+      this.setAccessToken(null);
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
       window.location.href = '/login';
-    }
-    
-    // Lanzar el error con el mensaje específico
-    if (errorMessage) {
-      throw new Error(errorMessage);
     }
   }
 
