@@ -100,6 +100,10 @@ export class AuthService {
       throw new UnauthorizedException('Esta cuenta está inactiva. Contacta al administrador');
     }
 
+    await this.prisma.refreshToken.deleteMany({
+      where: { userId: user.id },
+    });
+
     const tokens = await this.generateTokens(user.id, user.email, user.organizationId);
 
     return {
@@ -196,6 +200,21 @@ export class AuthService {
       };
     } catch (error) {
       throw new UnauthorizedException('Refresh token inválido o expirado');
+    }
+  }
+
+  async logout(refreshToken: string) {
+    if (!refreshToken) {
+      return { message: 'Sesión cerrada exitosamente' };
+    }
+
+    try {
+      await this.prisma.refreshToken.deleteMany({
+        where: { token: refreshToken },
+      });
+      return { message: 'Sesión cerrada exitosamente' };
+    } catch (error) {
+      return { message: 'Sesión cerrada exitosamente' };
     }
   }
 }

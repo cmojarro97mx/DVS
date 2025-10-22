@@ -29,10 +29,20 @@ export const authService = {
     return response;
   },
 
-  logout() {
-    apiService.setAccessToken(null);
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+  async logout() {
+    const refreshToken = localStorage.getItem('refreshToken');
+    
+    try {
+      if (refreshToken) {
+        await apiService.post('/auth/logout', { refreshToken });
+      }
+    } catch (error) {
+      console.error('Error al cerrar sesión en el servidor:', error);
+    } finally {
+      apiService.setAccessToken(null);
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+    }
   },
 
   isAuthenticated(): boolean {
