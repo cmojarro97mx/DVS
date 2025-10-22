@@ -34,21 +34,38 @@ export const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> =
             return;
         }
 
-        // Load Google Maps API
-        const script = document.createElement('script');
-        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_KEY || '';
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initGoogleMaps`;
-        script.async = true;
-        script.defer = true;
-        
-        window.initGoogleMaps = () => {
-            setIsLoaded(true);
+        // Fetch API key from backend and load Google Maps API
+        const loadGoogleMaps = async () => {
+            try {
+                const response = await fetch('/api/config/google-maps-key');
+                const data = await response.json();
+                const apiKey = data.apiKey || '';
+                
+                if (!apiKey) {
+                    console.error('Google Maps API key not available');
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initGoogleMaps`;
+                script.async = true;
+                script.defer = true;
+                
+                window.initGoogleMaps = () => {
+                    setIsLoaded(true);
+                };
+
+                document.head.appendChild(script);
+            } catch (error) {
+                console.error('Failed to load Google Maps API key:', error);
+            }
         };
 
-        document.head.appendChild(script);
+        loadGoogleMaps();
 
         return () => {
-            if (script.parentNode) {
+            const script = document.querySelector('script[src*="maps.googleapis.com"]');
+            if (script && script.parentNode) {
                 script.parentNode.removeChild(script);
             }
         };
