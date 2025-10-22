@@ -399,79 +399,90 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
                         {filteredEmployees.length > 0 ? (
                             <div className="overflow-x-auto">
                                 {/* Desktop Table View */}
-                                <div className="hidden lg:block">
-                                    <table className="w-full">
+                                <div className="hidden lg:block overflow-x-auto">
+                                    <table className="w-full min-w-max">
                                         <thead className="bg-gray-50 border-b border-gray-200">
                                             <tr>
-                                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Empleado</th>
-                                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Puesto</th>
-                                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Contacto</th>
-                                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Estado</th>
-                                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">Acciones</th>
+                                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Empleado</th>
+                                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Puesto</th>
+                                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Contacto</th>
+                                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Estado</th>
+                                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap w-32">Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
                                             {filteredEmployees.map(employee => (
                                                 <tr key={employee.id} className="hover:bg-gray-50 transition-colors">
                                                     <td className="px-6 py-4 align-middle">
-                                                        <div className="flex items-center gap-3">
+                                                        <div className="flex items-center gap-3 min-w-max">
                                                             <EmployeeAvatar name={employee.name} />
-                                                            <div>
-                                                                <p className="font-bold text-gray-800 text-base">{employee.name}</p>
-                                                                <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
-                                                                    <CalendarIcon className="w-3.5 h-3.5" />
+                                                            <div className="min-w-0">
+                                                                <p className="font-bold text-gray-800 text-base whitespace-nowrap">{employee.name}</p>
+                                                                <div className="flex items-center gap-1 text-sm text-gray-500 mt-1 whitespace-nowrap">
+                                                                    <CalendarIcon className="w-3.5 h-3.5 flex-shrink-0" />
                                                                     <span>{employee.hireDate || 'N/A'}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 align-middle">
-                                                        <p className="font-semibold text-gray-800">{employee.role}</p>
+                                                        <p className="font-semibold text-gray-800 whitespace-nowrap">{employee.role}</p>
                                                     </td>
                                                     <td className="px-6 py-4 align-middle">
-                                                        <div className="space-y-1">
+                                                        <div className="space-y-1 min-w-max">
                                                             <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                                <EmailIcon className="w-4 h-4 text-gray-400" />
-                                                                <span className="truncate max-w-xs">{employee.email}</span>
+                                                                <EmailIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                                                <span className="whitespace-nowrap">{employee.email}</span>
                                                             </div>
                                                             {employee.phone && (
                                                                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                                    <PhoneIcon className="w-4 h-4 text-gray-400" />
-                                                                    <span>{employee.phone}</span>
+                                                                    <PhoneIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                                                    <span className="whitespace-nowrap">{employee.phone}</span>
                                                                 </div>
                                                             )}
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 align-middle">
-                                                        <span className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full ${employee.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                                        <span className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${employee.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                                                             <span className={`w-1.5 h-1.5 rounded-full mr-2 ${employee.status === 'Active' ? 'bg-green-500' : 'bg-gray-500'}`}></span>
                                                             {employee.status === 'Active' ? 'Activo' : 'Inactivo'}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-4 align-middle text-center">
-                                                        <div className="relative inline-block" ref={menuRef}>
-                                                            <button 
-                                                                onClick={() => setActiveMenu(activeMenu === employee.id ? null : employee.id)} 
-                                                                className="p-2 text-gray-500 rounded-full hover:bg-gray-100 transition-colors"
-                                                            >
-                                                                <MoreVerticalIcon className="w-5 h-5" />
-                                                            </button>
-                                                            {activeMenu === employee.id && (
-                                                                <div className="absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-xl py-1 z-10 border border-gray-200 text-left">
-                                                                    <button 
-                                                                        onClick={() => handleEdit(employee)} 
-                                                                        className="w-full flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
-                                                                    >
-                                                                        <EditIcon className="w-4 h-4 mr-3" /> Editar
-                                                                    </button>
-                                                                    <button 
-                                                                        onClick={() => handleDeleteRequest(employee)} 
-                                                                        className="w-full flex items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                                                                    >
-                                                                        <TrashIcon className="w-4 h-4 mr-3" /> Eliminar
-                                                                    </button>
-                                                                </div>
-                                                            )}
+                                                    <td className="px-6 py-4 align-middle">
+                                                        <div className="flex justify-center">
+                                                            <div className="relative inline-block">
+                                                                <button 
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setActiveMenu(activeMenu === employee.id ? null : employee.id);
+                                                                    }} 
+                                                                    className="p-2 text-gray-500 rounded-full hover:bg-gray-100 transition-colors"
+                                                                >
+                                                                    <MoreVerticalIcon className="w-5 h-5" />
+                                                                </button>
+                                                                {activeMenu === employee.id && (
+                                                                    <div className="absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-xl py-1 z-50 border border-gray-200 text-left">
+                                                                        <button 
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleEdit(employee);
+                                                                            }} 
+                                                                            className="w-full flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                                                        >
+                                                                            <EditIcon className="w-4 h-4 mr-3" /> Editar
+                                                                        </button>
+                                                                        <button 
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleDeleteRequest(employee);
+                                                                            }} 
+                                                                            className="w-full flex items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                                                        >
+                                                                            <TrashIcon className="w-4 h-4 mr-3" /> Eliminar
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -483,7 +494,7 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
                                 {/* Mobile Card View */}
                                 <div className="lg:hidden divide-y divide-gray-200">
                                     {filteredEmployees.map(employee => (
-                                        <div key={employee.id} className="p-4 hover:bg-gray-50 transition-colors">
+                                        <div key={employee.id} className="p-4 hover:bg-gray-50 transition-colors relative">
                                             <div className="flex items-start justify-between mb-3">
                                                 <div className="flex items-center gap-3 flex-1 min-w-0">
                                                     <EmployeeAvatar name={employee.name} size="sm" />
@@ -492,31 +503,43 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
                                                         <p className="text-sm text-gray-600 truncate">{employee.role}</p>
                                                     </div>
                                                 </div>
-                                                <div className="relative flex-shrink-0" ref={menuRef}>
+                                                <div className="flex-shrink-0 ml-2">
                                                     <button 
-                                                        onClick={() => setActiveMenu(activeMenu === employee.id ? null : employee.id)} 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setActiveMenu(activeMenu === employee.id ? null : employee.id);
+                                                        }} 
                                                         className="p-2 text-gray-500 rounded-full hover:bg-gray-100"
                                                     >
                                                         <MoreVerticalIcon className="w-5 h-5" />
                                                     </button>
-                                                    {activeMenu === employee.id && (
-                                                        <div className="absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-xl py-1 z-10 border border-gray-200 text-left">
-                                                            <button 
-                                                                onClick={() => handleEdit(employee)} 
-                                                                className="w-full flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
-                                                            >
-                                                                <EditIcon className="w-4 h-4 mr-3" /> Editar
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => handleDeleteRequest(employee)} 
-                                                                className="w-full flex items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
-                                                            >
-                                                                <TrashIcon className="w-4 h-4 mr-3" /> Eliminar
-                                                            </button>
-                                                        </div>
-                                                    )}
                                                 </div>
                                             </div>
+                                            
+                                            {/* Dropdown Menu */}
+                                            {activeMenu === employee.id && (
+                                                <div className="absolute right-4 top-14 w-44 bg-white rounded-lg shadow-xl py-1 z-50 border border-gray-200">
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleEdit(employee);
+                                                        }} 
+                                                        className="w-full flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                                                    >
+                                                        <EditIcon className="w-4 h-4 mr-3" /> Editar
+                                                    </button>
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteRequest(employee);
+                                                        }} 
+                                                        className="w-full flex items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
+                                                    >
+                                                        <TrashIcon className="w-4 h-4 mr-3" /> Eliminar
+                                                    </button>
+                                                </div>
+                                            )}
+                                            
                                             <div className="space-y-2 mb-3">
                                                 <div className="flex items-center gap-2 text-sm text-gray-600">
                                                     <EmailIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
