@@ -38,6 +38,7 @@ export default function NotificationsSettingsPage() {
       setSettings(response.data);
     } catch (error) {
       console.error('Error loading notification settings:', error);
+      setMessage('Error al cargar la configuración. Usando valores predeterminados.');
     } finally {
       setLoading(false);
     }
