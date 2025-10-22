@@ -69,6 +69,9 @@ model Organization {
   files           File[]        @relation("OrganizationFiles")
   tasks           Task[]
   notes           Note[]
+  invoices        Invoice[]
+  payments        Payment[]
+  expenses        Expense[]
   
   @@map("organizations")
 }
@@ -311,28 +314,30 @@ model BankAccount {
 }
 
 model Invoice {
-  id              String    @id @default(uuid())
-  invoiceNumber   String    @unique
+  id              String        @id @default(uuid())
+  invoiceNumber   String        @unique
   invoiceDate     DateTime
   dueDate         DateTime
-  currency        String    @default("USD")
-  exchangeRate    Float     @default(1)
-  discount        Float     @default(0)
-  discountType    String    @default("%")
+  currency        String        @default("USD")
+  exchangeRate    Float         @default(1)
+  discount        Float         @default(0)
+  discountType    String        @default("%")
   subTotal        Float
-  taxAmount       Float     @default(0)
+  taxAmount       Float         @default(0)
   total           Float
-  status          String    @default("Draft")
+  status          String        @default("Draft")
   notes           String?
   clientId        String?
-  client          Client?   @relation(fields: [clientId], references: [id])
+  client          Client?       @relation(fields: [clientId], references: [id])
   operationId     String?
-  operation       Operation? @relation(fields: [operationId], references: [id])
+  operation       Operation?    @relation(fields: [operationId], references: [id])
   bankAccountId   String?
-  bankAccount     BankAccount? @relation(fields: [bankAccountId], references: [id])
+  bankAccount     BankAccount?  @relation(fields: [bankAccountId], references: [id])
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
   items           Json
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
   
   payments        Payment[]
   
@@ -340,45 +345,49 @@ model Invoice {
 }
 
 model Payment {
-  id              String    @id @default(uuid())
+  id              String        @id @default(uuid())
   paymentDate     DateTime
   amount          Float
-  currency        String    @default("USD")
+  currency        String        @default("USD")
   paymentMethod   String
   reference       String?
   notes           String?
   invoiceId       String?
-  invoice         Invoice?  @relation(fields: [invoiceId], references: [id])
+  invoice         Invoice?      @relation(fields: [invoiceId], references: [id])
   operationId     String?
-  operation       Operation? @relation(fields: [operationId], references: [id])
+  operation       Operation?    @relation(fields: [operationId], references: [id])
   bankAccountId   String?
-  bankAccount     BankAccount? @relation(fields: [bankAccountId], references: [id])
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  bankAccount     BankAccount?  @relation(fields: [bankAccountId], references: [id])
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
   
   @@map("payments")
 }
 
 model Expense {
-  id              String    @id @default(uuid())
+  id              String        @id @default(uuid())
   itemName        String
-  currency        String    @default("USD")
-  exchangeRate    Float     @default(1)
+  currency        String        @default("USD")
+  exchangeRate    Float         @default(1)
   price           Float
   purchaseDate    DateTime
   employee        String?
   userId          String?
-  user            User?     @relation(fields: [userId], references: [id])
+  user            User?         @relation(fields: [userId], references: [id])
   expenseCategory String?
   purchasedFrom   String?
   notes           String?
   receiptUrl      String?
   operationId     String?
-  operation       Operation? @relation(fields: [operationId], references: [id])
+  operation       Operation?    @relation(fields: [operationId], references: [id])
   bankAccountId   String?
-  bankAccount     BankAccount? @relation(fields: [bankAccountId], references: [id])
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  bankAccount     BankAccount?  @relation(fields: [bankAccountId], references: [id])
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
   
   @@map("expenses")
 }

@@ -18,6 +18,7 @@ The frontend uses React 19 with TypeScript, styled using Tailwind CSS, and bundl
 -   **Database**: PostgreSQL (Neon) with Prisma ORM for schema management.
 -   **Authentication**: JWT-based authentication with refresh token mechanisms for persistent sessions. Google OAuth for external integrations.
 -   **Multi-Tenancy**: All data is isolated by `organizationId`, enforced through JWT validation and database queries. Organizations are automatically created upon user registration.
+    -   **Security Implementation (October 2025)**: All modules (Notes, Tasks, Invoices, Payments, Expenses) enforce strict organization-level data isolation. Services validate that all referenced entities (clients, operations, bank accounts, invoices) belong to the requesting user's organization before any create/update operation, preventing cross-organization data leakage.
 -   **Core Modules**:
     -   Logistics Operations (with notes, tasks, documents, and commission tracking)
     -   Client and Supplier Management
@@ -30,10 +31,14 @@ The frontend uses React 19 with TypeScript, styled using Tailwind CSS, and bundl
     -   Lead and Quotation Management
 -   **File Storage**: Integrated with Backblaze B2 (S3-compatible) for secure and scalable file storage. All operation documents, note attachments, and organization logos are stored in Backblaze B2.
 -   **Operation Management Features** (October 2025):
-    -   **Notes**: Notes can be associated with operations via `operationId`. Notes service filters by userId and operationId for multi-tenant security.
-    -   **Tasks**: Tasks can be assigned to employees and associated with operations. Tasks include assignees (many-to-many with users), columnId for Kanban board management, and operationId.
+    -   **Notes**: Notes can be associated with operations via `operationId`. Notes service filters by organizationId and operationId for multi-tenant security.
+    -   **Tasks**: Tasks can be assigned to employees and associated with operations. Tasks include assignees (many-to-many with users), columnId for Kanban board management, and operationId. All queries filter by organizationId.
     -   **Documents**: Documents are uploaded to Backblaze B2 in folders organized by operation (`operations/{operationId}/`). API endpoints: GET, POST, DELETE at `/operations/:id/documents`.
     -   **Commissions**: Commission history is stored as JSON in the Operation model. Endpoint: PUT `/operations/:id/commissions`.
+-   **Financial Management Features** (October 2025):
+    -   **Invoices**: All invoices are scoped to organizationId. Service validates that referenced clients, operations, and bank accounts belong to the same organization before create/update.
+    -   **Payments**: All payments are scoped to organizationId. Service validates that referenced invoices, operations, and bank accounts belong to the same organization before create/update.
+    -   **Expenses**: All expenses are scoped to organizationId and userId. Service validates that referenced operations and bank accounts belong to the same organization before create/update.
 -   **API Endpoints**: Comprehensive CRUD operations for all modules, including:
     -   Authentication and organization management
     -   Google OAuth flow
