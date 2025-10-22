@@ -162,6 +162,7 @@ model Operation {
   hbl_awb           String?
   notes             String?
   currency          String    @default("USD")
+  commissionHistory Json?
   clientId          String?
   client            Client?   @relation(fields: [clientId], references: [id])
   organizationId    String?
