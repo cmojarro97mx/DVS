@@ -30,6 +30,11 @@ export class GoogleAuthController {
     }
   }
 
+  @Get('callback-url')
+  async getCallbackUrl() {
+    return { callbackUrl: this.googleAuthService.getCallbackUrlPublic() };
+  }
+
   @Get('callback')
   async callback(
     @Query('code') code: string,

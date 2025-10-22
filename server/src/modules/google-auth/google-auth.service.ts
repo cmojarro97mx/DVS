@@ -30,10 +30,24 @@ export class GoogleAuthService {
   }
 
   private getCallbackUrl(): string {
-    const domain = process.env.REPL_SLUG 
-      ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
-      : 'http://localhost:3001';
+    // Use GOOGLE_REDIRECT_URI if explicitly set, otherwise generate from Replit domain
+    if (process.env.GOOGLE_REDIRECT_URI) {
+      return process.env.GOOGLE_REDIRECT_URI;
+    }
+    
+    // Fallback to dynamic generation
+    const domain = process.env.REPLIT_DEV_DOMAIN 
+      ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+      : process.env.REPL_SLUG 
+        ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+        : 'http://localhost:3001';
+    
     return `${domain}/api/google-auth/callback`;
+  }
+
+  // Public method to expose callback URL for configuration purposes
+  getCallbackUrlPublic(): string {
+    return this.getCallbackUrl();
   }
 
   private generateSecureState(userId: string): string {
