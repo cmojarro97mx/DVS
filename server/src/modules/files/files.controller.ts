@@ -1,4 +1,17 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  Req,
+  BadRequestException,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { FilesService } from './files.service';
 
@@ -8,27 +21,54 @@ export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 
   @Get()
-  findAll() {
-    return this.filesService.findAll();
+  findAll(@Req() req: any) {
+    return this.filesService.findAll(req.user.organizationId);
+  }
+
+  @Get('folders')
+  getFolders(@Req() req: any) {
+    return this.filesService.getFolders(req.user.organizationId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.filesService.findOne(id);
+  findOne(@Param('id') id: string, @Req() req: any) {
+    return this.filesService.findOne(id, req.user.organizationId);
   }
 
-  @Post()
-  create(@Body() createData: any) {
-    return this.filesService.create(createData);
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadFile(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('folderId') folderId: string | undefined,
+    @Req() req: any,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    return this.filesService.uploadFile(file, folderId, req.user.organizationId);
   }
 
-  @Put(':id')
-  update(@Param('id') id: string, @Body() updateData: any) {
-    return this.filesService.update(id, updateData);
+  @Post('folder')
+  createFolder(
+    @Body('name') name: string,
+    @Body('parentId') parentId: string | undefined,
+    @Req() req: any,
+  ) {
+    if (!name) {
+      throw new BadRequestException('Folder name is required');
+    }
+
+    return this.filesService.createFolder(name, parentId, req.user.organizationId);
+  }
+
+  @Delete('folder/:id')
+  deleteFolder(@Param('id') id: string, @Req() req: any) {
+    return this.filesService.deleteFolder(id, req.user.organizationId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.filesService.remove(id);
+  remove(@Param('id') id: string, @Req() req: any) {
+    return this.filesService.remove(id, req.user.organizationId);
   }
 }
