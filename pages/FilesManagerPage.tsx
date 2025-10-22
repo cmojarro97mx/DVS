@@ -22,8 +22,19 @@ export default function FilesManagerPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    loadFiles();
-    loadFolders();
+    const initializeFileManager = async () => {
+      try {
+        await loadFiles();
+        await loadFolders();
+      } catch (error: any) {
+        console.error('Error initializing file manager:', error);
+        if (error.response?.status === 401) {
+          setError('Sesión expirada. Por favor inicia sesión nuevamente.');
+        }
+      }
+    };
+    
+    initializeFileManager();
   }, []);
 
   const loadFiles = async () => {
@@ -31,10 +42,15 @@ export default function FilesManagerPage() {
     setError('');
     try {
       const data = await filesService.getAllFiles();
+      console.log('Files loaded successfully:', data.length);
       setFiles(data);
     } catch (error: any) {
       console.error('Error loading files:', error);
-      const errorMsg = error.response?.data?.message || error.message || 'Error al cargar archivos';
+      const errorMsg = error.response?.status === 401 
+        ? 'No autorizado. Por favor inicia sesión.'
+        : error.response?.status === 500
+        ? 'Error del servidor. Verifica la configuración de Backblaze.'
+        : error.response?.data?.message || error.message || 'Error al cargar archivos';
       setError(errorMsg);
     } finally {
       setIsLoading(false);
@@ -44,10 +60,13 @@ export default function FilesManagerPage() {
   const loadFolders = async () => {
     try {
       const data = await filesService.getAllFolders();
+      console.log('Folders loaded successfully:', data.length);
       setFolders(data);
     } catch (error: any) {
       console.error('Error loading folders:', error);
-      const errorMsg = error.response?.data?.message || error.message || 'Error al cargar carpetas';
+      const errorMsg = error.response?.status === 401 
+        ? 'No autorizado. Por favor inicia sesión.'
+        : error.response?.data?.message || error.message || 'Error al cargar carpetas';
       setError(errorMsg);
     }
   };
