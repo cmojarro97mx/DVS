@@ -2,6 +2,7 @@ import React from 'react';
 import { View } from './DashboardPage';
 import { CompanyIcon } from '../components/icons/CompanyIcon';
 import { UsersIcon } from '../components/icons/UsersIcon';
+import { UserGroupIcon } from '../components/icons/UserGroupIcon';
 import { CogIcon } from '../components/icons/CogIcon';
 import { Banner } from '../components/Banner';
 import { ChevronRightIcon } from '../components/icons/ChevronRightIcon';
@@ -63,9 +64,18 @@ const CompanyHubPage: React.FC<CompanyHubPageProps> = ({ setActiveView }) => {
                 <CompanySection title="Recursos Humanos">
                     <HubCard
                         title="Empleados"
-                        description="Manage your team members and their information."
+                        description="Administra la información de los miembros de tu equipo."
                         icon={UsersIcon}
                         onClick={() => setActiveView('employees')}
+                    />
+                </CompanySection>
+
+                <CompanySection title="Gestión de Clientes">
+                    <HubCard
+                        title="Clientes"
+                        description="Gestiona tu base de datos de clientes y sus operaciones."
+                        icon={UserGroupIcon}
+                        onClick={() => setActiveView('clients')}
                     />
                 </CompanySection>
 
