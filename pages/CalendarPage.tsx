@@ -121,9 +121,9 @@ const UpcomingEvents: React.FC<{
     };
 
     return (
-        <div className="bg-white rounded-lg border border-slate-200 flex flex-col h-full">
-            <h3 className="text-sm md:text-base font-bold text-slate-800 p-3 md:p-4 border-b border-slate-200 flex-shrink-0">Próximos eventos</h3>
-            <div className="flex-grow overflow-y-auto p-3 md:p-4 space-y-2 md:space-y-3">
+        <div className="bg-white rounded-lg border border-slate-200 flex flex-col flex-shrink-0" style={{ maxHeight: '300px' }}>
+            <h3 className="text-sm font-bold text-slate-800 p-3 border-b border-slate-200 flex-shrink-0">Próximos eventos</h3>
+            <div className="flex-grow overflow-y-auto p-3 space-y-2 min-h-0">
                 {upcomingEvents.length > 0 ? (
                     upcomingEvents.map(event => {
                         const categoryStyle = EVENT_CATEGORIES[event.category] || EVENT_CATEGORIES['Other'];
@@ -363,43 +363,43 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
   };
 
   return (
-    <div className="animate-fade-in h-full flex flex-col space-y-4 md:space-y-6 overflow-hidden">
+    <div className="animate-fade-in flex flex-col space-y-4 md:space-y-6 h-full">
       <Banner
           title="Calendario"
           description="Organiza fechas límite, envíos y reuniones con sincronización automática."
           icon={CalendarDaysIcon}
       />
       
-      <div className="bg-white rounded-lg border border-slate-200 p-3 md:p-6 flex flex-col flex-1 overflow-hidden">
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-3 flex-shrink-0">
-          <div className="flex items-center gap-3 md:gap-4">
-            <span className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight capitalize">
+      <div className="bg-white rounded-lg border border-slate-200 p-3 md:p-6 flex flex-col flex-1 min-h-0">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 md:mb-4 gap-2 flex-shrink-0">
+          <div className="flex flex-wrap items-center gap-2 md:gap-3">
+            <span className="text-lg md:text-xl font-bold text-slate-800 tracking-tight capitalize">
               {currentDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}
             </span>
             <div className="flex items-center gap-1">
-              <button onClick={handlePrevMonth} className="p-1.5 md:p-2 rounded text-slate-600 hover:bg-slate-100 transition-colors">
-                <ChevronLeftIcon className="w-4 h-4 md:w-5 md:h-5" />
+              <button onClick={handlePrevMonth} className="p-1.5 rounded text-slate-600 hover:bg-slate-100 transition-colors">
+                <ChevronLeftIcon className="w-4 h-4" />
               </button>
-              <button onClick={handleNextMonth} className="p-1.5 md:p-2 rounded text-slate-600 hover:bg-slate-100 transition-colors">
-                <ChevronRightIcon className="w-4 h-4 md:w-5 md:h-5" />
+              <button onClick={handleNextMonth} className="p-1.5 rounded text-slate-600 hover:bg-slate-100 transition-colors">
+                <ChevronRightIcon className="w-4 h-4" />
               </button>
             </div>
-            <span className="hidden sm:inline text-[10px] md:text-xs text-slate-400">
+            <span className="text-[10px] md:text-xs text-slate-400">
               Última actualización: {lastUpdate.toLocaleTimeString('es-ES')}
             </span>
           </div>
-          <button onClick={() => openAddModal(new Date())} className="flex items-center bg-red-600 text-white px-3 md:px-4 py-2 rounded text-xs md:text-sm font-semibold hover:bg-red-700 w-full sm:w-auto justify-center">
-            <PlusIcon className="w-4 h-4 md:w-5 md:h-5 mr-1.5 md:mr-2" />
+          <button onClick={() => openAddModal(new Date())} className="flex items-center bg-red-600 text-white px-3 py-1.5 md:py-2 rounded text-xs md:text-sm font-semibold hover:bg-red-700 w-full sm:w-auto justify-center">
+            <PlusIcon className="w-4 h-4 mr-1.5" />
             Crear Evento
           </button>
         </header>
         
-        <div className="flex-1 flex flex-col lg:flex-row gap-3 md:gap-6 overflow-hidden">
-            <div className="flex-1 flex flex-col overflow-hidden">
-                <div className="grid grid-cols-7 text-center font-semibold text-[10px] md:text-sm text-slate-500 flex-shrink-0">
-                    {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => <div key={day} className="py-1.5 md:py-2 border-b border-slate-200">{day}</div>)}
+        <div className="flex-1 flex flex-col lg:flex-row gap-3 md:gap-4 min-h-0">
+            <div className="flex-1 flex flex-col min-h-0">
+                <div className="grid grid-cols-7 text-center font-semibold text-[10px] md:text-xs text-slate-500 flex-shrink-0">
+                    {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => <div key={day} className="py-1 md:py-1.5 border-b border-slate-200">{day}</div>)}
                 </div>
-                <div className="grid grid-cols-7 flex-1 border-l border-slate-200 overflow-auto" style={{ gridAutoRows: 'minmax(80px, 1fr)' }}>
+                <div className="grid grid-cols-7 flex-1 border-l border-slate-200 overflow-auto min-h-0" style={{ gridAutoRows: 'minmax(70px, 1fr)' }}>
                     {daysInMonth.map((day, index) => {
                     const isToday = new Date().toDateString() === day.toDateString();
                     const isCurrentMonth = day.getMonth() === currentDate.getMonth();
@@ -458,28 +458,28 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                 </div>
             </div>
 
-            <div className="lg:w-80 flex flex-col gap-3 md:gap-4 overflow-auto flex-shrink-0">
-                <div className="p-3 md:p-4 bg-slate-50 rounded-lg border border-slate-200">
-                    <h3 className="text-sm md:text-base font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                        <LinkIcon className="w-4 h-4 md:w-5 md:h-5 text-slate-500"/> 
+            <div className="lg:w-72 xl:w-80 flex flex-col gap-3 min-h-0 lg:max-h-full overflow-y-auto flex-shrink-0">
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex-shrink-0">
+                    <h3 className="text-sm font-semibold text-slate-800 mb-2 flex items-center gap-2">
+                        <LinkIcon className="w-4 h-4 text-slate-500"/> 
                         Filtrar eventos por fuente
                     </h3>
                     
-                    <label className="flex items-center gap-2 md:gap-3 p-2 hover:bg-white rounded cursor-pointer transition-colors">
+                    <label className="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer transition-colors">
                         <input
                             type="checkbox"
                             checked={includeLocalEvents}
                             onChange={(e) => setIncludeLocalEvents(e.target.checked)}
-                            className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-600 border-slate-300 rounded focus:ring-red-500 focus:ring-1"
+                            className="w-3.5 h-3.5 text-red-600 border-slate-300 rounded focus:ring-red-500 focus:ring-1 flex-shrink-0"
                         />
-                        <span className="font-semibold text-xs md:text-sm text-slate-800">Eventos Locales</span>
+                        <span className="font-semibold text-xs text-slate-800">Eventos Locales</span>
                     </label>
                     
                     {emailAccounts.length > 0 ? (
                         <div className="mt-2 space-y-1">
-                            <p className="text-[10px] md:text-xs font-medium text-slate-500 px-2 mb-1">Cuentas Vinculadas</p>
+                            <p className="text-[10px] font-medium text-slate-500 px-2 mb-1">Cuentas Vinculadas</p>
                             {emailAccounts.map(account => (
-                                <label key={account.id} className="flex items-center gap-2 md:gap-3 p-2 hover:bg-white rounded cursor-pointer transition-colors group">
+                                <label key={account.id} className="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer transition-colors group">
                                     <input
                                         type="checkbox"
                                         checked={selectedAccountIds.includes(account.id)}
@@ -490,11 +490,11 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                                                 setSelectedAccountIds(selectedAccountIds.filter(id => id !== account.id));
                                             }
                                         }}
-                                        className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-600 border-slate-300 rounded focus:ring-red-500 focus:ring-1"
+                                        className="w-3.5 h-3.5 text-red-600 border-slate-300 rounded focus:ring-red-500 focus:ring-1 flex-shrink-0"
                                     />
-                                    <ProviderIcon provider={account.provider} className="w-4 h-4 md:w-5 md:h-5" />
-                                    <div className="flex-grow truncate">
-                                        <span className="font-semibold text-xs md:text-sm text-slate-800 block truncate">{account.email}</span>
+                                    <ProviderIcon provider={account.provider} className="w-4 h-4 flex-shrink-0" />
+                                    <div className="flex-grow min-w-0">
+                                        <span className="font-semibold text-xs text-slate-800 block truncate">{account.email}</span>
                                         {account.calendarSyncEnabled && (
                                             <span className="text-[10px] text-green-600">✓ Sincronización activa</span>
                                         )}
