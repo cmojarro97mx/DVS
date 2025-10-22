@@ -149,21 +149,54 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
   const [selectedEvent, setSelectedEvent] = useState<UIEvent | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [eventToDelete, setEventToDelete] = useState<UIEvent | null>(null);
-  const [eventSource, setEventSource] = useState('local');
+  const [accountFilter, setAccountFilter] = useState<string>('all'); // 'all', 'local', or emailAccountId
 
   useEffect(() => {
-    loadData();
+    loadAccounts();
   }, []);
 
-  const loadData = async () => {
+  useEffect(() => {
+    loadEvents();
+  }, [accountFilter]);
+
+  const loadAccounts = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch('/api/google-auth/status', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setEmailAccounts(data);
+      }
+    } catch (error) {
+      console.error('Error loading accounts:', error);
+    }
+  };
+
+  const loadEvents = async () => {
     try {
       setLoading(true);
-      const backendEvents = await calendarService.getAll();
-      const uiEvents = backendEvents.map(adaptBackendEventToUI);
-      setEvents(uiEvents);
-      setEmailAccounts([]);
+      const token = localStorage.getItem('accessToken');
+      let url = '/api/calendar';
+      
+      // Add filter if not 'all'
+      if (accountFilter !== 'all') {
+        url += `?emailAccountId=${accountFilter}`;
+      }
+      
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      
+      if (response.ok) {
+        const backendEvents = await response.json();
+        const uiEvents = backendEvents.map(adaptBackendEventToUI);
+        setEvents(uiEvents);
+      }
     } catch (error) {
-      console.error('Error loading calendar data:', error);
+      console.error('Error loading calendar events:', error);
     } finally {
       setLoading(false);
     }
