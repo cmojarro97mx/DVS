@@ -47,11 +47,28 @@ class ApiService {
     });
 
     if (!response.ok) {
+      // Si el usuario fue eliminado o su sesión es inválida (401), cerrar sesión automáticamente
+      if (response.status === 401) {
+        this.handleUnauthorized();
+      }
+      
       const error = await response.json().catch(() => ({ message: 'Request failed' }));
       throw new Error(error.message || `HTTP ${response.status}`);
     }
 
     return response.json();
+  }
+
+  private handleUnauthorized() {
+    // Limpiar tokens y datos de sesión
+    this.setAccessToken(null);
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    
+    // Redirigir al login solo si no estamos ya en la página de login/registro
+    if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
+      window.location.href = '/login';
+    }
   }
 
   async get<T>(endpoint: string): Promise<T> {

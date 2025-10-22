@@ -42,6 +42,12 @@ export class UsersService {
   }
 
   async remove(id: string) {
+    // Primero eliminar todos los refresh tokens del usuario para invalidar sus sesiones
+    await this.prisma.refreshToken.deleteMany({
+      where: { userId: id },
+    });
+    
+    // Luego eliminar el usuario (esto también eliminará registros relacionados por CASCADE)
     return this.prisma.user.delete({
       where: { id },
     });

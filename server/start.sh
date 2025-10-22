@@ -1,9 +1,8 @@
 
 #!/bin/bash
 
-# Force the correct DATABASE_URL from .env
-export DATABASE_URL="postgresql://neondb_owner:npg_fK01vAmLVObW@ep-holy-glitter-adsfdor9-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require"
-echo "Using Neon database"
+# DATABASE_URL is now managed through Replit Secrets
+echo "Using Neon database from secrets"
 
 # Install dependencies if needed
 if [ ! -d "node_modules" ]; then
