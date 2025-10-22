@@ -9,8 +9,8 @@ fi
 # Generate Prisma Client
 npx prisma generate
 
-# Run database migrations
-npx prisma migrate deploy
+# Push schema to database
+npx prisma db push --accept-data-loss
 
-# Start the server
+# Start in dev mode
 npm run start:dev
