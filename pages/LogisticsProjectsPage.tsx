@@ -48,7 +48,7 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
       const data = await operationsService.getAll();
       setProjects(data.map(op => ({
         ...op,
-        assignees: op.assignees || []
+        assignees: (op.assignees || []).map((a: any) => a.user?.name || 'Unknown')
       })));
     } catch (err) {
       setError('Failed to load operations');

@@ -321,7 +321,7 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
                 setIsSaving(true);
                 setSaveError('');
                 
-                await operationsService.create({
+                const newOperation = await operationsService.create({
                     projectName: formData.projectName,
                     projectCategory: formData.projectCategory,
                     startDate: formData.startDate,
@@ -342,7 +342,10 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
                     notes: formData.notes,
                     currency: formData.currency,
                     clientId: formData.clientId,
+                    assignees: formData.assignees,
                 });
+                
+                console.log('Operation created successfully:', newOperation);
                 
                 setActiveView('logistics-projects');
             } catch (err) {

@@ -164,16 +164,28 @@ Esquema completo implementado con las siguientes tablas:
 
 1. ✅ ~~Implementar backend API para persistencia de datos~~ - COMPLETADO
 2. ✅ ~~Conectar frontend React con el backend API~~ - COMPLETADO
-3. ⏳ **Implementar Google OAuth para email y calendario** - EN PROGRESO
-4. Configurar almacenamiento de archivos (Replit Object Storage)
-5. Agregar validaciones y manejo de errores más robustos
-6. Implementar sistema de automatizaciones
-7. Configurar Tailwind CSS como PostCSS plugin (eliminar CDN)
-8. Agregar tests unitarios y de integración
+3. ✅ ~~Conectar módulo de operaciones con asignación de usuarios~~ - COMPLETADO
+4. ⏳ **Implementar Google OAuth para email y calendario** - EN PROGRESO
+5. Configurar almacenamiento de archivos (Replit Object Storage)
+6. Agregar validaciones y manejo de errores más robustos
+7. Implementar sistema de automatizaciones
+8. Configurar Tailwind CSS como PostCSS plugin (eliminar CDN)
+9. Agregar tests unitarios y de integración
 
 ## Cambios Recientes
 
-**2025-10-22**
+**2025-10-22 (Tarde)**
+- ✅ **Módulo de Operaciones completamente conectado con backend**:
+  - Frontend ahora envía campo `assignees` al crear operaciones
+  - Backend procesa assignees correctamente usando tabla junction `OperationAssignee`
+  - OperationsService actualizado para crear relaciones many-to-many con usuarios
+  - JWT strategy actualizado para incluir `userId` y `organizationId` en `req.user`
+  - OperationsController implementa multi-tenancy (filtra por organizationId)
+  - LogisticsProjectsPage mapea correctamente assignees desde estructura anidada del backend
+  - Interfaz TypeScript `CreateOperationData` actualizada con campo assignees
+  - ✅ **Problema resuelto**: Operaciones ahora se guardan en PostgreSQL con sus assignees
+
+**2025-10-22 (Mañana)**
 - ✅ **Módulo de Employees completamente funcional**:
   - Schema Prisma actualizado: agregados userId (relación con User) y organizationId
   - Módulo completo en backend: service, controller, module con validación

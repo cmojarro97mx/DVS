@@ -51,6 +51,7 @@ export interface CreateOperationData {
   notes?: string;
   currency?: string;
   clientId?: string;
+  assignees?: string[];
 }
 
 export interface UpdateOperationData extends Partial<CreateOperationData> {}
