@@ -68,7 +68,7 @@ export class InvoicesService {
         admins.map(a => a.id),
         {
           title: 'Nueva factura creada',
-          body: `Se ha creado una nueva factura ${invoice.number ? `#${invoice.number}` : ''} por ${invoice.amount} ${invoice.currency}`,
+          body: `Se ha creado una nueva factura por ${data.amount} ${data.currency}`,
           url: `/invoices/${invoice.id}`,
           data: { type: 'invoice_created', invoiceId: invoice.id },
         },

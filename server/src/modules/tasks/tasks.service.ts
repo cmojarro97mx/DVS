@@ -145,7 +145,7 @@ export class TasksService {
       }
     }
 
-    if (taskData.status === 'completed' && existing.status !== 'completed') {
+    if (taskData.status === 'completed') {
       const assigneeIds = assignees || existing.assignees.map(a => a.userId);
       if (assigneeIds.length > 0) {
         await this.notificationsService.sendNotificationToUsers(assigneeIds, {

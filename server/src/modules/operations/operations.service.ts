@@ -87,7 +87,7 @@ export class OperationsService {
 
           await this.notificationsService.sendNotificationToUser(userId, {
             title: 'Nueva operación asignada',
-            body: `Se te ha asignado la operación: ${operation.reference || 'Sin referencia'}`,
+            body: `Se te ha asignado una nueva operación`,
             url: `/operations/${operation.id}`,
             data: { type: 'operation_assigned', operationId: operation.id },
           });
@@ -163,7 +163,7 @@ export class OperationsService {
         for (const userId of addedAssignees) {
           await this.notificationsService.sendNotificationToUser(userId, {
             title: 'Nueva operación asignada',
-            body: `Se te ha asignado la operación: ${operation.reference || 'Sin referencia'}`,
+            body: `Se te ha asignado una nueva operación`,
             url: `/operations/${operation.id}`,
             data: { type: 'operation_assigned', operationId: operation.id },
           });
@@ -174,7 +174,7 @@ export class OperationsService {
       if (allAssigneeIds.length > 0 && Object.keys(cleanData).length > 0) {
         await this.notificationsService.sendNotificationToUsers(allAssigneeIds, {
           title: 'Operación actualizada',
-          body: `La operación ${operation.reference || 'Sin referencia'} ha sido actualizada`,
+          body: `Una de tus operaciones ha sido actualizada`,
           url: `/operations/${operation.id}`,
           data: { type: 'operation_updated', operationId: operation.id },
         });

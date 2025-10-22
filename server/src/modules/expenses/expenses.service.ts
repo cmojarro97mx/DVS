@@ -67,7 +67,7 @@ export class ExpensesService {
         admins.map(a => a.id),
         {
           title: 'Nuevo gasto registrado',
-          body: `Se ha registrado un nuevo gasto: ${expense.description || 'Sin descripción'} por ${expense.amount} ${expense.currency}`,
+          body: `Se ha registrado un nuevo gasto por ${data.amount} ${data.currency}`,
           url: `/expenses/${expense.id}`,
           data: { type: 'expense_created', expenseId: expense.id },
         },
