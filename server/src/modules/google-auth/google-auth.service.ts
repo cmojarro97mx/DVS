@@ -77,26 +77,35 @@ export class GoogleAuthService {
   }
 
   async getAuthorizationUrl(userId: string): Promise<string> {
-    const scopes = [
-      'https://www.googleapis.com/auth/gmail.readonly',
-      'https://www.googleapis.com/auth/gmail.send',
-      'https://www.googleapis.com/auth/gmail.modify',
-      'https://www.googleapis.com/auth/calendar',
-      'https://www.googleapis.com/auth/calendar.events',
-      'https://www.googleapis.com/auth/userinfo.email',
-      'https://www.googleapis.com/auth/userinfo.profile',
-    ];
+    try {
+      console.log('Generating authorization URL for userId:', userId);
+      
+      const scopes = [
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/gmail.send',
+        'https://www.googleapis.com/auth/gmail.modify',
+        'https://www.googleapis.com/auth/calendar',
+        'https://www.googleapis.com/auth/calendar.events',
+        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/userinfo.profile',
+      ];
 
-    const secureState = this.generateSecureState(userId);
+      const secureState = this.generateSecureState(userId);
+      console.log('Generated secure state');
 
-    const authUrl = this.oauth2Client.generateAuthUrl({
-      access_type: 'offline',
-      scope: scopes,
-      state: secureState,
-      prompt: 'consent',
-    });
+      const authUrl = this.oauth2Client.generateAuthUrl({
+        access_type: 'offline',
+        scope: scopes,
+        state: secureState,
+        prompt: 'consent',
+      });
 
-    return authUrl;
+      console.log('Authorization URL generated successfully');
+      return authUrl;
+    } catch (error) {
+      console.error('Error in getAuthorizationUrl:', error);
+      throw error;
+    }
   }
 
   async handleCallback(code: string, state: string): Promise<void> {

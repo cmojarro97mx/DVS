@@ -18,9 +18,16 @@ export class GoogleAuthController {
   @Get('auth-url')
   @UseGuards(JwtAuthGuard)
   async getAuthUrl(@Req() req: Request) {
-    const user = req.user as any;
-    const authUrl = await this.googleAuthService.getAuthorizationUrl(user.userId);
-    return { url: authUrl };
+    try {
+      const user = req.user as any;
+      console.log('Getting auth URL for user:', user.userId);
+      const authUrl = await this.googleAuthService.getAuthorizationUrl(user.userId);
+      console.log('Generated auth URL successfully');
+      return { url: authUrl };
+    } catch (error) {
+      console.error('Error generating auth URL:', error);
+      throw error;
+    }
   }
 
   @Get('callback')
