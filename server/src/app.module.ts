@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ClientsModule } from './modules/clients/clients.module';
+import { EmployeesModule } from './modules/employees/employees.module';
 import { OperationsModule } from './modules/operations/operations.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
 import { PaymentsModule } from './modules/payments/payments.module';
@@ -26,6 +27,7 @@ import { PrismaService } from './common/prisma.service';
     UsersModule,
     OrganizationsModule,
     ClientsModule,
+    EmployeesModule,
     OperationsModule,
     InvoicesModule,
     PaymentsModule,
