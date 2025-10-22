@@ -4,6 +4,7 @@ import { ChevronDoubleLeftIcon } from './icons/ChevronDoubleLeftIcon';
 import { LogOutIcon } from './icons/LogOutIcon';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import { ShipNowIcon } from './icons/ShipNowIcon';
+import { useAuth } from '../src/contexts/AuthContext';
 
 // Icons for navigation
 import { DashboardIcon } from './icons/DashboardIcon';
@@ -157,7 +158,8 @@ const UserAvatar: React.FC<{ name: string; className?: string }> = ({ name, clas
 const UserMenu: React.FC<{ onLogout: () => void, isSidebarOpen: boolean }> = ({ onLogout, isSidebarOpen }) => {
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
-    const userName = "John Doe";
+    const { user } = useAuth();
+    const userName = user?.name || "Usuario";
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
