@@ -138,10 +138,6 @@ const CompanyProfilePage: React.FC<CompanyProfilePageProps> = ({ setActiveView }
     const handleFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setEditedData(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
-
-    const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setEditedData(prev => ({ ...prev, address: e.target.value }));
-    };
     
     const handleTaxInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setEditedData(prev => ({ ...prev, taxInfo: { ...prev.taxInfo, [e.target.name]: e.target.value } }));
@@ -235,28 +231,32 @@ const CompanyProfilePage: React.FC<CompanyProfilePageProps> = ({ setActiveView }
                             <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Contact Email</p>
                             <div className="flex items-center gap-2">
                                 <AtSymbolIcon className="w-5 h-5 text-gray-400" />
-                                <span className="font-semibold text-gray-800 text-sm truncate">{companyData.email}</span>
+                                <span className="font-semibold text-gray-800 text-sm truncate">{companyData.email || 'Not set'}</span>
                             </div>
                         </div>
                          <div>
                             <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Phone</p>
                             <div className="flex items-center gap-2">
                                 <PhoneIcon className="w-5 h-5 text-gray-400" />
-                                <span className="font-semibold text-gray-800 text-sm">{companyData.phone}</span>
+                                <span className="font-semibold text-gray-800 text-sm">{companyData.phone || 'Not set'}</span>
                             </div>
                         </div>
                          <div>
                             <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Website</p>
                              <div className="flex items-center gap-2">
                                 <GlobeAltIcon className="w-5 h-5 text-gray-400" />
-                                <a href={companyData.website} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 hover:underline text-sm truncate">{companyData.website}</a>
+                                {companyData.website ? (
+                                    <a href={companyData.website} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 hover:underline text-sm truncate">{companyData.website}</a>
+                                ) : (
+                                    <span className="font-semibold text-gray-800 text-sm">Not set</span>
+                                )}
                             </div>
                         </div>
                          <div>
-                            <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Location</p>
+                            <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Address</p>
                             <div className="flex items-center gap-2">
                                 <MapPinIcon className="w-5 h-5 text-gray-400" />
-                                <span className="font-semibold text-gray-800 text-sm">{companyData.address.city}, {companyData.address.country}</span>
+                                <span className="font-semibold text-gray-800 text-sm truncate">{companyData.address || 'Not set'}</span>
                             </div>
                         </div>
                     </div>
@@ -282,12 +282,21 @@ const CompanyProfilePage: React.FC<CompanyProfilePageProps> = ({ setActiveView }
                         </div>
                     )}
                     {activeTab === 'address' && (
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <DetailItem label="Street Address">{isEditing ? <TextInput name="street" value={editedData.address.street} onChange={handleAddressChange} /> : <p>{companyData.address.street}</p>}</DetailItem>
-                            <DetailItem label="City">{isEditing ? <TextInput name="city" value={editedData.address.city} onChange={handleAddressChange} /> : <p>{companyData.address.city}</p>}</DetailItem>
-                            <DetailItem label="State / Province">{isEditing ? <TextInput name="state" value={editedData.address.state} onChange={handleAddressChange} /> : <p>{companyData.address.state}</p>}</DetailItem>
-                            <DetailItem label="ZIP / Postal Code">{isEditing ? <TextInput name="zip" value={editedData.address.zip} onChange={handleAddressChange} /> : <p>{companyData.address.zip}</p>}</DetailItem>
-                            <DetailItem label="Country">{isEditing ? <TextInput name="country" value={editedData.address.country} onChange={handleAddressChange} /> : <p>{companyData.address.country}</p>}</DetailItem>
+                         <div className="grid grid-cols-1 gap-8">
+                            <DetailItem label="Full Address">
+                                {isEditing ? (
+                                    <textarea 
+                                        name="address" 
+                                        value={editedData.address} 
+                                        onChange={(e) => setEditedData(prev => ({ ...prev, address: e.target.value }))}
+                                        className="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        rows={4}
+                                        placeholder="Enter full company address"
+                                    />
+                                ) : (
+                                    <p className="whitespace-pre-wrap">{companyData.address || 'No address set'}</p>
+                                )}
+                            </DetailItem>
                          </div>
                     )}
                     {activeTab === 'tax' && (
