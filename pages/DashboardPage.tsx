@@ -440,7 +440,7 @@ const viewTitles: Record<View, string> = {
   'bank-reconciliation': 'Bank Reconciliation',
   admin: 'Company',
   'company-profile': 'Company Profile',
-  integrations: 'Integrations',
+  integrations: 'Conexiones',
   'linked-accounts': 'Linked Accounts',
   'email-analysis': 'Análisis de Correo',
   'ai-agents': 'Automation Assistant',

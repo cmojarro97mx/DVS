@@ -392,8 +392,8 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
             
             <div className="animate-fade-in space-y-8">
                 <Banner
-                    title="Integrations & Connected Apps"
-                    description="Connect your favorite tools to streamline your workflow. Link your Google account to sync emails and calendar events automatically."
+                    title="Conexiones de Correo y Calendario"
+                    description="Vincula tus cuentas de Google para sincronizar correos electrónicos y eventos de calendario automáticamente."
                     icon={LinkIcon}
                 />
 
