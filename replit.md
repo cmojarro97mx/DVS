@@ -21,11 +21,17 @@ The frontend uses React with TypeScript, styled using Tailwind CSS, and bundled 
 -   **Core Modules**: Logistics Operations, Client/Supplier Management, Financial Management (Invoices, Payments, Expenses), Employee Management, Task Management (Kanban), Notes, File Management, Calendar and Events, Lead and Quotation Management.
 -   **File Storage**: Integrated with Backblaze B2 for secure and scalable file storage of documents, attachments, and logos.
 -   **File Manager Module**: Read-only unified view of all files stored in Backblaze B2 across the system.
-    -   **Unified View**: Aggregates files from both the Files module (general files with folders) and Operation Documents.
-    -   **Features**: Grid/list view modes, advanced filtering (by source, file type, date), search functionality, file size statistics, and type categorization.
-    -   **File Sources**: Displays files from `files` table (general files with folder organization) and `documents` table (operation-related documents).
+    -   **Unified View**: Aggregates files from three sources: Files module (general files with folders), Operation Documents, and Email Files (HTML content from synchronized emails).
+    -   **Organized Display**: Files are grouped in collapsible sections by source (General Files by folder, Operation Documents by operation reference, and Email Files).
+    -   **Features**: Compact grid view (up to 6 columns) and list view modes, advanced filtering (by source, file type), real-time search functionality, auto-refreshing statistics (every 30 seconds).
+    -   **File Sources**: 
+        - `files` table: General files with folder organization
+        - `documents` table: Operation-related documents
+        - `emailMessages` table: HTML email content and attachments stored in B2
+    -   **Secure Access**: Uses signed URLs (valid for 2 hours) generated via AWS S3 SDK for temporary authorized access to private Backblaze B2 files.
+    -   **Preview Features**: Image thumbnails with lazy loading, file type icons, compact file cards optimized for large datasets (1425+ files).
     -   **Read-Only**: View and download only; no editing or deletion capabilities (managed through respective modules).
-    -   **Statistics Dashboard**: Shows total file count, storage usage, breakdown by file type, and counts for general files vs operation documents.
+    -   **Statistics Dashboard**: Real-time metrics showing total file count, storage usage, and breakdown by source (general files, operation documents, email files).
 -   **Operation Management**: Includes notes, tasks (with assignees and Kanban board integration), documents (stored in Backblaze B2), and commission tracking.
 -   **Financial Management**: Invoices, Payments, and Expenses modules enforce organization-level data scoping and validation.
 -   **Google Workspace Integration (Multi-Account)**:
