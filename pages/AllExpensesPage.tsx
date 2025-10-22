@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Expense, TeamMember, Project, View, BankAccount } from './DashboardPage';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Expense, TeamMember, BankAccount } from './DashboardPage';
 import { PlusIcon } from '../components/icons/PlusIcon';
 import { EditIcon } from '../components/icons/EditIcon';
 import { TrashIcon } from '../components/icons/TrashIcon';
@@ -9,26 +9,51 @@ import { ArrowLeftIcon } from '../components/icons/ArrowLeftIcon';
 import { SearchIcon } from '../components/icons/SearchIcon';
 import { ExpensesIcon } from '../components/icons/ExpensesIcon';
 import { Banner } from '../components/Banner';
+import { expensesService } from '../src/services/expensesService';
+import { operationsService } from '../src/services/operationsService';
+import { employeesService } from '../src/services/employeesService';
+import { bankAccountsService } from '../src/services/bankAccountsService';
 
 interface AllExpensesPageProps {
   setActiveView: (view: View) => void;
-  expenses: Expense[];
-  projects: Project[];
-  teamMembers: TeamMember[];
-  onAddExpense: (expense: Omit<Expense, 'id'>) => void;
-  onUpdateExpense: (expense: Expense) => void;
-  onDeleteExpense: (expenseId: string) => void;
-  bankAccounts: BankAccount[];
 }
 
-const AllExpensesPage: React.FC<AllExpensesPageProps> = (props) => {
-    const { setActiveView, expenses, projects, teamMembers, onAddExpense, onUpdateExpense, onDeleteExpense, bankAccounts } = props;
+const AllExpensesPage: React.FC<AllExpensesPageProps> = ({ setActiveView }) => {
+    const [expenses, setExpenses] = useState<Expense[]>([]);
+    const [operations, setOperations] = useState<any[]>([]);
+    const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+    const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
     const [expenseToDeleteId, setExpenseToDeleteId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const [expensesData, operationsData, employeesData, bankAccountsData] = await Promise.all([
+                expensesService.getAll(),
+                operationsService.getAll(),
+                employeesService.getAll(),
+                bankAccountsService.getAll()
+            ]);
+            setExpenses(expensesData as any);
+            setOperations(operationsData);
+            setTeamMembers(employeesData as any);
+            setBankAccounts(bankAccountsData as any);
+        } catch (error) {
+            console.error('Error loading expenses data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
     
-    const projectMap = useMemo(() => new Map(projects.map(p => [p.id, p.projectName])), [projects]);
+    const projectMap = useMemo(() => new Map(operations.map(p => [p.id, p.projectName])), [operations]);
 
     const filteredExpenses = useMemo(() => {
         const lowercasedQuery = searchQuery.toLowerCase().trim();
@@ -48,21 +73,31 @@ const AllExpensesPage: React.FC<AllExpensesPageProps> = (props) => {
         setExpenseToDeleteId(expenseId);
     };
     
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (expenseToDeleteId) {
-            onDeleteExpense(expenseToDeleteId);
+            try {
+                await expensesService.delete(expenseToDeleteId);
+                await loadData();
+            } catch (error) {
+                console.error('Error deleting expense:', error);
+            }
         }
         setExpenseToDeleteId(null);
     };
 
-    const handleSave = (expenseData: Omit<Expense, 'id'>) => {
-        if (editingExpense) {
-            onUpdateExpense({ ...expenseData, id: editingExpense.id });
-        } else {
-            onAddExpense(expenseData);
+    const handleSave = async (expenseData: Omit<Expense, 'id'>) => {
+        try {
+            if (editingExpense) {
+                await expensesService.update(editingExpense.id, expenseData);
+            } else {
+                await expensesService.create(expenseData as any);
+            }
+            await loadData();
+            setIsPanelOpen(false);
+            setEditingExpense(null);
+        } catch (error) {
+            console.error('Error saving expense:', error);
         }
-        setIsPanelOpen(false);
-        setEditingExpense(null);
     };
 
     const handleAddNew = () => {
@@ -72,6 +107,22 @@ const AllExpensesPage: React.FC<AllExpensesPageProps> = (props) => {
 
     const formatCurrency = (amount: number, currency: string) => 
         `${new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount)} ${currency}`;
+
+    if (loading) {
+        return (
+            <div className="animate-fade-in space-y-6">
+                <Banner
+                    title="All Expenses"
+                    description="Manage all company expenses and link them to operations."
+                    icon={ExpensesIcon}
+                />
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    <p className="mt-4 text-gray-600">Loading expenses...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-fade-in space-y-6">
