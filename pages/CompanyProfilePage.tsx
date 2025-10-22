@@ -172,7 +172,7 @@ const CompanyProfilePage: React.FC<CompanyProfilePageProps> = ({ setActiveView }
                 }
             }
             
-            const updatedOrg = await organizationService.updateOrganization({
+            const updateData = {
                 name: editedData.companyName,
                 email: editedData.email,
                 phone: editedData.phone,
@@ -180,7 +180,12 @@ const CompanyProfilePage: React.FC<CompanyProfilePageProps> = ({ setActiveView }
                 address: editedData.address,
                 rfc: editedData.taxInfo.taxId,
                 taxRegime: editedData.taxInfo.vatId,
-            });
+            };
+            
+            console.log('🟢 FRONTEND - Sending data to backend:', updateData);
+            console.log('🟢 FRONTEND - editedData:', editedData);
+            
+            const updatedOrg = await organizationService.updateOrganization(updateData);
             
             const freshData: CompanyData = {
                 companyName: updatedOrg.name || '',
