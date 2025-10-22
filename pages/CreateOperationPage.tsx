@@ -15,6 +15,7 @@ import { DocumentCsvIcon } from '../components/icons/DocumentCsvIcon';
 import { DocumentTextIcon } from '../components/icons/DocumentTextIcon';
 import { operationsService } from '../src/services/operationsService';
 import { clientsService } from '../src/services/clientsService';
+import { GooglePlacesAutocomplete } from '../components/GooglePlacesAutocomplete';
 
 
 interface CreateOperationPageProps {
@@ -23,7 +24,7 @@ interface CreateOperationPageProps {
 }
 
 const STEPS = [
-    { name: 'Project Details', description: 'Basic project information.', icon: ClipboardListIcon, fields: ['projectName', 'clientId', 'startDate', 'status', 'assignees', 'currency'] },
+    { name: 'Project Details', description: 'Basic project information.', icon: ClipboardListIcon, fields: ['projectName', 'clientId', 'projectCategory', 'startDate', 'status', 'assignees', 'currency'] },
     { name: 'Shipment Information', description: 'Details about the transport.', icon: ShipmentInfoIcon, fields: [] },
     { name: 'Tracking & Dates', description: 'Key dates and tracking numbers.', icon: CalendarIcon, fields: [] },
     { name: 'Documents & Notes', description: 'Files and additional notes.', icon: PaperClipIcon, fields: [] },
@@ -68,7 +69,7 @@ const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HT
      <select
         ref={ref}
         {...props}
-        className={`block w-full px-3 py-2 bg-gray-50/50 border rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${props.hasError ? 'border-red-500' : 'border-gray-300'}`}
+        className={`block w-full px-3 py-2 bg-gray-50/50 border rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${props.hasError ? 'border-red-500' : 'border-gray-300'} ${props.disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
     >
       {props.children}
     </select>
@@ -240,6 +241,10 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
         setFormData(prev => ({ ...prev, clientId: client.id, currency: client.currency || 'USD' }));
         setClientSearch(client.name);
         setIsClientDropdownOpen(false);
+        // Clear currency error if exists
+        if (errors.currency) {
+            setErrors(prev => ({ ...prev, currency: '' }));
+        }
     };
 
     const handleSaveNewClient = async (clientData: Omit<Client, 'id'>) => {
@@ -351,6 +356,18 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
                 });
                 
                 console.log('Operation created successfully:', newOperation);
+                
+                // Upload files if any
+                if (files.length > 0) {
+                    console.log(`Uploading ${files.length} files to operation ${newOperation.id}`);
+                    for (const fileItem of files) {
+                        try {
+                            await operationsService.uploadDocument(newOperation.id, fileItem.file);
+                        } catch (uploadErr) {
+                            console.error('Failed to upload file:', fileItem.file.name, uploadErr);
+                        }
+                    }
+                }
                 
                 setActiveView('logistics-projects');
             } catch (err) {
@@ -473,8 +490,8 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
                                                     )}
                                                 </div>
                                             </FormField>
-                                            <FormField label="Project Category" id="projectCategory" error={errors.projectCategory}>
-                                                <Select name="projectCategory" value={formData.projectCategory} onChange={handleChange} hasError={!!errors.projectCategory}>
+                                            <FormField label="Project Category" id="projectCategory" required error={errors.projectCategory}>
+                                                <Select name="projectCategory" value={formData.projectCategory} onChange={handleChange} required hasError={!!errors.projectCategory}>
                                                     <option value="" disabled>Select a category</option>
                                                     {projectCategories.map(c => <option key={c} value={c}>{c}</option>)}
                                                 </Select>
@@ -492,11 +509,12 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
                                                 <Input type="date" name="deadline" value={formData.deadline} onChange={handleChange} hasError={!!errors.deadline} />
                                             </FormField>
                                             <FormField label="Project Currency" id="currency" required className="md:col-span-2" error={errors.currency}>
-                                                <Select name="currency" value={formData.currency} onChange={handleChange} required hasError={!!errors.currency}>
+                                                <Select name="currency" value={formData.currency} onChange={handleChange} required hasError={!!errors.currency} disabled={!!formData.clientId}>
                                                     <option value="USD">USD</option>
                                                     <option value="MXN">MXN</option>
                                                     <option value="EUR">EUR</option>
                                                 </Select>
+                                                {formData.clientId && <p className="mt-1 text-xs text-gray-500">Currency is set based on the selected client</p>}
                                             </FormField>
                                             <FormField label="Assigned To" id="assignees" required className="md:col-span-2" error={errors.assignees}>
                                                 <Select name="assignees" value={formData.assignees} onChange={handleChange} required hasError={!!errors.assignees} multiple>
@@ -509,8 +527,22 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
                                             <FormField label="Shipping Mode" id="shippingMode"><Select name="shippingMode" value={formData.shippingMode} onChange={handleChange}><option value="">Select a mode</option>{shippingModes.map(m => <option key={m} value={m}>{m}</option>)}</Select></FormField>
                                             <FormField label="Courrier" id="courrier"><Input name="courrier" value={formData.courrier} onChange={handleChange} /></FormField>
                                             <FormField label="Insurance" id="insurance"><Select name="insurance" value={formData.insurance} onChange={handleChange}><option value="">Select an option</option>{insuranceOptions.map(o => <option key={o} value={o}>{o}</option>)}</Select></FormField>
-                                            <FormField label="Pick Up Address" id="pickupAddress" className="md:col-span-2"><Input name="pickupAddress" value={formData.pickupAddress} onChange={handleChange} /></FormField>
-                                            <FormField label="Delivery Address" id="deliveryAddress" className="md:col-span-2"><Input name="deliveryAddress" value={formData.deliveryAddress} onChange={handleChange} /></FormField>
+                                            <FormField label="Pick Up Address" id="pickupAddress" className="md:col-span-2">
+                                                <GooglePlacesAutocomplete
+                                                    name="pickupAddress"
+                                                    value={formData.pickupAddress}
+                                                    onChange={(value) => setFormData(prev => ({ ...prev, pickupAddress: value }))}
+                                                    placeholder="Start typing to search for an address..."
+                                                />
+                                            </FormField>
+                                            <FormField label="Delivery Address" id="deliveryAddress" className="md:col-span-2">
+                                                <GooglePlacesAutocomplete
+                                                    name="deliveryAddress"
+                                                    value={formData.deliveryAddress}
+                                                    onChange={(value) => setFormData(prev => ({ ...prev, deliveryAddress: value }))}
+                                                    placeholder="Start typing to search for an address..."
+                                                />
+                                            </FormField>
                                         </>)}
                                         {currentStep === 2 && (<>
                                             <FormField label="Booking / Shipment Tracking" id="bookingTracking" className="md:col-span-2"><Input name="bookingTracking" value={formData.bookingTracking} onChange={handleChange} /></FormField>
