@@ -1,24 +1,59 @@
-import React, { useState, useMemo } from 'react';
-import { Payment, Invoice, Project, View } from './DashboardPage';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View } from './DashboardPage';
 import { ArrowLeftIcon } from '../components/icons/ArrowLeftIcon';
 import { SearchIcon } from '../components/icons/SearchIcon';
 import { PaymentsIcon } from '../components/icons/PaymentsIcon';
 import { Banner } from '../components/Banner';
+import { paymentsService } from '../src/services/paymentsService';
+import { invoicesService } from '../src/services/invoicesService';
+import { operationsService } from '../src/services/operationsService';
+
+interface Payment {
+  id: string;
+  invoiceId: string;
+  operationId: string;
+  amount: number;
+  paymentDate: string;
+  paymentMethod: string;
+}
 
 interface AllPaymentsPageProps {
   setActiveView: (view: View) => void;
-  payments: Payment[];
-  invoices: Invoice[];
-  projects: Project[];
   onViewOperation: (projectId: string) => void;
 }
 
-const AllPaymentsPage: React.FC<AllPaymentsPageProps> = ({ setActiveView, payments, invoices, projects, onViewOperation }) => {
+const AllPaymentsPage: React.FC<AllPaymentsPageProps> = ({ setActiveView, onViewOperation }) => {
+    const [payments, setPayments] = useState<Payment[]>([]);
+    const [invoices, setInvoices] = useState<any[]>([]);
+    const [operations, setOperations] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const [paymentsData, invoicesData, operationsData] = await Promise.all([
+                paymentsService.getAll(),
+                invoicesService.getAll(),
+                operationsService.getAll()
+            ]);
+            setPayments(paymentsData as any);
+            setInvoices(invoicesData);
+            setOperations(operationsData);
+        } catch (error) {
+            console.error('Error loading payments data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const enrichedPayments = useMemo(() => {
         const invoiceMap = new Map<string, { number: string; currency: string; }>(invoices.map(i => [i.id, { number: i.invoiceNumber, currency: i.currency }]));
-        const projectMap = new Map(projects.map(p => [p.id, p.projectName]));
+        const projectMap = new Map(operations.map(p => [p.id, p.projectName]));
         
         return payments.map(p => ({
             ...p,
@@ -26,7 +61,7 @@ const AllPaymentsPage: React.FC<AllPaymentsPageProps> = ({ setActiveView, paymen
             currency: invoiceMap.get(p.invoiceId)?.currency || 'USD',
             projectName: projectMap.get(p.operationId) || 'Unknown Project'
         }));
-    }, [payments, invoices, projects]);
+    }, [payments, invoices, operations]);
     
     const filteredPayments = useMemo(() => {
         const lowercasedQuery = searchQuery.toLowerCase().trim();
@@ -40,6 +75,22 @@ const AllPaymentsPage: React.FC<AllPaymentsPageProps> = ({ setActiveView, paymen
 
     const formatCurrency = (amount: number, currency: string) => 
         `${new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount)} ${currency}`;
+
+    if (loading) {
+        return (
+            <div className="animate-fade-in space-y-6">
+                <Banner
+                    title="All Payments"
+                    description="Record and view all payments received from clients."
+                    icon={PaymentsIcon}
+                />
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    <p className="mt-4 text-gray-600">Loading payments...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-fade-in space-y-6">
