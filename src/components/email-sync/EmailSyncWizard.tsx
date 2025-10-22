@@ -37,23 +37,38 @@ const EmailSyncWizard: React.FC<EmailSyncWizardProps> = ({
       setLoading(true);
       setError(null);
 
+      console.log('[Wizard] Starting discovery for accountId:', accountId);
       const response = await fetch(`/api/email-sync/accounts/${accountId}/discovery`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
       });
 
+      console.log('[Wizard] Response status:', response.status, response.statusText);
+      console.log('[Wizard] Response ok:', response.ok);
+
       if (!response.ok) {
-        throw new Error('Failed to discover email date range');
+        const errorText = await response.text();
+        console.error('[Wizard] Error response:', errorText);
+        throw new Error(`Failed to discover email date range: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log('[Wizard] Discovery data received:', data);
+      
+      if (!data.oldestEmailDate) {
+        console.error('[Wizard] Missing oldestEmailDate in response');
+        throw new Error('Invalid discovery response: missing date information');
+      }
+      
       setDiscoveryData(data);
 
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
       setSelectedDate(sixMonthsAgo.toISOString().split('T')[0]);
+      console.log('[Wizard] Discovery completed successfully');
     } catch (err: any) {
+      console.error('[Wizard] Discovery error:', err);
       setError(err.message || 'Error al descubrir el rango de fechas');
     } finally {
       setLoading(false);
