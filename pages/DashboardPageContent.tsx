@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Project, Client, Invoice, Expense, View, Task, Column } from './DashboardPage';
 import { GridIcon } from '../components/icons/GridIcon';
 import { TruckIcon } from '../components/icons/TruckIcon';
