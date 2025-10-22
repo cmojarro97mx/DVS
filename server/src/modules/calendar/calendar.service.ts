@@ -1,12 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../common/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class CalendarService {
   private readonly logger = new Logger(CalendarService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async findAll(
     userId: string, 
@@ -92,6 +96,24 @@ export class CalendarService {
         status: data.status || 'scheduled',
       },
     });
+    
+    if (event.source === 'local' && event.userId) {
+      const eventDate = new Date(event.startDate);
+      const formattedDate = eventDate.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      await this.notificationsService.sendNotificationToUser(event.userId, {
+        title: 'Nuevo evento en tu calendario',
+        body: `${event.title} - ${formattedDate}`,
+        url: '/calendar',
+        data: { type: 'event_created', eventId: event.id },
+      });
+    }
     
     return event;
   }
