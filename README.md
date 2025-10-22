@@ -26,7 +26,15 @@ npm install
 Create a file named `.env.local` in the root directory and add your Gemini API key:
 
 ```
-GEMINI_API_KEY=your_api_key_here
+SESSION_SECRET=your_new_session_secret
+B2_APP_KEY=your_new_b2_app_key
+B2_KEY_ID=your_new_b2_key_id
+B2_BUCKET_NAME=DashPanel
+B2_ENDPOINT=s3.us-east-005.backblazeb2.com
+GOOGLE_CLIENT_ID=your_new_google_client_id
+GOOGLE_CLIENT_SECRET=your_new_google_client_secret
+GEMINI_API_KEY=your_new_gemini_api_key
+DATABASE_URL=your_new_database_url
 ```
 
 > ⚠️ **Important:**  
