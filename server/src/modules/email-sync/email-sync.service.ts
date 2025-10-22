@@ -452,6 +452,13 @@ export class EmailSyncService {
       throw new Error('Account not found');
     }
 
+    const oldSyncFromDate = account.syncFromDate;
+    
+    if (oldSyncFromDate && syncFromDate > oldSyncFromDate) {
+      this.logger.log(`Detected date range reduction (${oldSyncFromDate.toISOString()} -> ${syncFromDate.toISOString()}), cleaning up old messages`);
+      await this.cleanupOldMessages(accountId, syncFromDate);
+    }
+
     await this.prisma.emailAccount.update({
       where: { id: accountId },
       data: {
@@ -461,6 +468,73 @@ export class EmailSyncService {
     });
 
     this.logger.log(`Sync settings updated for account ${accountId}`);
+  }
+
+  private async cleanupOldMessages(accountId: string, newSyncFromDate: Date): Promise<void> {
+    this.logger.log(`Starting cleanup of messages before ${newSyncFromDate.toISOString()} for account ${accountId}`);
+    
+    const messagesToDelete = await this.prisma.emailMessage.findMany({
+      where: {
+        accountId,
+        date: {
+          lt: newSyncFromDate,
+        },
+      },
+      select: {
+        id: true,
+        htmlBodyKey: true,
+        attachmentKeys: true,
+      },
+    });
+
+    if (messagesToDelete.length === 0) {
+      this.logger.log('No messages to cleanup');
+      return;
+    }
+
+    this.logger.log(`Found ${messagesToDelete.length} messages to delete`);
+
+    const keysToDelete: string[] = [];
+    
+    for (const message of messagesToDelete) {
+      if (message.htmlBodyKey) {
+        keysToDelete.push(message.htmlBodyKey);
+      }
+      
+      if (message.attachmentKeys && Array.isArray(message.attachmentKeys)) {
+        const attachmentKeys = message.attachmentKeys as any[];
+        for (const attachment of attachmentKeys) {
+          if (attachment.key) {
+            keysToDelete.push(attachment.key);
+          }
+        }
+      }
+    }
+
+    if (keysToDelete.length > 0) {
+      this.logger.log(`Deleting ${keysToDelete.length} files from Backblaze`);
+      await this.emailStorageService.deleteFiles(keysToDelete);
+    }
+
+    const messageIds = messagesToDelete.map(m => m.id);
+    await this.prisma.emailMessage.deleteMany({
+      where: {
+        id: { in: messageIds },
+      },
+    });
+
+    const remainingCount = await this.prisma.emailMessage.count({
+      where: { accountId },
+    });
+
+    await this.prisma.emailAccount.update({
+      where: { id: accountId },
+      data: {
+        syncedMessagesCount: remainingCount,
+      },
+    });
+
+    this.logger.log(`Cleanup complete: deleted ${messagesToDelete.length} messages, ${keysToDelete.length} files. Remaining: ${remainingCount} messages`);
   }
 
   private formatDateForGmailQuery(date: Date): string {

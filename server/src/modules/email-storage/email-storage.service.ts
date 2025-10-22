@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 @Injectable()
@@ -123,5 +123,49 @@ export class EmailStorageService {
     }
     
     return uploadedAttachments;
+  }
+
+  async deleteFile(key: string): Promise<void> {
+    try {
+      await this.s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucketName,
+          Key: key,
+        })
+      );
+      
+      this.logger.log(`Deleted file: ${key}`);
+    } catch (error) {
+      this.logger.error(`Failed to delete file ${key}:`, error);
+      throw error;
+    }
+  }
+
+  async deleteFiles(keys: string[]): Promise<void> {
+    if (keys.length === 0) return;
+
+    try {
+      const objects = keys.map(key => ({ Key: key }));
+      
+      const batchSize = 1000;
+      for (let i = 0; i < objects.length; i += batchSize) {
+        const batch = objects.slice(i, i + batchSize);
+        
+        await this.s3Client.send(
+          new DeleteObjectsCommand({
+            Bucket: this.bucketName,
+            Delete: {
+              Objects: batch,
+              Quiet: true,
+            },
+          })
+        );
+      }
+      
+      this.logger.log(`Deleted ${keys.length} files from Backblaze`);
+    } catch (error) {
+      this.logger.error(`Failed to batch delete files:`, error);
+      throw error;
+    }
   }
 }
