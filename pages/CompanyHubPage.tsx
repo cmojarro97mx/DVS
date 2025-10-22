@@ -1,8 +1,8 @@
-
 import React from 'react';
 import { View } from './DashboardPage';
 import { CompanyIcon } from '../components/icons/CompanyIcon';
 import { UsersIcon } from '../components/icons/UsersIcon';
+import { BoltIcon } from '../components/icons/BoltIcon';
 import { Banner } from '../components/Banner';
 import { ChevronRightIcon } from '../components/icons/ChevronRightIcon';
 
@@ -50,7 +50,7 @@ const CompanyHubPage: React.FC<CompanyHubPageProps> = ({ setActiveView }) => {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-start">
-                
+
                 <CompanySection title="Información Corporativa">
                     <HubCard
                         title="Perfil de Empresa"
@@ -59,13 +59,19 @@ const CompanyHubPage: React.FC<CompanyHubPageProps> = ({ setActiveView }) => {
                         onClick={() => setActiveView('company-profile')}
                     />
                 </CompanySection>
-                
+
                 <CompanySection title="Recursos Humanos">
                     <HubCard
                         title="Empleados"
-                        description="Administra tu equipo de trabajo y sus roles dentro de la organización."
+                        description="Manage your team members and their information."
                         icon={UsersIcon}
                         onClick={() => setActiveView('employees')}
+                    />
+                    <HubCard
+                        title="Automatización"
+                        description="Configure automated workflows and processes."
+                        icon={BoltIcon}
+                        onClick={() => setActiveView('automation')}
                     />
                 </CompanySection>
 
