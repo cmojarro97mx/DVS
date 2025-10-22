@@ -254,9 +254,23 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
     loadEvents();
     const interval = setInterval(() => {
       loadEvents();
-    }, 30000);
+    }, 15000);
     
     return () => clearInterval(interval);
+  }, [loadEvents]);
+  
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadEvents();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [loadEvents]);
 
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
