@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Invoice, Project, View, Payment } from './DashboardPage';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View } from './DashboardPage';
 import { ArrowLeftIcon } from '../components/icons/ArrowLeftIcon';
 import { SearchIcon } from '../components/icons/SearchIcon';
 import { InvoicesIcon } from '../components/icons/InvoicesIcon';
@@ -14,15 +14,57 @@ import { ProjectAvatar } from '../components/ProjectAvatar';
 import { PrinterIcon } from '../components/icons/PrinterIcon';
 import { TruckIcon } from '../components/icons/TruckIcon';
 import { ShipIcon } from '../components/icons/ShipIcon';
+import { invoicesService } from '../src/services/invoicesService';
+import { paymentsService } from '../src/services/paymentsService';
+import { operationsService } from '../src/services/operationsService';
 
+interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  invoiceDate: string;
+  dueDate: string;
+  currency: string;
+  exchangeRate: number;
+  discount: number;
+  discountType: string;
+  subTotal: number;
+  taxAmount: number;
+  total: number;
+  status: string;
+  client: string;
+  billingAddress?: string;
+  operationId: string;
+  items: Array<{
+    id: string;
+    itemName: string;
+    description?: string;
+    quantity: number;
+    unitPrice: number;
+    amount: number;
+  }>;
+}
+
+interface Payment {
+  id: string;
+  invoiceId: string;
+  amount: number;
+  date: string;
+  method: string;
+}
+
+interface Operation {
+  id: string;
+  projectName: string;
+  pickupAddress: string;
+  deliveryAddress: string;
+  etd: string;
+  eta: string;
+  shippingMode: string;
+}
 
 interface AllInvoicesPageProps {
   setActiveView: (view: View) => void;
-  invoices: Invoice[];
-  payments: Payment[];
-  projects: Project[];
   onViewOperation: (projectId: string) => void;
-  onDeleteInvoice: (invoiceId: string) => void;
   onEditInvoice: (invoiceId: string, operationId: string) => void;
   onViewInvoiceDetail: (invoiceId: string, operationId: string) => void;
 }
@@ -85,7 +127,7 @@ const BuildingOfficeIcon = ({ className }: { className?: string }) => (
 
 const InvoicePreview: React.FC<{
     invoice: Invoice;
-    project: Project;
+    project: Operation;
     payments: Payment[];
     onBack: () => void;
     onEdit: () => void;
@@ -257,13 +299,39 @@ const StatCard: React.FC<{ title: string; value: string; description: string; co
     </div>
 );
 
-const AllInvoicesPage: React.FC<AllInvoicesPageProps> = ({ setActiveView, invoices, payments, projects, onViewOperation, onDeleteInvoice, onEditInvoice, onViewInvoiceDetail }) => {
+const AllInvoicesPage: React.FC<AllInvoicesPageProps> = ({ setActiveView, onViewOperation, onEditInvoice, onViewInvoiceDetail }) => {
+    const [invoices, setInvoices] = useState<Invoice[]>([]);
+    const [payments, setPayments] = useState<Payment[]>([]);
+    const [operations, setOperations] = useState<Operation[]>([]);
+    const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
     const [statusFilter, setStatusFilter] = useState('All');
     const [sortConfig, setSortConfig] = useState<{ key: keyof EnrichedInvoice; direction: 'ascending' | 'descending' } | null>({ key: 'invoiceDate', direction: 'descending' });
 
-    const projectMap = useMemo(() => new Map(projects.map(p => [p.id, p.projectName])), [projects]);
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const [invoicesData, paymentsData, operationsData] = await Promise.all([
+                invoicesService.getAll(),
+                paymentsService.getAll(),
+                operationsService.getAll()
+            ]);
+            setInvoices(invoicesData as any);
+            setPayments(paymentsData as any);
+            setOperations(operationsData as any);
+        } catch (error) {
+            console.error('Error loading invoices data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const projectMap = useMemo(() => new Map(operations.map(p => [p.id, p.projectName])), [operations]);
 
     const enrichedInvoices = useMemo((): EnrichedInvoice[] => {
         return invoices.map(inv => {
@@ -330,10 +398,15 @@ const AllInvoicesPage: React.FC<AllInvoicesPageProps> = ({ setActiveView, invoic
         setSortConfig({ key, direction });
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (invoiceToDelete) {
-            onDeleteInvoice(invoiceToDelete.id);
-            setInvoiceToDelete(null);
+            try {
+                await invoicesService.delete(invoiceToDelete.id);
+                await loadData();
+                setInvoiceToDelete(null);
+            } catch (error) {
+                console.error('Error deleting invoice:', error);
+            }
         }
     };
 
@@ -356,6 +429,22 @@ const AllInvoicesPage: React.FC<AllInvoicesPageProps> = ({ setActiveView, invoic
             <ChevronUpDownIconSimple className={`w-4 h-4 transition-colors ${sortConfig?.key === sortKey ? 'text-gray-800' : 'text-gray-400 group-hover:text-gray-600'}`} />
         </button>
     );
+
+    if (loading) {
+        return (
+            <div className="animate-fade-in space-y-6">
+                <Banner
+                    title="All Invoices"
+                    description="Track all invoices, their statuses, and associated operations."
+                    icon={InvoicesIcon}
+                />
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    <p className="mt-4 text-gray-600">Loading invoices...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-fade-in space-y-6">
