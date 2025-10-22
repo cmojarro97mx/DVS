@@ -26,15 +26,7 @@ export default function FilesManagerPage() {
       console.log('Initializing File Manager...');
       setIsLoading(true);
       try {
-        // Verificar que hay token de autenticación
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setError('No estás autenticado. Por favor inicia sesión.');
-          setIsLoading(false);
-          return;
-        }
-        
-        console.log('Token found, loading files and folders...');
+        console.log('Loading files and folders...');
         await Promise.all([loadFiles(), loadFolders()]);
         console.log('Files and folders loaded successfully');
       } catch (error: any) {
@@ -107,12 +99,6 @@ export default function FilesManagerPage() {
     setError('');
     
     try {
-      // Verificar autenticación antes de subir
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No estás autenticado. Por favor inicia sesión nuevamente.');
-      }
-      
       let uploadedCount = 0;
       for (const file of fileList) {
         console.log(`Uploading file: ${file.name} (${file.size} bytes)`);
