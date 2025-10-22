@@ -236,16 +236,21 @@ export class EmailSyncController {
   @Get('accounts/:accountId/discovery')
   async discoverDateRange(@Req() req: Request, @Param('accountId') accountId: string) {
     const user = req.user as any;
+    console.log('[Discovery] Request received for accountId:', accountId, 'userId:', user.userId);
     
     const account = await this.prisma.emailAccount.findFirst({
       where: { id: accountId, userId: user.userId },
     });
 
     if (!account) {
+      console.log('[Discovery] Account not found');
       return { error: 'Account not found' };
     }
 
+    console.log('[Discovery] Account found:', account.email);
+
     if (account.detectedOldestEmailDate && account.detectedNewestEmailDate) {
+      console.log('[Discovery] Using cached discovery data');
       return {
         oldestEmailDate: account.detectedOldestEmailDate,
         newestEmailDate: account.detectedNewestEmailDate,
@@ -254,12 +259,19 @@ export class EmailSyncController {
       };
     }
 
-    const discovery = await this.emailSyncService.discoverEmailDateRange(user.userId, accountId);
-    
-    return {
-      ...discovery,
-      cached: false,
-    };
+    console.log('[Discovery] Running discovery process...');
+    try {
+      const discovery = await this.emailSyncService.discoverEmailDateRange(user.userId, accountId);
+      console.log('[Discovery] Discovery completed successfully:', discovery);
+      
+      return {
+        ...discovery,
+        cached: false,
+      };
+    } catch (error) {
+      console.error('[Discovery] Error during discovery:', error);
+      throw error;
+    }
   }
 
   @Post('accounts/:accountId/settings')
