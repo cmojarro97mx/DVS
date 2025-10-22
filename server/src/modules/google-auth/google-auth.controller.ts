@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Res, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Query, Res, UseGuards, Req } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { GoogleAuthService } from './google-auth.service';
 import { Response, Request } from 'express';
@@ -154,5 +154,37 @@ export class GoogleAuthController {
     const user = req.user as any;
     await this.googleAuthService.disconnect(user.userId);
     return { message: 'Google account disconnected successfully' };
+  }
+
+  @Post('sync/gmail/enable')
+  @UseGuards(JwtAuthGuard)
+  async enableGmailSync(@Req() req: Request) {
+    const user = req.user as any;
+    await this.googleAuthService.enableGmailSync(user.userId);
+    return { message: 'Gmail sync enabled successfully' };
+  }
+
+  @Post('sync/gmail/disable')
+  @UseGuards(JwtAuthGuard)
+  async disableGmailSync(@Req() req: Request) {
+    const user = req.user as any;
+    await this.googleAuthService.disableGmailSync(user.userId);
+    return { message: 'Gmail sync disabled successfully' };
+  }
+
+  @Post('sync/calendar/enable')
+  @UseGuards(JwtAuthGuard)
+  async enableCalendarSync(@Req() req: Request) {
+    const user = req.user as any;
+    await this.googleAuthService.enableCalendarSync(user.userId);
+    return { message: 'Calendar sync enabled successfully', syncing: true };
+  }
+
+  @Post('sync/calendar/disable')
+  @UseGuards(JwtAuthGuard)
+  async disableCalendarSync(@Req() req: Request) {
+    const user = req.user as any;
+    await this.googleAuthService.disableCalendarSync(user.userId);
+    return { message: 'Calendar sync disabled successfully' };
   }
 }

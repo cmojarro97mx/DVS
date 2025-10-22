@@ -21,6 +21,10 @@ model User {
   googleAccessToken  String?
   googleRefreshToken String?
   googleTokenExpiry  DateTime?
+  gmailSyncEnabled   Boolean   @default(false)
+  calendarSyncEnabled Boolean  @default(false)
+  lastGmailSync      DateTime?
+  lastCalendarSync   DateTime?
   refreshTokens RefreshToken[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -31,6 +35,7 @@ model User {
   expenses      Expense[]
   createdOperations Operation[] @relation("OperationCreator")
   employee      Employee? @relation("EmployeeUser")
+  events        Event[]
   
   @@map("users")
 }
@@ -72,6 +77,7 @@ model Organization {
   invoices        Invoice[]
   payments        Payment[]
   expenses        Expense[]
+  events          Event[]
   
   @@map("organizations")
 }
@@ -393,17 +399,24 @@ model Expense {
 }
 
 model Event {
-  id          String    @id @default(uuid())
-  title       String
-  description String?
-  startDate   DateTime
-  endDate     DateTime
-  location    String?
-  attendees   Json?
-  color       String?
-  allDay      Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id              String    @id @default(uuid())
+  title           String
+  description     String?
+  startDate       DateTime
+  endDate         DateTime
+  location        String?
+  attendees       Json?
+  color           String?
+  allDay          Boolean   @default(false)
+  source          String    @default("local")
+  googleEventId   String?   @unique
+  googleCalendarId String?
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id])
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
   
   @@map("events")
 }

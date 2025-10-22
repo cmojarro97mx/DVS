@@ -145,6 +145,10 @@ export class GoogleAuthService {
         googleAccessToken: true,
         googleRefreshToken: true,
         googleTokenExpiry: true,
+        gmailSyncEnabled: true,
+        calendarSyncEnabled: true,
+        lastGmailSync: true,
+        lastCalendarSync: true,
       },
     });
 
@@ -152,6 +156,10 @@ export class GoogleAuthService {
       connected: !!user?.googleAccessToken,
       hasRefreshToken: !!user?.googleRefreshToken,
       tokenExpiry: user?.googleTokenExpiry,
+      gmailSyncEnabled: user?.gmailSyncEnabled || false,
+      calendarSyncEnabled: user?.calendarSyncEnabled || false,
+      lastGmailSync: user?.lastGmailSync,
+      lastCalendarSync: user?.lastCalendarSync,
     };
   }
 
@@ -162,6 +170,48 @@ export class GoogleAuthService {
         googleAccessToken: null,
         googleRefreshToken: null,
         googleTokenExpiry: null,
+        gmailSyncEnabled: false,
+        calendarSyncEnabled: false,
+        lastGmailSync: null,
+        lastCalendarSync: null,
+      },
+    });
+  }
+
+  async enableGmailSync(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        gmailSyncEnabled: true,
+      },
+    });
+  }
+
+  async disableGmailSync(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        gmailSyncEnabled: false,
+      },
+    });
+  }
+
+  async enableCalendarSync(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        calendarSyncEnabled: true,
+      },
+    });
+    // Trigger initial sync
+    // This will be handled by the calendar service
+  }
+
+  async disableCalendarSync(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        calendarSyncEnabled: false,
       },
     });
   }

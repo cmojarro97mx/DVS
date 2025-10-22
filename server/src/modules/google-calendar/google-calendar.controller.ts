@@ -90,4 +90,9 @@ export class GoogleCalendarController {
       data.calendarId || 'primary',
     );
   }
+
+  @Post('sync-from-google')
+  async syncFromGoogle(@Request() req) {
+    return this.googleCalendarService.syncGoogleCalendarEvents(req.user.userId);
+  }
 }

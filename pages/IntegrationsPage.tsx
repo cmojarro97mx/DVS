@@ -16,6 +16,10 @@ interface GoogleConnectionStatus {
     connected: boolean;
     hasRefreshToken: boolean;
     tokenExpiry: string | null;
+    gmailSyncEnabled?: boolean;
+    calendarSyncEnabled?: boolean;
+    lastGmailSync?: string | null;
+    lastCalendarSync?: string | null;
 }
 
 const HubCard: React.FC<{
@@ -57,8 +61,10 @@ const HubCard: React.FC<{
 
 const ConnectedGoogleAccount: React.FC<{ 
     status: GoogleConnectionStatus;
-    onDisconnect: () => void; 
-}> = ({ status, onDisconnect }) => {
+    onDisconnect: () => void;
+    onToggleGmail: (enabled: boolean) => void;
+    onToggleCalendar: (enabled: boolean) => void;
+}> = ({ status, onDisconnect, onToggleGmail, onToggleCalendar }) => {
     return (
         <div className="p-6 bg-white transition-colors hover:bg-slate-50/70 rounded-xl border border-slate-200">
             <div className="flex justify-between items-start">
@@ -80,20 +86,53 @@ const ConnectedGoogleAccount: React.FC<{
                 </button>
             </div>
             
-            <div className="mt-4 pt-4 border-t space-y-2">
-                <div className="flex items-center gap-3">
-                    <GmailIcon className="w-5 h-5 text-slate-500" />
-                    <span className="text-sm font-medium text-slate-700">Gmail</span>
-                    <CheckCircleIcon className="w-4 h-4 text-green-600 ml-auto" />
+            <div className="mt-4 pt-4 border-t space-y-3">
+                <div className="flex items-center gap-3 justify-between">
+                    <div className="flex items-center gap-3">
+                        <GmailIcon className="w-5 h-5 text-slate-500" />
+                        <div>
+                            <span className="text-sm font-medium text-slate-700">Gmail</span>
+                            <p className="text-xs text-slate-400">Sync emails</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => onToggleGmail(!status.gmailSyncEnabled)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            status.gmailSyncEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                        }`}
+                    >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            status.gmailSyncEnabled ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                    </button>
                 </div>
-                <div className="flex items-center gap-3">
-                    <GoogleCalendarIcon className="w-5 h-5 text-slate-500" />
-                    <span className="text-sm font-medium text-slate-700">Calendar</span>
-                    <CheckCircleIcon className="w-4 h-4 text-green-600 ml-auto" />
+                <div className="flex items-center gap-3 justify-between">
+                    <div className="flex items-center gap-3">
+                        <GoogleCalendarIcon className="w-5 h-5 text-slate-500" />
+                        <div>
+                            <span className="text-sm font-medium text-slate-700">Calendar</span>
+                            <p className="text-xs text-slate-400">Sync events automatically</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => onToggleCalendar(!status.calendarSyncEnabled)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            status.calendarSyncEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                        }`}
+                    >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            status.calendarSyncEnabled ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                    </button>
                 </div>
                 {status.tokenExpiry && (
-                    <p className="text-xs text-slate-400 mt-3">
+                    <p className="text-xs text-slate-400 mt-3 pt-3 border-t">
                         Token expires: {new Date(status.tokenExpiry).toLocaleString('es-ES')}
+                    </p>
+                )}
+                {status.lastCalendarSync && status.calendarSyncEnabled && (
+                    <p className="text-xs text-slate-400">
+                        Last calendar sync: {new Date(status.lastCalendarSync).toLocaleString('es-ES')}
                     </p>
                 )}
             </div>
@@ -227,11 +266,75 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
             });
             
             if (response.ok) {
-                setGoogleStatus({ connected: false, hasRefreshToken: false, tokenExpiry: null });
+                setGoogleStatus({ 
+                    connected: false, 
+                    hasRefreshToken: false, 
+                    tokenExpiry: null,
+                    gmailSyncEnabled: false,
+                    calendarSyncEnabled: false,
+                });
             }
         } catch (error) {
             console.error('Error disconnecting Google:', error);
             alert('Error al desconectar la cuenta de Google');
+        }
+    };
+
+    const handleToggleGmail = async (enabled: boolean) => {
+        try {
+            const token = localStorage.getItem('accessToken');
+            const endpoint = enabled ? '/api/google-auth/sync/gmail/enable' : '/api/google-auth/sync/gmail/disable';
+            
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+            
+            if (response.ok) {
+                setGoogleStatus(prev => prev ? { ...prev, gmailSyncEnabled: enabled } : null);
+            }
+        } catch (error) {
+            console.error('Error toggling Gmail sync:', error);
+            alert('Error al cambiar la sincronización de Gmail');
+        }
+    };
+
+    const handleToggleCalendar = async (enabled: boolean) => {
+        try {
+            const token = localStorage.getItem('accessToken');
+            const endpoint = enabled ? '/api/google-auth/sync/calendar/enable' : '/api/google-auth/sync/calendar/disable';
+            
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+            
+            if (response.ok) {
+                setGoogleStatus(prev => prev ? { ...prev, calendarSyncEnabled: enabled } : null);
+                
+                // Si se habilitó, sincronizar inmediatamente
+                if (enabled) {
+                    const syncResponse = await fetch('/api/google-calendar/sync-from-google', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                        },
+                    });
+                    
+                    if (syncResponse.ok) {
+                        const result = await syncResponse.json();
+                        console.log('Calendar synced:', result);
+                        fetchGoogleStatus(); // Actualizar para mostrar lastCalendarSync
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error toggling Calendar sync:', error);
+            alert('Error al cambiar la sincronización de Calendar');
         }
     };
 
@@ -275,6 +378,8 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
                             <ConnectedGoogleAccount 
                                 status={googleStatus}
                                 onDisconnect={handleDisconnectGoogle}
+                                onToggleGmail={handleToggleGmail}
+                                onToggleCalendar={handleToggleCalendar}
                             />
                         ) : (
                             <div className="text-center bg-slate-50/70 border-2 border-dashed border-slate-200 rounded-xl py-16 flex flex-col items-center justify-center">
