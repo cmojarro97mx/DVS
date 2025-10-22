@@ -3,23 +3,22 @@ import { apiService } from './api';
 export interface Quotation {
   id: string;
   quotationNumber: string;
-  clientId: string;
-  date: string;
-  validUntil: string;
-  items: Array<{
-    description: string;
-    quantity: number;
-    unitPrice: number;
-    total: number;
-  }>;
+  quotationDate: string;
+  validUntil?: string;
+  clientId?: string;
+  clientName?: string;
+  clientEmail?: string;
+  clientCompany?: string;
+  status: string;
+  currency: string;
+  items: any;
   subtotal: number;
   tax: number;
   total: number;
-  status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
   notes?: string;
-  organizationId: string;
-  createdAt: string;
-  updatedAt: string;
+  termsConditions?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export const quotationsService = {
@@ -31,11 +30,11 @@ export const quotationsService = {
     return apiService.get<Quotation>(`/quotations/${id}`);
   },
 
-  async create(data: Omit<Quotation, 'id' | 'organizationId' | 'createdAt' | 'updatedAt'>): Promise<Quotation> {
+  async create(data: Omit<Quotation, 'id' | 'createdAt' | 'updatedAt'>): Promise<Quotation> {
     return apiService.post<Quotation>('/quotations', data);
   },
 
-  async update(id: string, data: Partial<Quotation>): Promise<Quotation> {
+  async update(id: string, data: Partial<Omit<Quotation, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Quotation> {
     return apiService.put<Quotation>(`/quotations/${id}`, data);
   },
 

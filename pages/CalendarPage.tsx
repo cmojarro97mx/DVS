@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Event, EmailAccount, View } from './DashboardPage';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, EmailAccount } from './DashboardPage';
 import { ChevronLeftIcon } from '../components/icons/ChevronLeftIcon';
 import { ChevronRightIcon } from '../components/icons/ChevronRightIcon';
 import { PlusIcon } from '../components/icons/PlusIcon';
@@ -12,13 +12,9 @@ import { GmailIcon } from '../components/icons/GmailIcon';
 import { GSuiteIcon } from '../components/icons/GSuiteIcon';
 import { MailIcon } from '../components/icons/MailIcon';
 import { LinkIcon } from '../components/icons/LinkIcon';
+import { calendarService, Event } from '../src/services/calendarService';
 
 interface CalendarPageProps {
-  events: Event[];
-  onAddEvent: (event: Omit<Event, 'id'>) => void;
-  onUpdateEvent: (event: Event) => void;
-  onDeleteEvent: (eventId: string) => void;
-  emailAccounts: EmailAccount[];
   setActiveView: (view: View) => void;
 }
 
@@ -90,13 +86,33 @@ const UpcomingEvents: React.FC<{
     )
 }
 
-const CalendarPage: React.FC<CalendarPageProps> = ({ events, onAddEvent, onUpdateEvent, onDeleteEvent, emailAccounts, setActiveView }) => {
+const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [emailAccounts, setEmailAccounts] = useState<EmailAccount[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
   const [eventSource, setEventSource] = useState('local');
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const eventsData = await calendarService.getAll();
+      setEvents(eventsData as any);
+      setEmailAccounts([]);
+    } catch (error) {
+      console.error('Error loading calendar data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
 
@@ -134,13 +150,18 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ events, onAddEvent, onUpdat
     setIsModalOpen(true);
   };
   
-  const handleSaveEvent = (eventData: Omit<Event, 'id'>, id?: string) => {
-      if (id) {
-        onUpdateEvent({ ...eventData, id });
-      } else {
-        onAddEvent(eventData);
+  const handleSaveEvent = async (eventData: Omit<Event, 'id'>, id?: string) => {
+      try {
+        if (id) {
+          await calendarService.update(id, eventData);
+        } else {
+          await calendarService.create(eventData);
+        }
+        await loadData();
+        setIsModalOpen(false);
+      } catch (error) {
+        console.error('Error saving event:', error);
       }
-      setIsModalOpen(false);
   };
 
   const handleDeleteRequest = (event: Event) => {
@@ -148,10 +169,15 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ events, onAddEvent, onUpdat
     setEventToDelete(event);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (eventToDelete) {
-        onDeleteEvent(eventToDelete.id);
-        setEventToDelete(null);
+        try {
+          await calendarService.delete(eventToDelete.id);
+          await loadData();
+          setEventToDelete(null);
+        } catch (error) {
+          console.error('Error deleting event:', error);
+        }
     }
   };
   

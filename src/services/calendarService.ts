@@ -4,16 +4,14 @@ export interface Event {
   id: string;
   title: string;
   description?: string;
-  start: string;
-  end: string;
-  type: 'meeting' | 'deadline' | 'reminder' | 'other';
-  relatedTo?: {
-    type: 'operation' | 'client';
-    id: string;
-  };
-  organizationId: string;
-  createdAt: string;
-  updatedAt: string;
+  startDate: string;
+  endDate: string;
+  location?: string;
+  attendees?: any;
+  color?: string;
+  allDay: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export const calendarService = {
@@ -25,11 +23,11 @@ export const calendarService = {
     return apiService.get<Event>(`/calendar/${id}`);
   },
 
-  async create(data: Omit<Event, 'id' | 'organizationId' | 'createdAt' | 'updatedAt'>): Promise<Event> {
+  async create(data: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>): Promise<Event> {
     return apiService.post<Event>('/calendar', data);
   },
 
-  async update(id: string, data: Partial<Event>): Promise<Event> {
+  async update(id: string, data: Partial<Omit<Event, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Event> {
     return apiService.put<Event>(`/calendar/${id}`, data);
   },
 

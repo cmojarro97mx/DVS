@@ -24,7 +24,7 @@ export const employeesService = {
     return apiService.get<Employee>(`/users/${id}`);
   },
 
-  async create(data: { email: string; name: string; password: string; role?: string; phone?: string }): Promise<Employee> {
+  async create(data: { email: string; name: string; password: string; role: string; phone?: string; status?: string }): Promise<Employee> {
     return apiService.post<Employee>('/users', data);
   },
 

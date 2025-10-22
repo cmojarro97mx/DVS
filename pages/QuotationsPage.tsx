@@ -12,13 +12,10 @@ import { PrinterIcon } from '../components/icons/PrinterIcon';
 import { LogoIcon } from '../components/icons/LogoIcon';
 import { EyeIcon } from '../components/icons/EyeIcon';
 import { Banner } from '../components/Banner';
+import { quotationsService } from '../src/services/quotationsService';
 
 // --- INTERFACES ---
 interface QuotationsPageProps {
-    quotations: Quotation[];
-    onAddQuotation: (quotation: Omit<Quotation, 'id'>) => void;
-    onUpdateQuotation: (quotation: Quotation) => void;
-    onDeleteQuotation: (quotationId: string) => void;
     setActiveView: (view: View) => void;
 }
 
@@ -278,11 +275,29 @@ const QuotationPreview: React.FC<QuotationPreviewProps> = ({ quotation, onBack, 
 
 // --- MAIN COMPONENT ---
 
-const QuotationsPage: React.FC<QuotationsPageProps> = ({ quotations, onAddQuotation, onUpdateQuotation, onDeleteQuotation, setActiveView }) => {
+const QuotationsPage: React.FC<QuotationsPageProps> = ({ setActiveView }) => {
+    const [quotations, setQuotations] = useState<Quotation[]>([]);
+    const [loading, setLoading] = useState(true);
     const [view, setView] = useState<'list' | 'form' | 'preview'>('list');
     const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
     const [quotationToDelete, setQuotationToDelete] = useState<Quotation | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const quotationsData = await quotationsService.getAll();
+            setQuotations(quotationsData as any);
+        } catch (error) {
+            console.error('Error loading quotations data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const filteredQuotations = useMemo(() => {
         return quotations.filter(q =>
@@ -306,21 +321,31 @@ const QuotationsPage: React.FC<QuotationsPageProps> = ({ quotations, onAddQuotat
         setView('preview');
     };
 
-    const handleSave = (quotationData: Omit<Quotation, 'id'>) => {
-        if (selectedQuotation) {
-            onUpdateQuotation({ ...quotationData, id: selectedQuotation.id });
-        } else {
-            onAddQuotation(quotationData);
+    const handleSave = async (quotationData: Omit<Quotation, 'id'>) => {
+        try {
+            if (selectedQuotation) {
+                await quotationsService.update(selectedQuotation.id, quotationData as any);
+            } else {
+                await quotationsService.create(quotationData as any);
+            }
+            await loadData();
+            setView('list');
+        } catch (error) {
+            console.error('Error saving quotation:', error);
         }
-        setView('list');
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (quotationToDelete) {
-            onDeleteQuotation(quotationToDelete.id);
-            setQuotationToDelete(null);
-            if (selectedQuotation?.id === quotationToDelete.id) {
-                setView('list');
+            try {
+                await quotationsService.delete(quotationToDelete.id);
+                await loadData();
+                setQuotationToDelete(null);
+                if (selectedQuotation?.id === quotationToDelete.id) {
+                    setView('list');
+                }
+            } catch (error) {
+                console.error('Error deleting quotation:', error);
             }
         }
     };

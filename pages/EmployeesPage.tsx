@@ -10,6 +10,7 @@ import { EditIcon } from '../components/icons/EditIcon';
 import { TrashIcon } from '../components/icons/TrashIcon';
 import { XIcon } from '../components/icons/XIcon';
 import { CalendarIcon } from '../components/icons/CalendarIcon';
+import { employeesService } from '../src/services/employeesService';
 
 // --- Local Components (to avoid creating new files) ---
 
@@ -41,11 +42,11 @@ const EmployeeAvatar: React.FC<{ name: string }> = ({ name }) => {
 const EmployeeModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
-    onSave: (employee: Omit<TeamMember, 'id'>) => void;
+    onSave: (employee: any) => void;
     employeeToEdit: TeamMember | null;
 }> = ({ isOpen, onClose, onSave, employeeToEdit }) => {
     const [formData, setFormData] = useState({
-        name: '', email: '', phone: '', role: '', hireDate: '', status: 'Active' as 'Active' | 'Inactive',
+        name: '', email: '', phone: '', role: '', hireDate: '', status: 'Active' as 'Active' | 'Inactive', password: '',
     });
 
     useEffect(() => {
@@ -58,9 +59,10 @@ const EmployeeModal: React.FC<{
                     role: employeeToEdit.role,
                     hireDate: employeeToEdit.hireDate || '',
                     status: employeeToEdit.status,
+                    password: '',
                 });
             } else {
-                setFormData({ name: '', email: '', phone: '', role: '', hireDate: new Date().toISOString().split('T')[0], status: 'Active' });
+                setFormData({ name: '', email: '', phone: '', role: '', hireDate: new Date().toISOString().split('T')[0], status: 'Active', password: '' });
             }
         }
     }, [employeeToEdit, isOpen]);
@@ -99,6 +101,12 @@ const EmployeeModal: React.FC<{
                             <div><label className={labelClasses}>Email *</label><input type="email" name="email" value={formData.email} onChange={handleChange} className={baseInputClasses} required /></div>
                             <div><label className={labelClasses}>Phone</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} className={baseInputClasses} /></div>
                         </div>
+                        {!employeeToEdit && (
+                            <div>
+                                <label className={labelClasses}>Password *</label>
+                                <input type="password" name="password" value={formData.password} onChange={handleChange} className={baseInputClasses} required={!employeeToEdit} placeholder="Initial password for new employee" />
+                            </div>
+                        )}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div><label className={labelClasses}>Hire Date</label><input type="date" name="hireDate" value={formData.hireDate} onChange={handleChange} className={baseInputClasses} /></div>
                             <div><label className={labelClasses}>Status</label><select name="status" value={formData.status} onChange={handleChange} className={baseInputClasses}><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div>
@@ -116,14 +124,11 @@ const EmployeeModal: React.FC<{
 
 
 // --- Main Page Component ---
-interface EmployeesPageProps {
-    teamMembers: TeamMember[];
-    onAddEmployee: (employee: Omit<TeamMember, 'id'>) => void;
-    onUpdateEmployee: (employee: TeamMember) => void;
-    onDeleteEmployee: (employeeId: string) => void;
-}
+interface EmployeesPageProps {}
 
-const EmployeesPage: React.FC<EmployeesPageProps> = ({ teamMembers, onAddEmployee, onUpdateEmployee, onDeleteEmployee }) => {
+const EmployeesPage: React.FC<EmployeesPageProps> = () => {
+    const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [employeeToEdit, setEmployeeToEdit] = useState<TeamMember | null>(null);
     const [employeeToDelete, setEmployeeToDelete] = useState<TeamMember | null>(null);
@@ -131,6 +136,22 @@ const EmployeesPage: React.FC<EmployeesPageProps> = ({ teamMembers, onAddEmploye
     const [statusFilter, setStatusFilter] = useState('All');
     const [activeMenu, setActiveMenu] = useState<string | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const employeesData = await employeesService.getAll();
+            setTeamMembers(employeesData as any);
+        } catch (error) {
+            console.error('Error loading employees data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -167,13 +188,18 @@ const EmployeesPage: React.FC<EmployeesPageProps> = ({ teamMembers, onAddEmploye
         setActiveMenu(null);
     };
     
-    const handleSave = (employeeData: Omit<TeamMember, 'id'>) => {
-        if (employeeToEdit) {
-            onUpdateEmployee({ ...employeeData, id: employeeToEdit.id });
-        } else {
-            onAddEmployee(employeeData);
+    const handleSave = async (employeeData: Omit<TeamMember, 'id'>) => {
+        try {
+            if (employeeToEdit) {
+                await employeesService.update(employeeToEdit.id, employeeData as any);
+            } else {
+                await employeesService.create(employeeData as any);
+            }
+            await loadData();
+            setIsModalOpen(false);
+        } catch (error) {
+            console.error('Error saving employee:', error);
         }
-        setIsModalOpen(false);
     };
     
     const handleDeleteRequest = (employee: TeamMember) => {
@@ -181,10 +207,15 @@ const EmployeesPage: React.FC<EmployeesPageProps> = ({ teamMembers, onAddEmploye
         setActiveMenu(null);
     };
     
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if(employeeToDelete) {
-            onDeleteEmployee(employeeToDelete.id);
-            setEmployeeToDelete(null);
+            try {
+                await employeesService.delete(employeeToDelete.id);
+                await loadData();
+                setEmployeeToDelete(null);
+            } catch (error) {
+                console.error('Error deleting employee:', error);
+            }
         }
     };
     
