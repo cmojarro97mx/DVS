@@ -48,6 +48,10 @@ The frontend uses React 19 with TypeScript, styled using Tailwind CSS, and bundl
         -   **Visual Indicators**: Synced events display a Google Calendar icon badge in the Calendar UI.
         -   **Individual Account Controls**: Each connected account has independent Gmail and Calendar sync toggles in the Integrations page.
         -   **Multi-Tenant Security**: Event sync enforces strict user and organization scoping with composite unique constraint `@@unique([userId, googleEventId])` in Prisma schema. Events without valid googleEventId are skipped and logged. All sync operations include organizationId validation and ownership verification before updates to prevent cross-tenant data leakage.
+        -   **Cascaded Event Deletion** (October 2025): When a Google account is disconnected, all associated calendar events are automatically deleted from the database using onDelete: Cascade relationship. The disconnect endpoint returns the count of deleted events to the user.
+        -   **Automatic Cleanup**: Cron job runs daily at 3 AM to permanently delete events with status 'deleted' or 'cancelled' that are older than 30 days, preventing unnecessary data accumulation.
+        -   **Real-Time Synchronization**: Calendar frontend polls for updates every 15 seconds and automatically reloads when the browser tab becomes visible again, ensuring users always see the latest event data.
+        -   **Enhanced UI/UX**: Calendar displays event states (scheduled, completed, cancelled) with appropriate visual indicators, shows sync status for each connected account, and provides direct links to connect Google accounts when none are linked.
     -   **Email Analysis Module** (October 2025):
         -   **Hybrid Storage Architecture**: Metadata stored in PostgreSQL (EmailMessage table), heavy content (HTML bodies, attachments) stored in Backblaze B2 with signed URLs (1-hour expiration).
         -   **EmailMessage Model**: Stores email metadata including gmailMessageId, threadId, subject, from/to/cc addresses, snippet, date, labels, isRead, hasAttachments, replyCount. Includes counters in EmailAccount for total/downloaded/replied/unreplied messages.

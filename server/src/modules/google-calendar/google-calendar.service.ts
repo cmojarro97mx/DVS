@@ -235,9 +235,7 @@ export class GoogleCalendarService {
 
       const existingEvents = await this.prisma.event.findMany({
         where: {
-          userId,
           emailAccountId: accountId,
-          organizationId: account.user.organizationId,
         },
       });
 
