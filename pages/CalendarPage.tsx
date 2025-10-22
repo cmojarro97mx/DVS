@@ -292,10 +292,25 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                   <button onClick={handleNextMonth} className="p-2 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"><ChevronRightIcon className="w-5 h-5" /></button>
               </div>
           </div>
-          <button onClick={() => openAddModal(new Date())} className="flex items-center bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 shadow-sm">
-              <PlusIcon className="w-5 h-5 mr-2" />
-              Crear Evento
-          </button>
+          <div className="flex items-center gap-3">
+              <select 
+                value={accountFilter} 
+                onChange={(e) => setAccountFilter(e.target.value)}
+                className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+              >
+                <option value="all">Todos los eventos</option>
+                <option value="local">Eventos locales</option>
+                {emailAccounts.map(account => (
+                  <option key={account.id} value={account.id}>
+                    {account.email}
+                  </option>
+                ))}
+              </select>
+              <button onClick={() => openAddModal(new Date())} className="flex items-center bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 shadow-sm">
+                  <PlusIcon className="w-5 h-5 mr-2" />
+                  Crear Evento
+              </button>
+          </div>
         </header>
         
         <div className="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
