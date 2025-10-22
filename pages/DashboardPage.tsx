@@ -673,7 +673,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
           onViewOperation={handleViewOperation}
         />;
       case 'operations':
-        return <LogisticsProjectsPage setActiveView={setActiveView} onViewOperation={handleViewOperation} projects={projectsWithRealProgress} />;
+        return <LogisticsProjectsPage 
+          setActiveView={setActiveView} 
+          onViewOperation={handleViewOperation} 
+          projects={projectsWithRealProgress}
+          onOperationsLoaded={setProjects}
+        />;
       case 'create-operation':
         return <CreateOperationPage 
           setActiveView={setActiveView} 

@@ -28,9 +28,11 @@ const statuses = ['All', 'Delivered', 'In Transit', 'On Hold', 'Canceled', 'Plan
 interface LogisticsProjectsPageProps {
   setActiveView: (view: View) => void;
   onViewOperation: (projectId: string) => void;
+  projects?: Project[];
+  onOperationsLoaded?: (projects: Project[]) => void;
 }
 
-const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActiveView, onViewOperation }) => {
+const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActiveView, onViewOperation, onOperationsLoaded }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -46,10 +48,16 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
       setIsLoading(true);
       setError('');
       const data = await operationsService.getAll();
-      setProjects(data.map(op => ({
+      const loadedProjects = data.map(op => ({
         ...op,
         assignees: (op.assignees || []).map((a: any) => a.user?.name || 'Unknown')
-      })));
+      }));
+      setProjects(loadedProjects);
+      
+      // Pass loaded operations back to DashboardPage
+      if (onOperationsLoaded) {
+        onOperationsLoaded(loadedProjects);
+      }
     } catch (err) {
       setError('Failed to load operations');
       console.error(err);
