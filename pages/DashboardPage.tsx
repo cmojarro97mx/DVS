@@ -25,6 +25,7 @@ import { ConfirmationModal } from '../components/ConfirmationModal';
 import IntegrationsPage from './IntegrationsPage'; // New Integrations Page
 import CompanyProfilePage from './CompanyProfilePage'; // New Company Profile Page
 import LinkedAccountsPage from './LinkedAccountsPage'; // New Linked Accounts Page
+import EmailAnalysisPage from './EmailAnalysisPage'; // Email Analysis Page
 import AIAgentsPage from './AIAgentsPage';
 import AIOperationCreatorPage from './AIOperationCreatorPage';
 import { employeesService } from '../src/services/employeesService';
@@ -411,6 +412,7 @@ export type View =
   | 'company-profile'
   | 'integrations'
   | 'linked-accounts'
+  | 'email-analysis'
   | 'ai-agents'
   | 'ai-operation-creator';
 
@@ -437,7 +439,8 @@ const viewTitles: Record<View, string> = {
   admin: 'Company',
   'company-profile': 'Company Profile',
   integrations: 'Integrations',
-  'linked-accounts': 'Análisis de Correo',
+  'linked-accounts': 'Linked Accounts',
+  'email-analysis': 'Análisis de Correo',
   'ai-agents': 'Automation Assistant',
   'ai-operation-creator': 'AI Operation Creator',
 };
@@ -879,6 +882,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
                     emails={emails} 
                     setActiveView={setActiveView} 
                 />;
+      case 'email-analysis':
+        return <EmailAnalysisPage setActiveView={setActiveView} />;
       case 'ai-agents':
         return <AIAgentsPage setActiveView={setActiveView} />;
       case 'ai-operation-creator':
