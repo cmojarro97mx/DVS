@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { google } from 'googleapis';
 import { GoogleAuthService } from '../google-auth/google-auth.service';
 import { PrismaService } from '../../common/prisma.service';
 
 @Injectable()
 export class GoogleCalendarService {
+  private readonly logger = new Logger(GoogleCalendarService.name);
+
   constructor(
     private googleAuthService: GoogleAuthService,
     private prisma: PrismaService,
@@ -136,7 +139,11 @@ export class GoogleCalendarService {
       let updated = 0;
 
       for (const gEvent of googleEvents) {
-        if (!gEvent.id || !gEvent.start) continue;
+        // Skip events without valid ID or start date - security requirement
+        if (!gEvent.id || !gEvent.start) {
+          this.logger.warn(`Skipping event without ID or start date for user ${userId}`);
+          continue;
+        }
 
         const startDate = new Date(gEvent.start.dateTime || gEvent.start.date);
         const endDate = new Date(gEvent.end?.dateTime || gEvent.end?.date || startDate);
@@ -156,16 +163,26 @@ export class GoogleCalendarService {
           organizationId: user.organizationId,
         };
 
-        const existingEvent = await this.prisma.event.findUnique({
-          where: { googleEventId: gEvent.id },
+        // Find existing event scoped by both userId and googleEventId to prevent cross-tenant overwrites
+        const existingEvent = await this.prisma.event.findFirst({
+          where: { 
+            userId,
+            googleEventId: gEvent.id,
+            organizationId: user.organizationId, // Additional organization scoping
+          },
         });
 
         if (existingEvent) {
-          await this.prisma.event.update({
-            where: { id: existingEvent.id },
-            data: eventData,
-          });
-          updated++;
+          // Double-check ownership before updating - defensive programming
+          if (existingEvent.userId === userId && existingEvent.organizationId === user.organizationId) {
+            await this.prisma.event.update({
+              where: { id: existingEvent.id },
+              data: eventData,
+            });
+            updated++;
+          } else {
+            this.logger.error(`Security violation: Event ${existingEvent.id} ownership mismatch for user ${userId}`);
+          }
         } else {
           await this.prisma.event.create({
             data: eventData,
@@ -190,6 +207,37 @@ export class GoogleCalendarService {
     } catch (error) {
       console.error('Error syncing Google Calendar events:', error);
       throw error;
+    }
+  }
+
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async autoSyncCalendars() {
+    this.logger.log('Starting automatic calendar sync for all users...');
+    
+    try {
+      const users = await this.prisma.user.findMany({
+        where: {
+          AND: [
+            { googleRefreshToken: { not: null } },
+            { calendarSyncEnabled: true },
+          ],
+        },
+      });
+
+      this.logger.log(`Found ${users.length} users with calendar sync enabled`);
+
+      for (const user of users) {
+        try {
+          const result = await this.syncGoogleCalendarEvents(user.id);
+          this.logger.log(`Synced calendar for user ${user.email}: ${result.created} created, ${result.updated} updated`);
+        } catch (error) {
+          this.logger.error(`Failed to sync calendar for user ${user.email}:`, error.message);
+        }
+      }
+
+      this.logger.log('Automatic calendar sync completed');
+    } catch (error) {
+      this.logger.error('Error in automatic calendar sync:', error);
     }
   }
 }
