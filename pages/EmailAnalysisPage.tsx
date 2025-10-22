@@ -6,7 +6,6 @@ import { InboxIcon } from '../components/icons/InboxIcon';
 import { PaperAirplaneIcon } from '../components/icons/PaperAirplaneIcon';
 import { CheckCircleIcon } from '../components/icons/CheckCircleIcon';
 import { EyeIcon } from '../components/icons/EyeIcon';
-import { RefreshIcon } from '../components/icons/RefreshIcon';
 import { EmailAvatar } from '../components/EmailAvatar';
 import { ClockIcon } from '../components/icons/ClockIcon';
 
@@ -155,7 +154,6 @@ const EmailAnalysisPage: React.FC<EmailAnalysisPageProps> = ({ setActiveView }) 
     const [metrics, setMetrics] = useState<EmailMetrics | null>(null);
     const [emails, setEmails] = useState<EmailMessage[]>([]);
     const [loading, setLoading] = useState(true);
-    const [syncing, setSyncing] = useState(false);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
@@ -169,6 +167,17 @@ const EmailAnalysisPage: React.FC<EmailAnalysisPageProps> = ({ setActiveView }) 
             fetchEmails();
         }
     }, [selectedAccount, page]);
+
+    useEffect(() => {
+        if (!selectedAccount) return;
+        
+        const interval = setInterval(() => {
+            fetchMetrics();
+            fetchAccounts();
+        }, 30000);
+
+        return () => clearInterval(interval);
+    }, [selectedAccount]);
 
     const fetchAccounts = async () => {
         try {
@@ -231,29 +240,6 @@ const EmailAnalysisPage: React.FC<EmailAnalysisPageProps> = ({ setActiveView }) 
         }
     };
 
-    const handleSync = async () => {
-        if (!selectedAccount || syncing) return;
-        
-        setSyncing(true);
-        try {
-            const token = localStorage.getItem('accessToken');
-            const response = await fetch(`/api/email-sync/sync/${selectedAccount}`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-            });
-            
-            if (response.ok) {
-                await fetchMetrics();
-                await fetchEmails();
-                await fetchAccounts();
-            }
-        } catch (error) {
-            console.error('Error syncing emails:', error);
-            alert('Error al sincronizar correos. Por favor intenta de nuevo.');
-        } finally {
-            setSyncing(false);
-        }
-    };
 
     if (loading) {
         return (
@@ -304,7 +290,7 @@ const EmailAnalysisPage: React.FC<EmailAnalysisPageProps> = ({ setActiveView }) 
             />
 
             <div className="bg-white rounded-xl border border-slate-200 p-6">
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-4">
                     <div className="flex-grow max-w-md">
                         <label className="block text-sm font-medium text-slate-700 mb-2">
                             Cuenta de Correo Activa
@@ -319,20 +305,16 @@ const EmailAnalysisPage: React.FC<EmailAnalysisPageProps> = ({ setActiveView }) 
                         >
                             {accounts.map((account) => (
                                 <option key={account.id} value={account.id}>
-                                    {account.email} ({account.syncedMessagesCount} mensajes)
+                                    {account.email} (Total en Gmail: {account.totalMessagesInGmail} mensajes)
                                 </option>
                             ))}
                         </select>
                     </div>
                     
-                    <button
-                        onClick={handleSync}
-                        disabled={syncing}
-                        className="ml-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                        <RefreshIcon className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
-                        {syncing ? 'Sincronizando...' : 'Sincronizar'}
-                    </button>
+                    <div className="ml-4 flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg border border-green-200">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-sm font-medium">Sincronización automática activa</span>
+                    </div>
                 </div>
 
                 {selectedAccountData?.lastEmailSync && (
@@ -343,6 +325,9 @@ const EmailAnalysisPage: React.FC<EmailAnalysisPageProps> = ({ setActiveView }) 
                         </span>
                     </div>
                 )}
+                <p className="text-xs text-slate-400 mt-2">
+                    Los correos se sincronizan automáticamente cada 10 minutos en segundo plano
+                </p>
             </div>
 
             {metrics && (
