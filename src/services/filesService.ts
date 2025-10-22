@@ -27,11 +27,22 @@ export const filesService = {
     console.log('[filesService] Fetching all files...');
     try {
       const response = await api.get('/files');
-      console.log(`[filesService] Fetched ${response.data.length} files`);
-      return response.data;
+      console.log('[filesService] Response:', response);
+      
+      // Validar que response existe y tiene data
+      if (!response) {
+        console.error('[filesService] No response received');
+        return [];
+      }
+      
+      // El api.get ya devuelve directamente los datos, no response.data
+      const data = Array.isArray(response) ? response : [];
+      console.log(`[filesService] Fetched ${data.length} files`);
+      return data;
     } catch (error: any) {
       console.error('[filesService] Error fetching files:', error);
       console.error('[filesService] Error response:', error.response?.data);
+      console.error('[filesService] Error status:', error.response?.status);
       throw error;
     }
   },
@@ -39,9 +50,9 @@ export const filesService = {
   async getFile(id: string): Promise<FileItem> {
     try {
       const response = await api.get(`/files/${id}`);
-      return response.data;
+      return response;
     } catch (error: any) {
-      console.error('Error fetching file:', error);
+      console.error('[filesService] Error fetching file:', error);
       throw error;
     }
   },
@@ -64,8 +75,8 @@ export const filesService = {
         timeout: 120000, // 2 minutes timeout for large files
       });
       
-      console.log('[filesService] Upload successful:', response.data);
-      return response.data;
+      console.log('[filesService] Upload successful:', response);
+      return response;
     } catch (error: any) {
       console.error('[filesService] Error uploading file:', error);
       console.error('[filesService] Error response:', error.response?.data);
@@ -82,8 +93,11 @@ export const filesService = {
     console.log('[filesService] Fetching all folders...');
     try {
       const response = await api.get('/files/folders');
-      console.log(`[filesService] Fetched ${response.data.length} folders`);
-      return response.data;
+      console.log('[filesService] Response:', response);
+      
+      const data = Array.isArray(response) ? response : [];
+      console.log(`[filesService] Fetched ${data.length} folders`);
+      return data;
     } catch (error: any) {
       console.error('[filesService] Error fetching folders:', error);
       console.error('[filesService] Error response:', error.response?.data);
@@ -93,7 +107,7 @@ export const filesService = {
 
   async createFolder(name: string, parentId?: string): Promise<FileFolder> {
     const response = await api.post('/files/folder', { name, parentId });
-    return response.data;
+    return response;
   },
 
   async deleteFolder(id: string): Promise<void> {
