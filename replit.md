@@ -50,6 +50,13 @@ Nexxio es una plataforma completa de gestión de logística y CRM que permite ad
   - Employee creado para usuario de prueba existente
   - Frontend conectado con backend API de employees
   - Validación y error handling implementados
+- ✅ **Sistema de Refresh Tokens implementado**:
+  - Endpoint POST /api/auth/refresh para renovar tokens automáticamente
+  - Interceptor en frontend que detecta 401 y renueva tokens transparentemente
+  - Protección contra loops infinitos de refresh
+  - Tokens persistidos en localStorage para sesiones permanentes
+  - Backend valida, invalida y regenera tokens de forma segura
+  - ✅ **Problema resuelto**: Sesiones ahora se mantienen al refrescar/reiniciar la página
 
 ## Configuración de Replit
 
@@ -108,6 +115,7 @@ El backend proporciona endpoints REST completos para todos los módulos:
 ### Autenticación
 - `POST /api/auth/register` - Registro de usuarios
 - `POST /api/auth/login` - Login con JWT
+- `POST /api/auth/refresh` - Renovar access token usando refresh token
 
 ### Módulos Disponibles
 Todos los módulos tienen endpoints CRUD estándar (GET, POST, PUT, DELETE):
@@ -173,6 +181,26 @@ Esquema completo implementado con las siguientes tablas:
 9. Agregar tests unitarios y de integración
 
 ## Cambios Recientes
+
+**2025-10-22 (Noche)**
+- ✅ **Sistema de Refresh Tokens completamente implementado**:
+  - **Backend**: 
+    - Endpoint `POST /api/auth/refresh` creado en AuthController
+    - Método `refreshTokens()` en AuthService que valida refresh token
+    - Invalidación automática del refresh token anterior (seguridad)
+    - Generación de nuevos access + refresh tokens
+    - Validación de token expirado y usuario activo
+  - **Frontend**:
+    - Interceptor automático en ApiService que detecta 401
+    - Auto-refresh transparente antes de reintentar la petición fallida
+    - Protección contra loops infinitos (flag isRefreshing + promise compartido)
+    - Método `refresh()` agregado a authService
+    - Tokens actualizados automáticamente en localStorage
+  - **Seguridad**:
+    - No hay loops infinitos si refresh falla
+    - Endpoints /auth/* excluidos del auto-refresh
+    - Solo se intenta refrescar una vez por petición
+  - ✅ **Problema resuelto**: Las sesiones ahora persisten al actualizar/reiniciar, eliminando errores "Failed to load clients"
 
 **2025-10-22 (Tarde)**
 - ✅ **Módulo de Operaciones completamente conectado con backend**:
