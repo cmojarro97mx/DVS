@@ -44,10 +44,19 @@ class ApiService {
       headers['Authorization'] = `Bearer ${this.accessToken}`;
     }
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const finalOptions = {
       ...options,
       headers,
-    });
+    };
+
+    console.log('🔶 REQUEST METHOD - Making HTTP request');
+    console.log('🔶 URL:', `${API_BASE_URL}${endpoint}`);
+    console.log('🔶 Method:', finalOptions.method);
+    console.log('🔶 Headers:', finalOptions.headers);
+    console.log('🔶 Body:', finalOptions.body);
+    console.log('🔶 Full options:', finalOptions);
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, finalOptions);
 
     if (!response.ok) {
       let errorMessage = 'Error en la solicitud';
