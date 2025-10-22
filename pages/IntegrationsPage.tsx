@@ -147,18 +147,27 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
 
     const handleConnectGoogle = async () => {
         try {
+            console.log('Attempting to connect to Google...');
             const token = localStorage.getItem('token');
+            console.log('Token exists:', !!token);
+            
             const response = await fetch('/api/google-auth/auth-url', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
             });
             
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+            
             if (response.ok) {
                 const data = await response.json();
+                console.log('Received auth URL, redirecting...');
                 window.location.href = data.url;
             } else {
-                throw new Error('Failed to get authorization URL');
+                const errorData = await response.text();
+                console.error('Error response:', errorData);
+                throw new Error(`Failed to get authorization URL: ${response.status}`);
             }
         } catch (error) {
             console.error('Error connecting to Google:', error);
