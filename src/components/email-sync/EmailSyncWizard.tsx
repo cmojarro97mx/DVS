@@ -38,9 +38,10 @@ const EmailSyncWizard: React.FC<EmailSyncWizardProps> = ({
       setError(null);
 
       console.log('[Wizard] Starting discovery for accountId:', accountId);
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`/api/email-sync/accounts/${accountId}/discovery`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -162,10 +163,11 @@ const EmailSyncWizard: React.FC<EmailSyncWizardProps> = ({
       setSaving(true);
       setError(null);
 
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`/api/email-sync/accounts/${accountId}/settings`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
