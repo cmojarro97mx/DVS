@@ -136,6 +136,82 @@ export class FilesService {
       },
     });
 
+    // Get email attachments and HTML content stored in Backblaze
+    const emailMessages = await this.prisma.emailMessage.findMany({
+      where: {
+        account: {
+          user: {
+            organizationId,
+          },
+        },
+        OR: [
+          { htmlBodyKey: { not: null } },
+          { attachmentsKey: { not: null } },
+        ],
+      },
+      select: {
+        id: true,
+        subject: true,
+        htmlBodyKey: true,
+        htmlBodyUrl: true,
+        attachmentsKey: true,
+        attachmentsData: true,
+        createdAt: true,
+        updatedAt: true,
+        from: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    // Process email files
+    const emailFiles = [];
+    
+    for (const email of emailMessages) {
+      // Add HTML body file if exists
+      if (email.htmlBodyKey && email.htmlBodyUrl) {
+        emailFiles.push({
+          id: `email-html-${email.id}`,
+          name: `${email.subject || 'Sin asunto'}.html`,
+          url: email.htmlBodyUrl,
+          storageKey: email.htmlBodyKey,
+          size: 0, // Size not stored for HTML
+          mimeType: 'text/html',
+          preview: null,
+          createdAt: email.createdAt,
+          updatedAt: email.updatedAt,
+          source: 'emails' as const,
+          folder: null,
+          operationReference: null,
+          emailReference: `De: ${email.from}`,
+        });
+      }
+
+      // Add attachments if exist
+      if (email.attachmentsData && Array.isArray(email.attachmentsData)) {
+        for (const attachment of email.attachmentsData as any[]) {
+          if (attachment.b2Key && attachment.b2Url) {
+            emailFiles.push({
+              id: `email-attachment-${email.id}-${attachment.filename}`,
+              name: attachment.filename || 'attachment',
+              url: attachment.b2Url,
+              storageKey: attachment.b2Key,
+              size: attachment.size || 0,
+              mimeType: attachment.mimeType || 'application/octet-stream',
+              preview: null,
+              createdAt: email.createdAt,
+              updatedAt: email.updatedAt,
+              source: 'emails' as const,
+              folder: null,
+              operationReference: null,
+              emailReference: `De: ${email.from}`,
+            });
+          }
+        }
+      }
+    }
+
     // Transform to unified format
     const unifiedFiles = [
       ...files.map((file) => ({
@@ -151,6 +227,7 @@ export class FilesService {
         source: 'files' as const,
         folder: file.folder,
         operationReference: null,
+        emailReference: null,
       })),
       ...documents.map((doc) => ({
         id: doc.id,
@@ -165,7 +242,9 @@ export class FilesService {
         source: 'operations' as const,
         folder: null,
         operationReference: doc.operation?.projectName || null,
+        emailReference: null,
       })),
+      ...emailFiles,
     ];
 
     // Sort by creation date
@@ -195,7 +274,50 @@ export class FilesService {
       },
     });
 
-    const allFiles = [...files, ...documents];
+    // Get email files statistics
+    const emailMessages = await this.prisma.emailMessage.findMany({
+      where: {
+        account: {
+          user: {
+            organizationId,
+          },
+        },
+        OR: [
+          { htmlBodyKey: { not: null } },
+          { attachmentsKey: { not: null } },
+        ],
+      },
+      select: {
+        htmlBodyKey: true,
+        attachmentsData: true,
+      },
+    });
+
+    // Count email files
+    let emailFilesCount = 0;
+    let emailFilesSize = 0;
+    const emailFileTypes = [];
+
+    for (const email of emailMessages) {
+      if (email.htmlBodyKey) {
+        emailFilesCount++;
+        emailFileTypes.push({ mimeType: 'text/html', size: 0 });
+      }
+      if (email.attachmentsData && Array.isArray(email.attachmentsData)) {
+        for (const attachment of email.attachmentsData as any[]) {
+          if (attachment.b2Key) {
+            emailFilesCount++;
+            emailFilesSize += attachment.size || 0;
+            emailFileTypes.push({ 
+              mimeType: attachment.mimeType || 'application/octet-stream',
+              size: attachment.size || 0,
+            });
+          }
+        }
+      }
+    }
+
+    const allFiles = [...files, ...documents, ...emailFileTypes];
     const totalSize = allFiles.reduce((acc, file) => acc + (file.size || 0), 0);
     const totalCount = allFiles.length;
 
@@ -212,6 +334,7 @@ export class FilesService {
       typeStats,
       filesCount: files.length,
       documentsCount: documents.length,
+      emailFilesCount,
     };
   }
 

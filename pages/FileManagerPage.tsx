@@ -23,11 +23,12 @@ interface FileItem {
   size: number;
   mimeType: string;
   createdAt: string;
-  source: 'files' | 'operations';
+  source: 'files' | 'operations' | 'emails';
   folder: {
     name: string;
   } | null;
   operationReference: string | null;
+  emailReference?: string | null;
 }
 
 interface Stats {
@@ -35,6 +36,7 @@ interface Stats {
   totalCount: number;
   filesCount: number;
   documentsCount: number;
+  emailFilesCount: number;
   typeStats: Record<string, number>;
 }
 
@@ -44,7 +46,7 @@ export default function FileManagerPage() {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterSource, setFilterSource] = useState<'all' | 'files' | 'operations'>('all');
+  const [filterSource, setFilterSource] = useState<'all' | 'files' | 'operations' | 'emails'>('all');
   const [filterType, setFilterType] = useState<string>('all');
 
   useEffect(() => {
@@ -169,6 +171,16 @@ export default function FileManagerPage() {
               <FileText className="w-8 h-8 text-red-500" />
             </div>
           </div>
+
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Archivos de Emails</p>
+                <p className="text-2xl font-bold text-gray-800">{stats.emailFilesCount}</p>
+              </div>
+              <FileText className="w-8 h-8 text-purple-500" />
+            </div>
+          </div>
         </div>
       )}
 
@@ -194,6 +206,7 @@ export default function FileManagerPage() {
               <option value="all">Todos los orígenes</option>
               <option value="files">Archivos Generales</option>
               <option value="operations">Documentos de Operaciones</option>
+              <option value="emails">Archivos de Emails</option>
             </select>
 
             <select
@@ -262,6 +275,11 @@ export default function FileManagerPage() {
                         Op: {file.operationReference}
                       </span>
                     )}
+                    {file.source === 'emails' && file.emailReference && (
+                      <span className="mt-1 text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded">
+                        📧 {file.emailReference}
+                      </span>
+                    )}
                     {file.folder && (
                       <span className="mt-1 text-xs bg-green-100 text-green-600 px-2 py-1 rounded">
                         {file.folder.name}
@@ -293,6 +311,12 @@ export default function FileManagerPage() {
                             <span className="text-blue-600">Op: {file.operationReference}</span>
                           </>
                         )}
+                        {file.source === 'emails' && file.emailReference && (
+                          <>
+                            <span>•</span>
+                            <span className="text-purple-600">📧 {file.emailReference}</span>
+                          </>
+                        )}
                         {file.folder && (
                           <>
                             <span>•</span>
@@ -306,9 +330,11 @@ export default function FileManagerPage() {
                     <span className={`px-2 py-1 text-xs rounded ${
                       file.source === 'files' 
                         ? 'bg-green-100 text-green-700' 
-                        : 'bg-blue-100 text-blue-700'
+                        : file.source === 'operations'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'bg-purple-100 text-purple-700'
                     }`}>
-                      {file.source === 'files' ? 'Archivo General' : 'Operación'}
+                      {file.source === 'files' ? 'Archivo General' : file.source === 'operations' ? 'Operación' : 'Email'}
                     </span>
                     <Download className="w-4 h-4 text-gray-400" />
                   </div>
