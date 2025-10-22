@@ -202,7 +202,7 @@ export class GoogleAuthService {
     };
   }
 
-  async disconnect(userId: string, accountId: string): Promise<void> {
+  async disconnect(userId: string, accountId: string): Promise<{ eventsDeleted: number }> {
     const account = await this.prisma.emailAccount.findFirst({
       where: {
         id: accountId,
@@ -214,9 +214,17 @@ export class GoogleAuthService {
       throw new NotFoundException('Email account not found');
     }
 
+    const eventsCount = await this.prisma.event.count({
+      where: { emailAccountId: accountId },
+    });
+
     await this.prisma.emailAccount.delete({
       where: { id: accountId },
     });
+
+    console.log(`[GoogleAuth] Disconnected account ${account.email}, deleted ${eventsCount} associated calendar events`);
+
+    return { eventsDeleted: eventsCount };
   }
 
   async enableGmailSync(userId: string, accountId: string): Promise<void> {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, EmailAccount } from './DashboardPage';
 import { ChevronLeftIcon } from '../components/icons/ChevronLeftIcon';
 import { ChevronRightIcon } from '../components/icons/ChevronRightIcon';
@@ -13,6 +13,9 @@ import { GSuiteIcon } from '../components/icons/GSuiteIcon';
 import { MailIcon } from '../components/icons/MailIcon';
 import { LinkIcon } from '../components/icons/LinkIcon';
 import { GoogleCalendarIcon } from '../components/icons/GoogleCalendarIcon';
+import { CheckCircleIcon } from '../components/icons/CheckCircleIcon';
+import { XCircleIcon } from '../components/icons/XCircleIcon';
+import { RefreshIcon } from '../components/icons/RefreshIcon';
 import { calendarService, Event as BackendEvent } from '../src/services/calendarService';
 import { Event as UIEvent } from './DashboardPage';
 
@@ -32,7 +35,7 @@ const COLOR_TO_CATEGORY: Record<string, UIEvent['category']> = {
   'gray': 'Other',
 };
 
-const adaptBackendEventToUI = (backendEvent: BackendEvent): UIEvent & { source?: 'manual' | 'google' } => {
+const adaptBackendEventToUI = (backendEvent: BackendEvent): UIEvent & { source?: 'manual' | 'google'; status?: string } => {
   const category = backendEvent.color && COLOR_TO_CATEGORY[backendEvent.color] 
     ? COLOR_TO_CATEGORY[backendEvent.color] 
     : 'Meeting';
@@ -46,6 +49,7 @@ const adaptBackendEventToUI = (backendEvent: BackendEvent): UIEvent & { source?:
     category: category,
     allDay: backendEvent.allDay,
     source: backendEvent.source || 'manual',
+    status: backendEvent.status || 'scheduled',
   };
 };
 
@@ -74,8 +78,16 @@ const EVENT_CATEGORIES: Record<UIEvent['category'], { label: string, dot: string
   Other: { label: 'Other', dot: 'bg-gray-400', bg: 'bg-gray-100 hover:bg-gray-200', text: 'text-gray-800', border: 'border-l-gray-400' },
 };
 
+const EmptyDayIcon: React.FC<{ className?: string }> = ({ className = "w-6 h-6" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <circle cx="12" cy="14" r="1" fill="currentColor"/>
+  </svg>
+);
+
 const UpcomingEvents: React.FC<{
-  events: UIEvent[];
+  events: Array<UIEvent & { status?: string }>;
   currentDate: Date;
   onEdit: (event: UIEvent) => void;
 }> = ({ events, currentDate, onEdit }) => {
@@ -87,7 +99,7 @@ const UpcomingEvents: React.FC<{
         return events
             .filter(event => {
                 const eventStart = new Date(event.start);
-                return eventStart >= startOfMonth && eventStart <= endOfMonth;
+                return eventStart >= startOfMonth && eventStart <= endOfMonth && event.status !== 'deleted' && event.status !== 'cancelled';
             })
             .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
     }, [events, currentDate]);
@@ -99,13 +111,13 @@ const UpcomingEvents: React.FC<{
 
         if (allDay) {
             if (startDate.toDateString() === endDate.toDateString()) {
-                return startDate.toLocaleDateString('en-US', options);
+                return startDate.toLocaleDateString('es-ES', options);
             }
-            return `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
+            return `${startDate.toLocaleDateString('es-ES', options)} - ${endDate.toLocaleDateString('es-ES', options)}`;
         }
         
         const timeOptions: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
-        return `${startDate.toLocaleDateString('en-US', options)}, ${startDate.toLocaleTimeString('en-US', timeOptions)}`;
+        return `${startDate.toLocaleDateString('es-ES', options)}, ${startDate.toLocaleTimeString('es-ES', timeOptions)}`;
     };
 
     return (
@@ -115,13 +127,20 @@ const UpcomingEvents: React.FC<{
                 {upcomingEvents.length > 0 ? (
                     upcomingEvents.map(event => {
                         const categoryStyle = EVENT_CATEGORIES[event.category] || EVENT_CATEGORIES['Other'];
-                        const isGoogleEvent = (event as any).source === 'google';
+                        const isGoogleEvent = event.source === 'google';
+                        const isCompleted = event.status === 'completed';
+                        
                         return (
-                             <div key={event.id} onClick={() => onEdit(event)} className={`p-3 rounded-lg border-l-4 cursor-pointer transition-all duration-200 ${categoryStyle.bg} ${categoryStyle.border}`}>
+                             <div key={event.id} onClick={() => onEdit(event)} className={`p-3 rounded-lg border-l-4 cursor-pointer transition-all duration-200 ${categoryStyle.bg} ${categoryStyle.border} ${isCompleted ? 'opacity-60' : ''}`}>
                                 <div className="flex items-start justify-between gap-2">
-                                    <p className={`font-bold text-sm ${categoryStyle.text} flex-grow`}>{event.title}</p>
+                                    <div className="flex items-center gap-2 flex-grow">
+                                        <p className={`font-bold text-sm ${categoryStyle.text} ${isCompleted ? 'line-through' : ''}`}>{event.title}</p>
+                                        {isCompleted && (
+                                            <CheckCircleIcon className="w-4 h-4 text-green-600 flex-shrink-0" title="Completado" />
+                                        )}
+                                    </div>
                                     {isGoogleEvent && (
-                                        <GoogleCalendarIcon className="w-4 h-4 text-blue-500 flex-shrink-0" title="Synced from Google Calendar" />
+                                        <GoogleCalendarIcon className="w-4 h-4 text-blue-500 flex-shrink-0" title="Sincronizado con Google Calendar" />
                                     )}
                                 </div>
                                 <p className="text-xs text-slate-500 mt-1">{formatEventDate(event.start, event.end, event.allDay)}</p>
@@ -141,28 +160,21 @@ const UpcomingEvents: React.FC<{
 }
 
 const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
-  const [events, setEvents] = useState<UIEvent[]>([]);
+  const [events, setEvents] = useState<Array<UIEvent & { status?: string }>>([]);
   const [emailAccounts, setEmailAccounts] = useState<EmailAccount[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<UIEvent | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [eventToDelete, setEventToDelete] = useState<UIEvent | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   
-  // New multi-source filtering state
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const [includeLocalEvents, setIncludeLocalEvents] = useState(true);
 
-  useEffect(() => {
-    loadAccounts();
-  }, []);
-
-  useEffect(() => {
-    loadEvents();
-  }, [selectedAccountIds, includeLocalEvents]);
-
-  const loadAccounts = async () => {
+  const loadAccounts = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch('/api/google-auth/status', {
@@ -171,19 +183,18 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
       
       if (response.ok) {
         const data = await response.json();
-        setEmailAccounts(data);
+        setEmailAccounts(data.accounts || []);
       }
     } catch (error) {
       console.error('Error loading accounts:', error);
     }
-  };
+  }, []);
 
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken');
       
-      // Build query parameters for multi-source filtering
       const params = new URLSearchParams();
       if (selectedAccountIds.length > 0) {
         params.append('emailAccountIds', selectedAccountIds.join(','));
@@ -202,13 +213,51 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
         const backendEvents = await response.json();
         const uiEvents = backendEvents.map(adaptBackendEventToUI);
         setEvents(uiEvents);
+        setLastUpdate(new Date());
       }
     } catch (error) {
       console.error('Error loading calendar events:', error);
     } finally {
       setLoading(false);
     }
+  }, [selectedAccountIds, includeLocalEvents]);
+
+  const syncAllAccounts = async () => {
+    try {
+      setSyncing(true);
+      const token = localStorage.getItem('accessToken');
+      
+      for (const account of emailAccounts.filter(a => a.calendarSyncEnabled)) {
+        await fetch('/api/google-calendar/sync-from-google', {
+          method: 'POST',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ accountId: account.id }),
+        });
+      }
+      
+      await loadEvents();
+    } catch (error) {
+      console.error('Error syncing calendars:', error);
+    } finally {
+      setSyncing(false);
+    }
   };
+
+  useEffect(() => {
+    loadAccounts();
+  }, [loadAccounts]);
+
+  useEffect(() => {
+    loadEvents();
+    const interval = setInterval(() => {
+      loadEvents();
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [loadEvents]);
 
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
 
@@ -225,7 +274,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
   }, [currentDate]);
 
   const filteredEvents = useMemo(() => {
-    return events;
+    return events.filter(e => e.status !== 'deleted');
   }, [events]);
 
   const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
@@ -287,7 +336,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
     <div className="animate-fade-in h-full flex flex-col space-y-6">
       <Banner
           title="Calendario"
-          description="Organiza fechas límite, envíos y reuniones."
+          description="Organiza fechas límite, envíos y reuniones con sincronización automática."
           icon={CalendarDaysIcon}
       />
       
@@ -299,6 +348,17 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                   <button onClick={handlePrevMonth} className="p-2 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"><ChevronLeftIcon className="w-5 h-5" /></button>
                   <button onClick={handleNextMonth} className="p-2 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"><ChevronRightIcon className="w-5 h-5" /></button>
               </div>
+              <button 
+                onClick={syncAllAccounts} 
+                disabled={syncing}
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+              >
+                <RefreshIcon className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+                {syncing ? 'Sincronizando...' : 'Sincronizar'}
+              </button>
+              <span className="text-xs text-slate-400">
+                Última actualización: {lastUpdate.toLocaleTimeString('es-ES')}
+              </span>
           </div>
           <button onClick={() => openAddModal(new Date())} className="flex items-center bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 shadow-sm">
               <PlusIcon className="w-5 h-5 mr-2" />
@@ -340,16 +400,21 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                             {dayEvents.length > 0 ? (
                                 dayEvents.slice(0, 3).map(event => {
                                     const categoryStyle = EVENT_CATEGORIES[event.category] || EVENT_CATEGORIES['Other'];
+                                    const isCompleted = event.status === 'completed';
+                                    const isCancelled = event.status === 'cancelled';
+                                    
                                     return (
-                                        <div key={event.id} onClick={(e) => { e.stopPropagation(); openEditModal(event); }} className={`w-full text-left p-1 rounded-md text-xs truncate flex items-center gap-1.5 ${categoryStyle.bg} ${categoryStyle.text} font-semibold transition-all duration-200 hover:shadow-md`} title={event.title}>
+                                        <div key={event.id} onClick={(e) => { e.stopPropagation(); openEditModal(event); }} className={`w-full text-left p-1 rounded-md text-xs truncate flex items-center gap-1.5 ${categoryStyle.bg} ${categoryStyle.text} font-semibold transition-all duration-200 hover:shadow-md ${(isCompleted || isCancelled) ? 'opacity-60' : ''}`} title={event.title}>
                                             <div className={`w-1.5 h-1.5 rounded-full ${categoryStyle.dot} flex-shrink-0`}></div>
-                                            <span className="truncate">{event.title}</span>
+                                            <span className={`truncate ${isCompleted || isCancelled ? 'line-through' : ''}`}>{event.title}</span>
+                                            {isCompleted && <CheckCircleIcon className="w-3 h-3 flex-shrink-0" />}
+                                            {isCancelled && <XCircleIcon className="w-3 h-3 flex-shrink-0" />}
                                         </div>
                                     )
                                 })
                             ) : (
-                                isCurrentMonth && <div className="flex-grow flex flex-col items-center justify-center text-center text-slate-300 h-full p-1 opacity-90">
-                                    <PackageIcon className="w-5 h-5" />
+                                isCurrentMonth && <div className="flex-grow flex flex-col items-center justify-center text-center text-slate-300 h-full p-1 opacity-70">
+                                    <EmptyDayIcon className="w-5 h-5" />
                                     <span className="text-[9px] mt-1 font-semibold text-slate-400">Sin eventos</span>
                                 </div>
                             )}
@@ -372,7 +437,6 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                         Filtrar eventos por fuente
                     </h3>
                     
-                    {/* Local Events Checkbox */}
                     <label className="flex items-center gap-3 p-2 hover:bg-white rounded-md cursor-pointer transition-colors">
                         <input
                             type="checkbox"
@@ -383,7 +447,6 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                         <span className="font-semibold text-sm text-slate-800">Eventos Locales</span>
                     </label>
                     
-                    {/* Email Accounts Checkboxes */}
                     {emailAccounts.length > 0 ? (
                         <div className="mt-2 space-y-1">
                             <p className="text-xs font-medium text-slate-500 px-2 mb-1">Cuentas Vinculadas</p>
@@ -432,9 +495,9 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
         isOpen={!!eventToDelete}
         onClose={() => setEventToDelete(null)}
         onConfirm={confirmDelete}
-        title="Delete Event"
+        title="Eliminar Evento"
       >
-        Are you sure you want to delete the event "{eventToDelete?.title}"? This action cannot be undone.
+        ¿Estás seguro de que deseas eliminar el evento "{eventToDelete?.title}"? Esta acción no se puede deshacer.
       </ConfirmationModal>
     </div>
   );

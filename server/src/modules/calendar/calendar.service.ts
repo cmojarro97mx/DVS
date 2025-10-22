@@ -19,11 +19,9 @@ export class CalendarService {
       organizationId,
     };
 
-    // Handle multi-source filtering
     if (filters && (filters.emailAccountIds?.length || filters.includeLocal)) {
       const conditions = [];
       
-      // Add email account IDs if specified
       if (filters.emailAccountIds && filters.emailAccountIds.length > 0) {
         conditions.push({
           emailAccountId: {
@@ -32,25 +30,22 @@ export class CalendarService {
         });
       }
       
-      // Add local events if specified
       if (filters.includeLocal) {
         conditions.push({
           emailAccountId: null,
         });
       }
       
-      // Use OR to combine conditions
       if (conditions.length > 0) {
         where.OR = conditions;
       }
     }
 
-    // Filter by status if provided (exclude deleted events by default)
     if (filters?.status) {
       where.status = filters.status;
     } else {
       where.status = {
-        not: 'deleted',
+        notIn: ['deleted'],
       };
     }
 
@@ -61,6 +56,7 @@ export class CalendarService {
           select: {
             id: true,
             email: true,
+            provider: true,
           },
         },
       },
@@ -71,18 +67,83 @@ export class CalendarService {
   }
 
   async findOne(id: string) {
-    return this.prisma.event.findUnique({ where: { id } });
+    return this.prisma.event.findUnique({ 
+      where: { id },
+      include: {
+        emailAccount: {
+          select: {
+            id: true,
+            email: true,
+            provider: true,
+          },
+        },
+      },
+    });
   }
 
   async create(data: any) {
-    return this.prisma.event.create({ data });
+    const event = await this.prisma.event.create({ 
+      data: {
+        ...data,
+        source: data.source || 'local',
+        status: data.status || 'scheduled',
+      },
+    });
+    
+    return event;
   }
 
   async update(id: string, data: any) {
-    return this.prisma.event.update({ where: { id }, data });
+    const event = await this.prisma.event.update({ 
+      where: { id }, 
+      data: {
+        ...data,
+        updatedAt: new Date(),
+      },
+    });
+
+    return event;
   }
 
   async remove(id: string) {
-    return this.prisma.event.delete({ where: { id } });
+    const event = await this.prisma.event.findUnique({ where: { id } });
+    
+    if (event?.googleEventId && event?.emailAccountId) {
+      await this.prisma.event.update({
+        where: { id },
+        data: { 
+          status: 'deleted',
+          lastSyncedAt: new Date(),
+        },
+      });
+      return { soft: true, event };
+    } else {
+      return this.prisma.event.delete({ where: { id } });
+    }
+  }
+
+  async getEventStats(userId: string, organizationId: string, accountId?: string) {
+    const where: any = {
+      userId,
+      organizationId,
+    };
+
+    if (accountId) {
+      where.emailAccountId = accountId;
+    }
+
+    const [total, scheduled, completed, cancelled] = await Promise.all([
+      this.prisma.event.count({ where: { ...where, status: { notIn: ['deleted'] } } }),
+      this.prisma.event.count({ where: { ...where, status: 'scheduled' } }),
+      this.prisma.event.count({ where: { ...where, status: 'completed' } }),
+      this.prisma.event.count({ where: { ...where, status: 'cancelled' } }),
+    ]);
+
+    return {
+      total,
+      scheduled,
+      completed,
+      cancelled,
+    };
   }
 }

@@ -106,4 +106,9 @@ export class GoogleCalendarController {
   async syncFromGoogle(@Request() req, @Body() data: { accountId: string }) {
     return this.googleCalendarService.syncGoogleCalendarEvents(req.user.userId, data.accountId);
   }
+
+  @Post('sync-to-google/:eventId')
+  async syncToGoogle(@Request() req, @Param('eventId') eventId: string) {
+    return this.googleCalendarService.syncLocalEventToGoogle(eventId, req.user.userId);
+  }
 }

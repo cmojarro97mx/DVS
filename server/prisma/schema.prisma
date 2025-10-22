@@ -406,8 +406,10 @@ model Event {
   source          String    @default("local")
   googleEventId   String?
   googleCalendarId String?
+  googleUpdated   DateTime?
+  lastSyncedAt    DateTime?
   emailAccountId  String?
-  emailAccount    EmailAccount? @relation("EventEmailAccount", fields: [emailAccountId], references: [id], onDelete: SetNull)
+  emailAccount    EmailAccount? @relation("EventEmailAccount", fields: [emailAccountId], references: [id], onDelete: Cascade)
   userId          String?
   user            User?     @relation(fields: [userId], references: [id])
   organizationId  String?
@@ -416,6 +418,8 @@ model Event {
   updatedAt       DateTime  @updatedAt
   
   @@unique([userId, googleEventId])
+  @@index([emailAccountId, status])
+  @@index([userId, startDate])
   @@map("events")
 }
 

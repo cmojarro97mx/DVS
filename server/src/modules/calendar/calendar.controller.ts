@@ -24,14 +24,28 @@ export class CalendarController {
     });
   }
 
+  @Get('stats')
+  getStats(
+    @Request() req,
+    @Query('accountId') accountId?: string
+  ) {
+    const user = req.user as any;
+    return this.calendarService.getEventStats(user.userId, user.organizationId, accountId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.calendarService.findOne(id);
   }
 
   @Post()
-  create(@Body() createData: any) {
-    return this.calendarService.create(createData);
+  create(@Request() req, @Body() createData: any) {
+    const user = req.user as any;
+    return this.calendarService.create({
+      ...createData,
+      userId: user.userId,
+      organizationId: user.organizationId,
+    });
   }
 
   @Put(':id')
