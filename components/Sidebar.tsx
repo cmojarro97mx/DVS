@@ -304,14 +304,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <NavItem icon={FolderIcon} label="Files" isActive={activeView === 'files'} onClick={() => setActiveView('files')} isSidebarOpen={isSidebarOpen} />
                         <NavItem icon={LinkIcon} label="Conexiones" isActive={activeView === 'integrations'} onClick={() => setActiveView('integrations')} isSidebarOpen={isSidebarOpen} />
                         <NavItem icon={AtSymbolIcon} label="Análisis de Correo" isActive={activeView === 'email-analysis'} onClick={() => setActiveView('email-analysis')} isSidebarOpen={isSidebarOpen} />
-                        <NavItem icon={CpuChipIcon} label="AI Agents" isActive={['ai-agents', 'ai-operation-creator'].includes(activeView)} onClick={() => setActiveView('ai-agents')} isSidebarOpen={isSidebarOpen} />
                     </NavSection>
 
                     <NavSection title="Administración" isSidebarOpen={isSidebarOpen}>
                         <NavItem 
                             icon={CompanyIcon} 
                             label="Empresa" 
-                            isActive={['company-hub', 'company-profile', 'employees'].includes(activeView)} 
+                            isActive={['company-hub', 'company-profile', 'employees', 'ai-operation-creator'].includes(activeView)} 
                             onClick={() => setActiveView('company-hub')} 
                             isSidebarOpen={isSidebarOpen} 
                         />

@@ -26,7 +26,6 @@ import IntegrationsPage from './IntegrationsPage'; // New Integrations Page
 import CompanyProfilePage from './CompanyProfilePage'; // New Company Profile Page
 import LinkedAccountsPage from './LinkedAccountsPage'; // New Linked Accounts Page
 import EmailAnalysisPage from './EmailAnalysisPage'; // Email Analysis Page
-import AIAgentsPage from './AIAgentsPage';
 import AIOperationCreatorPage from './AIOperationCreatorPage';
 import CompanyHubPage from './CompanyHubPage'; // Import new Company Hub Page
 import { employeesService } from '../src/services/employeesService';

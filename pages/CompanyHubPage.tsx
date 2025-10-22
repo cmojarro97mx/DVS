@@ -67,11 +67,14 @@ const CompanyHubPage: React.FC<CompanyHubPageProps> = ({ setActiveView }) => {
                         icon={UsersIcon}
                         onClick={() => setActiveView('employees')}
                     />
+                </CompanySection>
+
+                <CompanySection title="Automatización">
                     <HubCard
-                        title="Automatización"
-                        description="Configura flujos de trabajo y procesos automatizados."
+                        title="AI Operation Creator"
+                        description="Crea y actualiza operaciones automáticamente desde correos electrónicos."
                         icon={CogIcon}
-                        onClick={() => setActiveView('automation')}
+                        onClick={() => setActiveView('ai-operation-creator')}
                     />
                 </CompanySection>
 
