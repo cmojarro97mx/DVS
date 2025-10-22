@@ -17,22 +17,22 @@ export interface Employee {
 
 export const employeesService = {
   async getAll(): Promise<Employee[]> {
-    return apiService.get<Employee[]>('/users');
+    return apiService.get<Employee[]>('/employees');
   },
 
   async getById(id: string): Promise<Employee> {
-    return apiService.get<Employee>(`/users/${id}`);
+    return apiService.get<Employee>(`/employees/${id}`);
   },
 
-  async create(data: { email: string; name: string; password: string; role: string; phone?: string; status?: string }): Promise<Employee> {
-    return apiService.post<Employee>('/users', data);
+  async create(data: { email: string; name: string; role: string; phone?: string; status?: string }): Promise<Employee> {
+    return apiService.post<Employee>('/employees', data);
   },
 
   async update(id: string, data: Partial<Employee>): Promise<Employee> {
-    return apiService.put<Employee>(`/users/${id}`, data);
+    return apiService.put<Employee>(`/employees/${id}`, data);
   },
 
   async delete(id: string): Promise<void> {
-    return apiService.delete<void>(`/users/${id}`);
+    return apiService.delete<void>(`/employees/${id}`);
   },
 };

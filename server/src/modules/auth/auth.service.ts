@@ -42,6 +42,18 @@ export class AuthService {
       },
     });
 
+    await this.prisma.employee.create({
+      data: {
+        name: user.name,
+        email: user.email,
+        role: 'CEO',
+        status: 'Active',
+        userId: user.id,
+        organizationId: organization.id,
+        hireDate: new Date(),
+      },
+    });
+
     const tokens = await this.generateTokens(user.id, user.email, user.organizationId);
     
     return {
