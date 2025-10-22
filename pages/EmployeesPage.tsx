@@ -11,6 +11,8 @@ import { TrashIcon } from '../components/icons/TrashIcon';
 import { XIcon } from '../components/icons/XIcon';
 import { CalendarIcon } from '../components/icons/CalendarIcon';
 import { FilterIcon } from '../components/icons/FilterIcon';
+import { ClipboardListIcon } from '../components/icons/ClipboardListIcon';
+import { ChartBarIcon } from '../components/icons/ChartBarIcon';
 import { employeesService } from '../src/services/employeesService';
 
 // --- Local Components (to avoid creating new files) ---
@@ -178,6 +180,7 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [activeMenu, setActiveMenu] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'performance'>('overview');
     const menuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -291,14 +294,89 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
     
     return (
         <div className="animate-fade-in space-y-6 h-full flex flex-col">
-            <Banner
-                title="Employee Management"
-                description="Administer your team, manage roles, and track employee information."
-                icon={UsersIcon}
-            />
+            {/* Header Banner con información general */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-red-50 rounded-lg">
+                            <UsersIcon className="w-8 h-8 text-red-600" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-800">Employee Management</h1>
+                            <p className="text-sm text-gray-500">ID: EMP-{new Date().getFullYear()}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Stats Row */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 uppercase font-semibold">Total Employees</p>
+                        <p className="text-xl font-bold text-gray-800 mt-1">{teamMembers.length}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 uppercase font-semibold">Active</p>
+                        <p className="text-xl font-bold text-green-600 mt-1">
+                            {teamMembers.filter(e => e.status === 'Active').length}
+                        </p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 uppercase font-semibold">Inactive</p>
+                        <p className="text-xl font-bold text-gray-600 mt-1">
+                            {teamMembers.filter(e => e.status === 'Inactive').length}
+                        </p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 uppercase font-semibold">Departments</p>
+                        <p className="text-xl font-bold text-blue-600 mt-1">
+                            {new Set(teamMembers.map(e => e.role)).size}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Navigation Tabs */}
+                <div className="flex gap-6 mt-6 border-b border-gray-200">
+                    <button
+                        onClick={() => setActiveTab('overview')}
+                        className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+                            activeTab === 'overview'
+                                ? 'border-blue-600 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                        }`}
+                    >
+                        <UsersIcon className="w-5 h-5" />
+                        Overview
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('tasks')}
+                        className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+                            activeTab === 'tasks'
+                                ? 'border-blue-600 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                        }`}
+                    >
+                        <ClipboardListIcon className="w-5 h-5" />
+                        Tasks
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('performance')}
+                        className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+                            activeTab === 'performance'
+                                ? 'border-blue-600 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                        }`}
+                    >
+                        <ChartBarIcon className="w-5 h-5" />
+                        Performance
+                    </button>
+                </div>
+            </div>
             
-            {/* Controls Bar */}
-            <div className="flex-shrink-0 flex flex-col md:flex-row justify-between items-center gap-4">
+            {/* Tab Content */}
+            {activeTab === 'overview' && (
+                <>
+                    {/* Controls Bar */}
+                    <div className="flex-shrink-0 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex items-center gap-4 w-full md:w-auto">
                     <div className="relative flex-grow">
                         <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -428,6 +506,26 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
             >
                 Are you sure you want to delete employee "{employeeToDelete?.name}"? This action cannot be undone.
             </ConfirmationModal>
+                </>
+            )}
+
+            {/* Tasks Tab */}
+            {activeTab === 'tasks' && (
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center">
+                    <ClipboardListIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-800">Employee Tasks</h3>
+                    <p className="text-sm text-gray-500 mt-2">Task management coming soon</p>
+                </div>
+            )}
+
+            {/* Performance Tab */}
+            {activeTab === 'performance' && (
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center">
+                    <ChartBarIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-800">Performance Metrics</h3>
+                    <p className="text-sm text-gray-500 mt-2">Performance tracking coming soon</p>
+                </div>
+            )}
         </div>
     );
 };
