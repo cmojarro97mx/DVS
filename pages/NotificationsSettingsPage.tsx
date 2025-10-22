@@ -14,19 +14,11 @@ interface NotificationSettings {
 }
 
 export default function NotificationsSettingsPage() {
-  const [settings, setSettings] = useState<NotificationSettings>({
-    pushEnabled: true,
-    operationsEnabled: true,
-    tasksEnabled: true,
-    paymentsEnabled: true,
-    invoicesEnabled: true,
-    expensesEnabled: true,
-    calendarEnabled: true,
-    emailsEnabled: true,
-  });
+  const [settings, setSettings] = useState<NotificationSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadSettings();
@@ -34,11 +26,26 @@ export default function NotificationsSettingsPage() {
 
   const loadSettings = async () => {
     try {
+      setError(null);
       const response = await api.get('/notifications/settings');
+      console.log('Notification settings loaded:', response.data);
       setSettings(response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading notification settings:', error);
-      setMessage('Error al cargar la configuración. Usando valores predeterminados.');
+      console.error('Error response:', error.response);
+      const errorMsg = error.response?.data?.message || error.message || 'Error desconocido';
+      setError(errorMsg);
+      // Set default values on error
+      setSettings({
+        pushEnabled: true,
+        operationsEnabled: true,
+        tasksEnabled: true,
+        paymentsEnabled: true,
+        invoicesEnabled: true,
+        expensesEnabled: true,
+        calendarEnabled: true,
+        emailsEnabled: true,
+      });
     } finally {
       setLoading(false);
     }
@@ -77,13 +84,28 @@ export default function NotificationsSettingsPage() {
   if (!settings) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-red-500">Error al cargar la configuración de notificaciones</div>
+        <div className="text-center">
+          <div className="text-red-500 text-lg font-semibold mb-2">Error al cargar la configuración de notificaciones</div>
+          {error && <div className="text-gray-600 text-sm">{error}</div>}
+          <button
+            onClick={loadSettings}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Reintentar
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
+      {error && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-800">
+          <strong>Advertencia:</strong> No se pudo cargar tu configuración guardada. Mostrando valores predeterminados. Error: {error}
+        </div>
+      )}
+      
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
           <Bell className="w-6 h-6" />
