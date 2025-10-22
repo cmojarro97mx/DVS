@@ -217,11 +217,8 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
   }, [currentDate]);
 
   const filteredEvents = useMemo(() => {
-    if (eventSource === 'linked') {
-      return [...events]; 
-    }
     return events;
-  }, [events, eventSource]);
+  }, [events]);
 
   const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
@@ -246,7 +243,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
         } else {
           await calendarService.create(backendEventData);
         }
-        await loadData();
+        await loadEvents();
         setIsModalOpen(false);
       } catch (error) {
         console.error('Error saving event:', error);
@@ -262,7 +259,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
     if (eventToDelete) {
         try {
           await calendarService.delete(eventToDelete.id);
-          await loadData();
+          await loadEvents();
           setEventToDelete(null);
         } catch (error) {
           console.error('Error deleting event:', error);
