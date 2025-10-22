@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ExpensesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async findAll(organizationId: string) {
     return this.prisma.expense.findMany({
@@ -37,7 +41,7 @@ export class ExpensesService {
   async create(data: any, organizationId: string, userId: string) {
     await this.validateRelatedEntities(data, organizationId);
     
-    return this.prisma.expense.create({
+    const expense = await this.prisma.expense.create({
       data: {
         ...data,
         organizationId,
@@ -49,6 +53,28 @@ export class ExpensesService {
         bankAccount: true,
       },
     });
+
+    const admins = await this.prisma.user.findMany({
+      where: {
+        organizationId,
+        role: { in: ['admin', 'owner'] },
+      },
+      select: { id: true },
+    });
+
+    if (admins.length > 0) {
+      await this.notificationsService.sendNotificationToUsers(
+        admins.map(a => a.id),
+        {
+          title: 'Nuevo gasto registrado',
+          body: `Se ha registrado un nuevo gasto: ${expense.description || 'Sin descripción'} por ${expense.amount} ${expense.currency}`,
+          url: `/expenses/${expense.id}`,
+          data: { type: 'expense_created', expenseId: expense.id },
+        },
+      );
+    }
+
+    return expense;
   }
 
   async update(id: string, data: any, organizationId: string) {

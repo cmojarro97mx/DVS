@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class InvoicesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async findAll(organizationId: string) {
     return this.prisma.invoice.findMany({
@@ -39,7 +43,7 @@ export class InvoicesService {
   async create(data: any, organizationId: string) {
     await this.validateRelatedEntities(data, organizationId);
     
-    return this.prisma.invoice.create({
+    const invoice = await this.prisma.invoice.create({
       data: {
         ...data,
         organizationId,
@@ -50,6 +54,28 @@ export class InvoicesService {
         bankAccount: true,
       },
     });
+
+    const admins = await this.prisma.user.findMany({
+      where: {
+        organizationId,
+        role: { in: ['admin', 'owner'] },
+      },
+      select: { id: true },
+    });
+
+    if (admins.length > 0) {
+      await this.notificationsService.sendNotificationToUsers(
+        admins.map(a => a.id),
+        {
+          title: 'Nueva factura creada',
+          body: `Se ha creado una nueva factura ${invoice.number ? `#${invoice.number}` : ''} por ${invoice.amount} ${invoice.currency}`,
+          url: `/invoices/${invoice.id}`,
+          data: { type: 'invoice_created', invoiceId: invoice.id },
+        },
+      );
+    }
+
+    return invoice;
   }
 
   async update(id: string, data: any, organizationId: string) {

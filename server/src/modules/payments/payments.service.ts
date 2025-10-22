@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class PaymentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async findAll(organizationId: string) {
     return this.prisma.payment.findMany({
@@ -37,7 +41,7 @@ export class PaymentsService {
   async create(data: any, organizationId: string) {
     await this.validateRelatedEntities(data, organizationId);
     
-    return this.prisma.payment.create({
+    const payment = await this.prisma.payment.create({
       data: {
         ...data,
         organizationId,
@@ -48,6 +52,28 @@ export class PaymentsService {
         bankAccount: true,
       },
     });
+
+    const admins = await this.prisma.user.findMany({
+      where: {
+        organizationId,
+        role: { in: ['admin', 'owner'] },
+      },
+      select: { id: true },
+    });
+
+    if (admins.length > 0) {
+      await this.notificationsService.sendNotificationToUsers(
+        admins.map(a => a.id),
+        {
+          title: 'Nuevo pago registrado',
+          body: `Se ha registrado un nuevo pago por ${payment.amount} ${payment.currency}`,
+          url: `/payments/${payment.id}`,
+          data: { type: 'payment_created', paymentId: payment.id },
+        },
+      );
+    }
+
+    return payment;
   }
 
   async update(id: string, data: any, organizationId: string) {
