@@ -485,7 +485,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                         <div className="mt-2 space-y-1">
                             <p className="text-[10px] md:text-xs font-medium text-slate-500 px-2 mb-1">Cuentas Vinculadas</p>
                             {emailAccounts.map(account => (
-                                <label key={account.id} className="flex items-center gap-2 md:gap-3 p-2 hover:bg-white rounded cursor-pointer transition-colors">
+                                <label key={account.id} className="flex items-center gap-2 md:gap-3 p-2 hover:bg-white rounded cursor-pointer transition-colors group">
                                     <input
                                         type="checkbox"
                                         checked={selectedAccountIds.includes(account.id)}
@@ -499,12 +499,25 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                                         className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-600 border-slate-300 rounded focus:ring-red-500 focus:ring-1"
                                     />
                                     <ProviderIcon provider={account.provider} className="w-4 h-4 md:w-5 md:h-5" />
-                                    <span className="font-semibold text-xs md:text-sm text-slate-800 flex-grow truncate">{account.email}</span>
+                                    <div className="flex-grow truncate">
+                                        <span className="font-semibold text-xs md:text-sm text-slate-800 block truncate">{account.email}</span>
+                                        {account.calendarSyncEnabled && (
+                                            <span className="text-[10px] text-green-600">✓ Sincronización activa</span>
+                                        )}
+                                    </div>
                                 </label>
                             ))}
                         </div>
                     ) : (
-                        <div className="text-xs md:text-sm text-slate-500 p-2 text-center mt-2">No hay cuentas vinculadas.</div>
+                        <div className="text-xs md:text-sm text-slate-500 p-2 text-center mt-2">
+                            <p className="mb-2">No hay cuentas vinculadas.</p>
+                            <button
+                                onClick={() => setActiveView('integrations')}
+                                className="text-blue-600 hover:text-blue-700 text-xs font-medium underline"
+                            >
+                                Vincular cuenta de Google
+                            </button>
+                        </div>
                     )}
                     
                     <button onClick={() => setActiveView('integrations')} className="text-xs md:text-sm font-medium text-blue-600 hover:underline w-full text-center mt-3">
