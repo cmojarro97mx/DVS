@@ -380,19 +380,9 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                     <button onClick={handleNextMonth} className="p-1.5 md:p-2 rounded text-slate-600 hover:bg-slate-100 transition-colors"><ChevronRightIcon className="w-4 h-4 md:w-5 md:h-5" /></button>
                 </div>
               </div>
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <button 
-                  onClick={syncAllAccounts} 
-                  disabled={syncing}
-                  className="flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 md:py-2 rounded text-xs md:text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50 border border-slate-200"
-                >
-                  <RefreshIcon className={`w-3.5 h-3.5 md:w-4 md:h-4 ${syncing ? 'animate-spin' : ''}`} />
-                  <span className="hidden sm:inline">{syncing ? 'Sincronizando...' : 'Sincronizar'}</span>
-                </button>
-                <span className="text-[10px] md:text-xs text-slate-400">
-                  {lastUpdate.toLocaleTimeString('es-ES')}
-                </span>
-              </div>
+              <span className="text-[10px] md:text-xs text-slate-400">
+                Última actualización: {lastUpdate.toLocaleTimeString('es-ES')}
+              </span>
           </div>
           <button onClick={() => openAddModal(new Date())} className="flex items-center bg-red-600 text-white px-3 md:px-4 py-2 rounded text-xs md:text-sm font-semibold hover:bg-red-700 w-full sm:w-auto justify-center">
               <PlusIcon className="w-4 h-4 md:w-5 md:h-5 mr-1.5 md:mr-2" />
