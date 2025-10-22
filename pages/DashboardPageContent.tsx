@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Project, Client, Invoice, Expense, View, Task, Column } from './DashboardPage';
 import { GridIcon } from '../components/icons/GridIcon';
 import { TruckIcon } from '../components/icons/TruckIcon';
@@ -91,19 +91,46 @@ const DashboardPageContent: React.FC<DashboardPageContentProps> = ({ projects, c
             />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
-                <StatCard title="Active Shipments" value={activeProjects.toString()} icon={TruckIcon} change="+2" changeType="increase" />
-                <StatCard title="Total Revenue (USD)" value={`$${(totalRevenue / 1000).toFixed(1)}k`} icon={ChartPieIcon} change="+12.1%" changeType="increase" />
-                <StatCard title="Total Clients" value={totalClients.toString()} icon={UsersIcon} change="+1" changeType="increase" />
-                <StatCard title="Pending Tasks" value={pendingTasks.toString()} icon={TasksIcon} change="-3" changeType="decrease" />
+                <StatCard title="Active Shipments" value="0" icon={TruckIcon} change="+0" changeType="increase" />
+                <StatCard title="Total Revenue (USD)" value="$0.0k" icon={ChartPieIcon} change="+0%" changeType="increase" />
+                <StatCard title="Total Clients" value="0" icon={UsersIcon} change="+0" changeType="increase" />
+                <StatCard title="Pending Tasks" value="0" icon={TasksIcon} change="-0" changeType="decrease" />
             </div>
             
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
                 <div className="xl:col-span-2 min-w-0">
-                    <GlobalShipmentsMap projects={projects} />
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-full flex flex-col">
+                        <h3 className="text-lg font-bold text-gray-800 mb-4 flex-shrink-0">Live Global Shipments</h3>
+                        <div className="flex-grow flex items-center justify-center min-h-[300px]">
+                            <div className="text-center text-gray-400">
+                                <TruckIcon className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                                <p className="text-lg font-medium">No active shipments</p>
+                                <p className="text-sm mt-2">Start by creating your first operation</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div className="space-y-4 md:space-y-6 min-w-0">
-                    <ShipmentStatusChart projects={projects} />
-                    <UpcomingTasksCard tasks={tasks} columns={columns} projects={projects} onViewOperation={onViewOperation} />
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-full">
+                        <h3 className="text-lg font-bold text-gray-800 mb-4">Shipment Status Breakdown</h3>
+                        <div className="flex items-center justify-center min-h-[200px]">
+                            <div className="text-center text-gray-400">
+                                <ChartPieIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                                <p className="text-sm font-medium">No data available</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                        <div className="p-6 border-b border-gray-200">
+                            <h3 className="text-lg font-bold text-gray-800">Upcoming Deadlines</h3>
+                        </div>
+                        <div className="p-4">
+                            <div className="text-center text-gray-400 py-8">
+                                <TasksIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                                <p className="text-sm font-medium">No upcoming tasks</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
