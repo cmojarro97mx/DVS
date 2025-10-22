@@ -74,6 +74,14 @@ export default function NotificationsSettingsPage() {
     );
   }
 
+  if (!settings) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-red-500">Error al cargar la configuración de notificaciones</div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6">
