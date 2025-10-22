@@ -81,38 +81,59 @@ export default function FilesManagerPage() {
     }
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      handleFiles(Array.from(files));
+      await handleFiles(Array.from(files));
+      // Limpiar el input para permitir subir el mismo archivo de nuevo
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
   const handleFiles = async (fileList: File[]) => {
     if (!fileList || fileList.length === 0) {
-      console.log('No files to upload');
+      console.log('[FilesManager] No files to upload');
       return;
     }
     
-    console.log(`Starting upload of ${fileList.length} file(s)`);
+    console.log(`[FilesManager] Starting upload of ${fileList.length} file(s)`, fileList.map(f => f.name));
     setIsUploading(true);
     setError('');
     
     try {
       let uploadedCount = 0;
+      const errors: string[] = [];
+      
       for (const file of fileList) {
-        console.log(`Uploading file: ${file.name} (${file.size} bytes)`);
-        await filesService.uploadFile(file, selectedFolder);
-        uploadedCount++;
-        console.log(`Successfully uploaded: ${file.name} (${uploadedCount}/${fileList.length})`);
+        try {
+          console.log(`[FilesManager] Uploading file ${uploadedCount + 1}/${fileList.length}: ${file.name} (${file.size} bytes) to folder: ${selectedFolder || 'root'}`);
+          const result = await filesService.uploadFile(file, selectedFolder);
+          uploadedCount++;
+          console.log(`[FilesManager] Successfully uploaded: ${file.name}`, result);
+        } catch (fileError: any) {
+          console.error(`[FilesManager] Failed to upload ${file.name}:`, fileError);
+          errors.push(`${file.name}: ${fileError.response?.data?.message || fileError.message}`);
+        }
       }
       
-      console.log(`All files uploaded successfully (${uploadedCount}/${fileList.length})`);
-      await loadFiles();
+      console.log(`[FilesManager] Upload complete: ${uploadedCount}/${fileList.length} successful`);
+      
+      // Recargar archivos solo si al menos uno se subió exitosamente
+      if (uploadedCount > 0) {
+        await loadFiles();
+      }
+      
+      // Mostrar errores si hubo alguno
+      if (errors.length > 0) {
+        setError(`Algunos archivos no se pudieron subir:\n${errors.join('\n')}`);
+      }
+      
     } catch (error: any) {
-      console.error('Error uploading files:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
+      console.error('[FilesManager] Critical error during upload:', error);
+      console.error('[FilesManager] Error response:', error.response?.data);
+      console.error('[FilesManager] Error status:', error.response?.status);
       
       let errorMsg = 'Error al subir archivos.';
       
@@ -121,7 +142,7 @@ export default function FilesManagerPage() {
       } else if (error.response?.status === 500) {
         errorMsg = 'Error del servidor. Verifica la configuración de Backblaze en los Secrets.';
       } else if (error.code === 'ECONNREFUSED') {
-        errorMsg = 'No se puede conectar con el servidor. Verifica que el backend esté corriendo.';
+        errorMsg = 'No se puede conectar con el servidor. Verifica que el backend esté corriendo en el puerto 3001.';
       } else if (error.response?.data?.message) {
         errorMsg = error.response.data.message;
       } else if (error.message) {

@@ -42,11 +42,25 @@ export class FilesController {
     @Body('folderId') folderId: string | undefined,
     @Req() req: any,
   ) {
+    console.log('[FilesController] Upload request received');
+    console.log('[FilesController] File:', file ? { name: file.originalname, size: file.size, mimetype: file.mimetype } : 'NO FILE');
+    console.log('[FilesController] FolderId:', folderId);
+    console.log('[FilesController] User:', req.user?.id);
+    console.log('[FilesController] Organization:', req.user?.organizationId);
+    
     if (!file) {
+      console.error('[FilesController] No file in request');
       throw new BadRequestException('No file uploaded');
     }
 
-    return this.filesService.uploadFile(file, folderId, req.user.organizationId);
+    try {
+      const result = await this.filesService.uploadFile(file, folderId, req.user.organizationId);
+      console.log('[FilesController] Upload successful:', result.id);
+      return result;
+    } catch (error) {
+      console.error('[FilesController] Upload failed:', error);
+      throw error;
+    }
   }
 
   @Post('folder')

@@ -46,7 +46,13 @@ export class FilesService {
     folderId: string | undefined,
     organizationId: string,
   ) {
+    console.log('[FilesService] uploadFile called');
+    console.log('[FilesService] File:', file.originalname, file.size, 'bytes');
+    console.log('[FilesService] FolderId:', folderId);
+    console.log('[FilesService] OrganizationId:', organizationId);
+    
     if (folderId) {
+      console.log('[FilesService] Validating folder...');
       const folder = await this.prisma.fileFolder.findFirst({
         where: {
           id: folderId,
@@ -55,8 +61,10 @@ export class FilesService {
       });
 
       if (!folder) {
+        console.error('[FilesService] Folder not found:', folderId);
         throw new NotFoundException('Folder not found');
       }
+      console.log('[FilesService] Folder validated:', folder.name);
     }
 
     // Create proper folder path: organizations/{organizationId}/files/{folderId}
@@ -64,9 +72,13 @@ export class FilesService {
     if (folderId) {
       folderPath = `${folderPath}/${folderId}`;
     }
+    console.log('[FilesService] Upload path:', folderPath);
 
+    console.log('[FilesService] Uploading to Backblaze...');
     const { url, key } = await this.backblaze.uploadFile(file, folderPath);
+    console.log('[FilesService] Backblaze upload successful. URL:', url);
 
+    console.log('[FilesService] Saving file record to database...');
     const createdFile = await this.prisma.file.create({
       data: {
         name: file.originalname,
@@ -82,6 +94,7 @@ export class FilesService {
       },
     });
 
+    console.log('[FilesService] File record created:', createdFile.id);
     return createdFile;
   }
 
