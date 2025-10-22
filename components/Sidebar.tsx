@@ -274,7 +274,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                      <NavSection title="Gestión" isSidebarOpen={isSidebarOpen}>
                         <NavItem icon={TruckIcon} label="Operations" isActive={['operations', 'create-operation', 'detail-operation'].includes(activeView)} onClick={() => setActiveView('operations')} isSidebarOpen={isSidebarOpen} />
-                        <NavItem icon={UserGroupIcon} label="Clients" isActive={['clients', 'create-client', 'client-detail'].includes(activeView)} onClick={() => setActiveView('clients')} isSidebarOpen={isSidebarOpen} />
                     </NavSection>
                     
                     <NavSection title="Finanzas" isSidebarOpen={isSidebarOpen}>
@@ -303,7 +302,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <NavItem 
                             icon={CompanyIcon} 
                             label="Empresa" 
-                            isActive={['company-hub', 'company-profile', 'employees'].includes(activeView)} 
+                            isActive={['company-hub', 'company-profile', 'employees', 'clients', 'create-client', 'client-detail'].includes(activeView)} 
                             onClick={() => setActiveView('company-hub')} 
                             isSidebarOpen={isSidebarOpen} 
                         />
