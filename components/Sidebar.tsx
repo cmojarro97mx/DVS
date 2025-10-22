@@ -308,15 +308,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </NavSection>
 
                     <NavSection title="Administración" isSidebarOpen={isSidebarOpen}>
-                         <CollapsibleNavItem 
+                        <NavItem 
                             icon={CompanyIcon} 
-                            label="Company" 
-                            isSidebarOpen={isSidebarOpen}
-                            setIsSidebarOpen={setIsSidebarOpen}
-                            activeView={activeView}
-                            setActiveView={setActiveView}
-                            mainView='admin'
-                            subItems={companySubItems}
+                            label="Empresa" 
+                            isActive={['company-hub', 'company-profile', 'employees'].includes(activeView)} 
+                            onClick={() => setActiveView('company-hub')} 
+                            isSidebarOpen={isSidebarOpen} 
                         />
                     </NavSection>
                 </nav>

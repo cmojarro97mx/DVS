@@ -28,6 +28,7 @@ import LinkedAccountsPage from './LinkedAccountsPage'; // New Linked Accounts Pa
 import EmailAnalysisPage from './EmailAnalysisPage'; // Email Analysis Page
 import AIAgentsPage from './AIAgentsPage';
 import AIOperationCreatorPage from './AIOperationCreatorPage';
+import CompanyHubPage from './CompanyHubPage'; // Import new Company Hub Page
 import { employeesService } from '../src/services/employeesService';
 import { clientsService } from '../src/services/clientsService';
 import { 
@@ -414,7 +415,8 @@ export type View =
   | 'linked-accounts'
   | 'email-analysis'
   | 'ai-agents'
-  | 'ai-operation-creator';
+  | 'ai-operation-creator'
+  | 'company-hub';
 
 const viewTitles: Record<View, string> = {
   dashboard: 'Dashboard',
@@ -443,6 +445,7 @@ const viewTitles: Record<View, string> = {
   'email-analysis': 'Análisis de Correo',
   'ai-agents': 'Automation Assistant',
   'ai-operation-creator': 'AI Operation Creator',
+  'company-hub': 'Empresa'
 };
 
 
@@ -495,7 +498,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
         console.error('Error loading employees:', error);
       }
     };
-    
+
     const loadClients = async () => {
       try {
         const clientsData = await clientsService.getAll();
@@ -504,7 +507,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
         console.error('Error loading clients:', error);
       }
     };
-    
+
     loadEmployees();
     loadClients();
   }, []);
@@ -514,24 +517,24 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
     // ensuring properties can be accessed safely.
     const doneColumn = (Object.values(columns) as Column[]).find(col => col.title.toLowerCase() === 'done');
     const doneTaskIds = doneColumn ? new Set(doneColumn.taskIds) : new Set<string>();
-    
+
     const allTasks = Object.values(tasks) as Task[];
 
     return projects.map(project => {
       const projectTasks = allTasks.filter(task => task.operationId === project.id);
-      
+
       if (projectTasks.length === 0) {
         return { ...project, progress: project.status === 'Delivered' ? 100 : 0 };
       }
 
       const doneTaskCount = projectTasks.filter(task => doneTaskIds.has(task.id)).length;
-      
+
       const progress = Math.round((doneTaskCount / projectTasks.length) * 100);
 
       if (project.status === 'Delivered' && progress < 100) {
         return { ...project, progress: 100 };
       }
-      
+
       return { ...project, progress };
     });
   }, [projects, tasks, columns]);
@@ -556,7 +559,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
     setSelectedProjectId(newProject.id);
     setActiveView('detail-operation');
   };
-  
+
   const handleViewClientDetails = (clientId: string) => {
     setSelectedClientId(clientId);
     setActiveView('client-detail');
@@ -572,7 +575,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
       console.error('Error creating client:', error);
     }
   };
-  
+
   const handleUpdateClient = async (updatedClient: Client) => {
     try {
       const updated = await clientsService.update(updatedClient.id, updatedClient as any);
@@ -594,7 +597,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
       console.error('Error deleting client:', error);
     }
   };
-  
+
   const handleAddClient = useCallback((clientData: Omit<Client, 'id'>): Client => {
     const newClient: Client = {
       ...clientData,
@@ -632,7 +635,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
   const handleUpdateEmployee = (updatedEmployee: TeamMember) => {
     setTeamMembers(prev => prev.map(emp => emp.id === updatedEmployee.id ? updatedEmployee : emp));
   };
-  
+
   const handleDeleteEmployee = (employeeId: string) => {
     setTeamMembers(prev => prev.filter(emp => emp.id !== employeeId));
   };
@@ -652,7 +655,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
   const handleDeleteQuotation = (quotationId: string) => {
       setQuotations(prev => prev.filter(q => q.id !== quotationId));
   };
-  
+
   const handleAddBankAccount = (accountData: Omit<BankAccount, 'id'>) => {
     const newAccount: BankAccount = {
         ...accountData,
@@ -680,7 +683,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
       };
       setEmails(prev => [newEmail, ...prev]);
   }, []);
-  
+
   const handleUpdateEmailAccount = (updatedAccount: EmailAccount) => {
       setEmailAccounts(prev => prev.map(acc => acc.id === updatedAccount.id ? updatedAccount : acc));
   };
@@ -894,6 +897,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
                     projects={projects}
                     onCreateOperation={handleCreateOperation}
                 />;
+      case 'company-hub':
+        return <CompanyHubPage setActiveView={setActiveView} />;
       default:
         return <div className="p-6">{viewTitles[activeView] || 'Not Implemented'}</div>;
     }
@@ -908,14 +913,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
         setIsSidebarOpen={setIsSidebarOpen}
         onLogout={onLogout}
       />
-      
+
       <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-20'}`}>
         <TopHeader onLogout={onLogout} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 p-4 md:p-6">
           {renderContent()}
         </main>
       </div>
-      
+
        <ConfirmationModal
         isOpen={!!clientToDelete}
         onClose={() => setClientToDelete(null)}
