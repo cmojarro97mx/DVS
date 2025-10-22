@@ -166,17 +166,13 @@ const CompanyProfilePage: React.FC<CompanyProfilePageProps> = ({ setActiveView }
             setError('');
             
             if (editedData.logo && editedData.logo.file) {
-                const updatedOrg = await organizationService.uploadLogo(editedData.logo.file);
+                await organizationService.uploadLogo(editedData.logo.file);
                 if (editedData.logo.preview && editedData.logo.preview.startsWith('blob:')) {
                     URL.revokeObjectURL(editedData.logo.preview);
                 }
-                setEditedData(prev => ({
-                    ...prev,
-                    logo: { file: null as any, preview: updatedOrg.logo || '' }
-                }));
             }
             
-            await organizationService.updateOrganization({
+            const updatedOrg = await organizationService.updateOrganization({
                 name: editedData.companyName,
                 email: editedData.email,
                 phone: editedData.phone,
@@ -185,7 +181,23 @@ const CompanyProfilePage: React.FC<CompanyProfilePageProps> = ({ setActiveView }
                 rfc: editedData.taxInfo.taxId,
                 taxRegime: editedData.taxInfo.vatId,
             });
-            setCompanyData(editedData);
+            
+            const freshData: CompanyData = {
+                companyName: updatedOrg.name || '',
+                email: updatedOrg.email || '',
+                phone: updatedOrg.phone || '',
+                website: updatedOrg.website || '',
+                address: updatedOrg.address || '',
+                taxInfo: {
+                    legalName: updatedOrg.name || '',
+                    taxId: updatedOrg.rfc || '',
+                    vatId: updatedOrg.taxRegime || ''
+                },
+                logo: updatedOrg.logo ? { file: null as any, preview: updatedOrg.logo } : null
+            };
+            
+            setCompanyData(freshData);
+            setEditedData(freshData);
             setIsEditing(false);
         } catch (err) {
             setError('Failed to save organization data');

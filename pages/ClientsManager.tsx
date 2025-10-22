@@ -11,6 +11,7 @@ import { DiamondIcon } from '../components/icons/DiamondIcon';
 import { clientsService } from '../src/services/clientsService';
 
 interface ClientsManagerProps {
+    clients: Client[];
     onViewClientDetails: (clientId: string) => void;
     onAddNewClient: () => void;
 }
@@ -75,30 +76,11 @@ const getTierColor = (tier?: 'Gold' | 'Silver' | 'Bronze' | 'Standard') => {
 
 const statuses = ['All', 'Active', 'Inactive'];
 
-const ClientsManager: React.FC<ClientsManagerProps> = ({ onViewClientDetails, onAddNewClient }) => {
-    const [clients, setClients] = useState<Client[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState('');
+const ClientsManager: React.FC<ClientsManagerProps> = ({ clients, onViewClientDetails, onAddNewClient }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
-
-    useEffect(() => {
-        loadClients();
-    }, []);
-
-    const loadClients = async () => {
-        try {
-            setIsLoading(true);
-            setError('');
-            const data = await clientsService.getAll();
-            setClients(data);
-        } catch (err) {
-            setError('Failed to load clients');
-            console.error(err);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    const isLoading = false;
+    const error = '';
 
     const filteredClients = useMemo(() => {
         return clients.filter(client => {

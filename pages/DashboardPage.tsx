@@ -28,6 +28,7 @@ import LinkedAccountsPage from './LinkedAccountsPage'; // New Linked Accounts Pa
 import AIAgentsPage from './AIAgentsPage';
 import AIOperationCreatorPage from './AIOperationCreatorPage';
 import { employeesService } from '../src/services/employeesService';
+import { clientsService } from '../src/services/clientsService';
 import { 
     initialProjects, 
     initialClients, 
@@ -491,7 +492,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
         console.error('Error loading employees:', error);
       }
     };
+    
+    const loadClients = async () => {
+      try {
+        const clientsData = await clientsService.getAll();
+        setClients(clientsData as Client[]);
+      } catch (error) {
+        console.error('Error loading clients:', error);
+      }
+    };
+    
     loadEmployees();
+    loadClients();
   }, []);
 
   const projectsWithRealProgress = useMemo(() => {
@@ -547,23 +559,37 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
     setActiveView('client-detail');
   };
 
-  const handleSaveNewClient = (clientData: Omit<Client, 'id'>) => {
-    const newClient: Client = { ...clientData, id: `client-${Date.now()}` };
-    setClients(prev => [newClient, ...prev]);
-    setSelectedClientId(newClient.id);
-    setActiveView('client-detail');
+  const handleSaveNewClient = async (clientData: Omit<Client, 'id'>) => {
+    try {
+      const newClient = await clientsService.create(clientData as any);
+      setClients(prev => [newClient as Client, ...prev]);
+      setSelectedClientId(newClient.id);
+      setActiveView('client-detail');
+    } catch (error) {
+      console.error('Error creating client:', error);
+    }
   };
   
-  const handleUpdateClient = (updatedClient: Client) => {
-      setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
+  const handleUpdateClient = async (updatedClient: Client) => {
+    try {
+      const updated = await clientsService.update(updatedClient.id, updatedClient as any);
+      setClients(prev => prev.map(c => c.id === updated.id ? updated as Client : c));
+    } catch (error) {
+      console.error('Error updating client:', error);
+    }
   };
 
-  const handleDeleteClient = (clientId: string) => {
+  const handleDeleteClient = async (clientId: string) => {
+    try {
+      await clientsService.delete(clientId);
       setClients(prev => prev.filter(c => c.id !== clientId));
       if (selectedClientId === clientId) {
-          setActiveView('clients');
-          setSelectedClientId(null);
+        setActiveView('clients');
+        setSelectedClientId(null);
       }
+    } catch (error) {
+      console.error('Error deleting client:', error);
+    }
   };
   
   const handleAddClient = useCallback((clientData: Omit<Client, 'id'>): Client => {
