@@ -62,20 +62,26 @@ export class EmailSyncController {
     }
 
     const totalMessages = account.totalMessagesInGmail;
+    
+    // Build filter to respect syncFromDate
+    const dateFilter = account.syncFromDate 
+      ? { date: { gte: account.syncFromDate } } 
+      : {};
+
     const downloadedMessages = await this.prisma.emailMessage.count({
-      where: { accountId },
+      where: { accountId, ...dateFilter },
     });
 
     const repliedMessages = await this.prisma.emailMessage.count({
-      where: { accountId, isReplied: true },
+      where: { accountId, isReplied: true, ...dateFilter },
     });
 
     const unrepliedMessages = await this.prisma.emailMessage.count({
-      where: { accountId, isReplied: false, folder: { not: 'sent' } },
+      where: { accountId, isReplied: false, folder: { not: 'sent' }, ...dateFilter },
     });
 
     const unreadMessages = await this.prisma.emailMessage.count({
-      where: { accountId, unread: true },
+      where: { accountId, unread: true, ...dateFilter },
     });
 
     return {
@@ -115,6 +121,12 @@ export class EmailSyncController {
     const skip = (pageNum - 1) * limitNum;
 
     const where: any = { accountId };
+    
+    // Filter by syncFromDate if configured
+    if (account.syncFromDate) {
+      where.date = { gte: account.syncFromDate };
+    }
+    
     if (folder) {
       where.folder = folder;
     }
