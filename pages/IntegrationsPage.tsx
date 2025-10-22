@@ -127,7 +127,7 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
 
     const fetchGoogleStatus = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             const response = await fetch('/api/google-auth/status', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -148,7 +148,7 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
     const handleConnectGoogle = async () => {
         try {
             console.log('Attempting to connect to Google...');
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             console.log('Token exists:', !!token);
             
             const response = await fetch('/api/google-auth/auth-url', {
@@ -181,7 +181,7 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
         }
 
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('accessToken');
             const response = await fetch('/api/google-auth/disconnect', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
