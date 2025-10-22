@@ -308,6 +308,11 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
+        // Only allow submission if we're on the last step
+        if (currentStep !== STEPS.length - 1) {
+            return;
+        }
+        
         let allErrors: { [key: string]: string } = {};
         STEPS.forEach((step, index) => {
             const stepErrors = validateStepLogic(index, formData);
@@ -420,7 +425,7 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
                          <form 
                             onSubmit={handleSubmit} 
                             onKeyDown={(e) => {
-                                if (e.key === 'Enter' && currentStep < STEPS.length - 1) {
+                                if (e.key === 'Enter') {
                                     e.preventDefault();
                                 }
                             }}
