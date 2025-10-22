@@ -23,14 +23,32 @@ export default function FilesManagerPage() {
 
   useEffect(() => {
     const initializeFileManager = async () => {
+      console.log('Initializing File Manager...');
+      setIsLoading(true);
       try {
-        await loadFiles();
-        await loadFolders();
+        // Verificar que hay token de autenticación
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setError('No estás autenticado. Por favor inicia sesión.');
+          setIsLoading(false);
+          return;
+        }
+        
+        console.log('Token found, loading files and folders...');
+        await Promise.all([loadFiles(), loadFolders()]);
+        console.log('Files and folders loaded successfully');
       } catch (error: any) {
         console.error('Error initializing file manager:', error);
+        console.error('Error details:', error.response?.data);
         if (error.response?.status === 401) {
           setError('Sesión expirada. Por favor inicia sesión nuevamente.');
+        } else if (error.code === 'ECONNREFUSED') {
+          setError('No se puede conectar con el servidor. Verifica que el backend esté corriendo.');
+        } else {
+          setError(`Error al inicializar el gestor de archivos: ${error.message}`);
         }
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -79,16 +97,51 @@ export default function FilesManagerPage() {
   };
 
   const handleFiles = async (fileList: File[]) => {
+    if (!fileList || fileList.length === 0) {
+      console.log('No files to upload');
+      return;
+    }
+    
+    console.log(`Starting upload of ${fileList.length} file(s)`);
     setIsUploading(true);
     setError('');
+    
     try {
-      for (const file of fileList) {
-        await filesService.uploadFile(file, selectedFolder);
+      // Verificar autenticación antes de subir
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No estás autenticado. Por favor inicia sesión nuevamente.');
       }
+      
+      let uploadedCount = 0;
+      for (const file of fileList) {
+        console.log(`Uploading file: ${file.name} (${file.size} bytes)`);
+        await filesService.uploadFile(file, selectedFolder);
+        uploadedCount++;
+        console.log(`Successfully uploaded: ${file.name} (${uploadedCount}/${fileList.length})`);
+      }
+      
+      console.log(`All files uploaded successfully (${uploadedCount}/${fileList.length})`);
       await loadFiles();
     } catch (error: any) {
       console.error('Error uploading files:', error);
-      const errorMsg = error.response?.data?.message || error.message || 'Error al subir archivos. Verifica tu conexión con Backblaze.';
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      
+      let errorMsg = 'Error al subir archivos.';
+      
+      if (error.response?.status === 401) {
+        errorMsg = 'Sesión expirada. Por favor inicia sesión nuevamente.';
+      } else if (error.response?.status === 500) {
+        errorMsg = 'Error del servidor. Verifica la configuración de Backblaze en los Secrets.';
+      } else if (error.code === 'ECONNREFUSED') {
+        errorMsg = 'No se puede conectar con el servidor. Verifica que el backend esté corriendo.';
+      } else if (error.response?.data?.message) {
+        errorMsg = error.response.data.message;
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+      
       setError(errorMsg);
     } finally {
       setIsUploading(false);
