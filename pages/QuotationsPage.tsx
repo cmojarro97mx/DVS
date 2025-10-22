@@ -51,17 +51,22 @@ const QuotationForm: React.FC<QuotationFormProps> = ({ onSave, onCancel, quotati
 
     useEffect(() => {
         if (quotationToEdit) {
+            const quotationItems = Array.isArray(quotationToEdit.items) ? quotationToEdit.items : [];
             setFormData({
                 quotationNumber: quotationToEdit.quotationNumber,
-                clientName: quotationToEdit.clientName,
-                date: quotationToEdit.date,
-                validUntil: quotationToEdit.validUntil,
+                clientName: quotationToEdit.clientName || '',
+                date: quotationToEdit.quotationDate || quotationToEdit.date || new Date().toISOString().split('T')[0],
+                validUntil: quotationToEdit.validUntil || '',
                 status: quotationToEdit.status,
                 currency: quotationToEdit.currency || 'USD',
                 notes: quotationToEdit.notes || '',
-                tax: quotationToEdit.tax || 0,
+                tax: quotationToEdit.tax ? (quotationToEdit.tax / quotationToEdit.subtotal * 100) : 16,
             });
-            setItems(quotationToEdit.items.map(({ id, total, ...rest }) => rest));
+            setItems(quotationItems.map((item: any) => ({
+                description: item.description,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+            })));
         }
     }, [quotationToEdit]);
 
@@ -91,20 +96,25 @@ const QuotationForm: React.FC<QuotationFormProps> = ({ onSave, onCancel, quotati
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const finalItems: QuotationItem[] = items.map((item, index) => ({
-            ...item,
-            id: quotationToEdit?.items[index]?.id || `item-${Date.now()}-${index}`,
+        const finalItems = items.map((item) => ({
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
             total: item.quantity * item.unitPrice,
         }));
         
-        const { tax, ...restFormData } = formData;
-
-        const quotationData: Omit<Quotation, 'id'> = {
-            ...restFormData,
+        const quotationData: any = {
+            quotationNumber: formData.quotationNumber,
+            quotationDate: formData.date,
+            validUntil: formData.validUntil,
+            clientName: formData.clientName,
+            status: formData.status,
+            currency: formData.currency,
             items: finalItems,
             subtotal: totals.subtotal,
             tax: totals.taxAmount,
             total: totals.total,
+            notes: formData.notes,
         };
         onSave(quotationData);
     };

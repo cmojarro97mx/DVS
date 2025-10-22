@@ -38,6 +38,38 @@ const EmployeeAvatar: React.FC<{ name: string }> = ({ name }) => {
   );
 };
 
+// Puestos predeterminados para panel logístico
+const LOGISTICS_ROLES = [
+    'CEO',
+    'Gerente General',
+    'Director de Operaciones',
+    'Gerente de Operaciones',
+    'Coordinador de Operaciones',
+    'Coordinador de Importaciones',
+    'Coordinador de Exportaciones',
+    'Agente Aduanal',
+    'Director Comercial',
+    'Gerente de Ventas',
+    'Ejecutivo de Ventas',
+    'Ejecutivo de Cuentas',
+    'Especialista en Pricing',
+    'Analista de Pricing',
+    'Gerente de Pricing',
+    'Coordinador de Tráfico',
+    'Despachador',
+    'Gerente de Almacén',
+    'Supervisor de Almacén',
+    'Coordinador Logístico',
+    'Analista de Logística',
+    'Servicio al Cliente',
+    'Gerente de Atención al Cliente',
+    'Gerente de RRHH',
+    'Contador',
+    'Gerente Financiero',
+    'Asistente Administrativo',
+    'Recepcionista',
+];
+
 // Employee Modal Component
 const EmployeeModal: React.FC<{
     isOpen: boolean;
@@ -46,7 +78,7 @@ const EmployeeModal: React.FC<{
     employeeToEdit: TeamMember | null;
 }> = ({ isOpen, onClose, onSave, employeeToEdit }) => {
     const [formData, setFormData] = useState({
-        name: '', email: '', phone: '', role: '', hireDate: '', status: 'Active' as 'Active' | 'Inactive', password: '',
+        name: '', email: '', phone: '', role: '', status: 'Active' as 'Active' | 'Inactive',
     });
 
     useEffect(() => {
@@ -57,12 +89,10 @@ const EmployeeModal: React.FC<{
                     email: employeeToEdit.email,
                     phone: employeeToEdit.phone || '',
                     role: employeeToEdit.role,
-                    hireDate: employeeToEdit.hireDate || '',
                     status: employeeToEdit.status,
-                    password: '',
                 });
             } else {
-                setFormData({ name: '', email: '', phone: '', role: '', hireDate: new Date().toISOString().split('T')[0], status: 'Active', password: '' });
+                setFormData({ name: '', email: '', phone: '', role: '', status: 'Active' });
             }
         }
     }, [employeeToEdit, isOpen]);
@@ -87,34 +117,46 @@ const EmployeeModal: React.FC<{
             <div className="bg-white rounded-lg shadow-xl w-full max-w-lg relative animate-fade-in" onClick={(e) => e.stopPropagation()}>
                 <form onSubmit={handleSubmit}>
                     <div className="p-6 border-b flex justify-between items-center">
-                        <h3 className="text-xl font-semibold text-gray-800">{employeeToEdit ? 'Edit Employee' : 'Add New Employee'}</h3>
+                        <h3 className="text-xl font-semibold text-gray-800">{employeeToEdit ? 'Editar Empleado' : 'Agregar Nuevo Empleado'}</h3>
                         <button type="button" onClick={onClose} className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100">
                            <XIcon className="w-5 h-5" />
                         </button>
                     </div>
                     <div className="p-6 space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label className={labelClasses}>Full Name *</label><input type="text" name="name" value={formData.name} onChange={handleChange} className={baseInputClasses} required /></div>
-                            <div><label className={labelClasses}>Role / Position *</label><input type="text" name="role" value={formData.role} onChange={handleChange} className={baseInputClasses} required /></div>
+                        <div>
+                            <label className={labelClasses}>Nombre Completo *</label>
+                            <input type="text" name="name" value={formData.name} onChange={handleChange} className={baseInputClasses} required />
+                        </div>
+                        <div>
+                            <label className={labelClasses}>Puesto *</label>
+                            <select name="role" value={formData.role} onChange={handleChange} className={baseInputClasses} required>
+                                <option value="">Seleccionar puesto...</option>
+                                {LOGISTICS_ROLES.map(role => (
+                                    <option key={role} value={role}>{role}</option>
+                                ))}
+                            </select>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label className={labelClasses}>Email *</label><input type="email" name="email" value={formData.email} onChange={handleChange} className={baseInputClasses} required /></div>
-                            <div><label className={labelClasses}>Phone</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} className={baseInputClasses} /></div>
-                        </div>
-                        {!employeeToEdit && (
                             <div>
-                                <label className={labelClasses}>Password *</label>
-                                <input type="password" name="password" value={formData.password} onChange={handleChange} className={baseInputClasses} required={!employeeToEdit} placeholder="Initial password for new employee" />
+                                <label className={labelClasses}>Correo Electrónico *</label>
+                                <input type="email" name="email" value={formData.email} onChange={handleChange} className={baseInputClasses} required />
                             </div>
-                        )}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label className={labelClasses}>Hire Date</label><input type="date" name="hireDate" value={formData.hireDate} onChange={handleChange} className={baseInputClasses} /></div>
-                            <div><label className={labelClasses}>Status</label><select name="status" value={formData.status} onChange={handleChange} className={baseInputClasses}><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div>
+                            <div>
+                                <label className={labelClasses}>Teléfono</label>
+                                <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className={baseInputClasses} placeholder="+52 123 456 7890" />
+                            </div>
+                        </div>
+                        <div>
+                            <label className={labelClasses}>Estado</label>
+                            <select name="status" value={formData.status} onChange={handleChange} className={baseInputClasses}>
+                                <option value="Active">Activo</option>
+                                <option value="Inactive">Inactivo</option>
+                            </select>
                         </div>
                     </div>
                     <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 rounded-b-lg">
-                        <button type="button" onClick={onClose} className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100">Cancel</button>
-                        <button type="submit" className="px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">{employeeToEdit ? 'Save Changes' : 'Add Employee'}</button>
+                        <button type="button" onClick={onClose} className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100">Cancelar</button>
+                        <button type="submit" className="px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">{employeeToEdit ? 'Guardar Cambios' : 'Agregar Empleado'}</button>
                     </div>
                 </form>
             </div>
@@ -188,12 +230,24 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
         setActiveMenu(null);
     };
     
-    const handleSave = async (employeeData: Omit<TeamMember, 'id'>) => {
+    const handleSave = async (employeeData: any) => {
         try {
+            const userData: any = {
+                name: employeeData.name,
+                email: employeeData.email,
+                role: employeeData.role,
+                status: employeeData.status,
+            };
+            
+            if (employeeData.phone) {
+                userData.phone = employeeData.phone;
+            }
+            
             if (employeeToEdit) {
-                await employeesService.update(employeeToEdit.id, employeeData as any);
+                await employeesService.update(employeeToEdit.id, userData);
             } else {
-                await employeesService.create(employeeData as any);
+                userData.password = Math.random().toString(36).slice(-8);
+                await employeesService.create(userData);
             }
             await loadData();
             setIsModalOpen(false);

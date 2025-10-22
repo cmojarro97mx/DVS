@@ -12,13 +12,59 @@ import { GmailIcon } from '../components/icons/GmailIcon';
 import { GSuiteIcon } from '../components/icons/GSuiteIcon';
 import { MailIcon } from '../components/icons/MailIcon';
 import { LinkIcon } from '../components/icons/LinkIcon';
-import { calendarService, Event } from '../src/services/calendarService';
+import { calendarService, Event as BackendEvent } from '../src/services/calendarService';
+import { Event as UIEvent } from './DashboardPage';
+
+const CATEGORY_TO_COLOR: Record<UIEvent['category'], string> = {
+  'Meeting': 'blue',
+  'Deadline': 'red',
+  'Shipment': 'yellow',
+  'Personal': 'green',
+  'Other': 'gray',
+};
+
+const COLOR_TO_CATEGORY: Record<string, UIEvent['category']> = {
+  'blue': 'Meeting',
+  'red': 'Deadline',
+  'yellow': 'Shipment',
+  'green': 'Personal',
+  'gray': 'Other',
+};
+
+const adaptBackendEventToUI = (backendEvent: BackendEvent): UIEvent => {
+  const category = backendEvent.color && COLOR_TO_CATEGORY[backendEvent.color] 
+    ? COLOR_TO_CATEGORY[backendEvent.color] 
+    : 'Meeting';
+  
+  return {
+    id: backendEvent.id,
+    title: backendEvent.title,
+    description: backendEvent.description || '',
+    start: backendEvent.startDate,
+    end: backendEvent.endDate,
+    category: category,
+    allDay: backendEvent.allDay,
+  };
+};
+
+const adaptUIEventToBackend = (uiEvent: Omit<UIEvent, 'id'>): Omit<BackendEvent, 'id' | 'createdAt' | 'updatedAt'> => {
+  return {
+    title: uiEvent.title,
+    description: uiEvent.description || undefined,
+    startDate: uiEvent.start,
+    endDate: uiEvent.end,
+    allDay: uiEvent.allDay ?? true,
+    location: undefined,
+    attendees: undefined,
+    color: CATEGORY_TO_COLOR[uiEvent.category] || 'blue',
+  };
+};
 
 interface CalendarPageProps {
   setActiveView: (view: View) => void;
 }
 
-const EVENT_CATEGORIES: Record<Event['category'], { label: string, dot: string, bg: string, text: string, border: string }> = {
+const EVENT_CATEGORIES: Record<UIEvent['category'], { label: string, dot: string, bg: string, text: string, border: string }> = {
   Meeting: { label: 'Meeting', dot: 'bg-blue-500', bg: 'bg-blue-50 hover:bg-blue-100', text: 'text-blue-800', border: 'border-l-blue-500' },
   Deadline: { label: 'Deadline', dot: 'bg-red-500', bg: 'bg-red-50 hover:bg-red-100', text: 'text-red-800', border: 'border-l-red-500' },
   Shipment: { label: 'Shipment', dot: 'bg-yellow-400', bg: 'bg-yellow-50 hover:bg-yellow-100', text: 'text-yellow-800', border: 'border-l-yellow-400' },
@@ -27,9 +73,9 @@ const EVENT_CATEGORIES: Record<Event['category'], { label: string, dot: string, 
 };
 
 const UpcomingEvents: React.FC<{
-  events: Event[];
+  events: UIEvent[];
   currentDate: Date;
-  onEdit: (event: Event) => void;
+  onEdit: (event: UIEvent) => void;
 }> = ({ events, currentDate, onEdit }) => {
     
     const upcomingEvents = useMemo(() => {
@@ -87,14 +133,14 @@ const UpcomingEvents: React.FC<{
 }
 
 const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<UIEvent[]>([]);
   const [emailAccounts, setEmailAccounts] = useState<EmailAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<UIEvent | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
+  const [eventToDelete, setEventToDelete] = useState<UIEvent | null>(null);
   const [eventSource, setEventSource] = useState('local');
 
   useEffect(() => {
@@ -104,8 +150,9 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const eventsData = await calendarService.getAll();
-      setEvents(eventsData as any);
+      const backendEvents = await calendarService.getAll();
+      const uiEvents = backendEvents.map(adaptBackendEventToUI);
+      setEvents(uiEvents);
       setEmailAccounts([]);
     } catch (error) {
       console.error('Error loading calendar data:', error);
@@ -144,18 +191,19 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (event: Event) => {
+  const openEditModal = (event: UIEvent) => {
     setSelectedDate(null);
     setSelectedEvent(event);
     setIsModalOpen(true);
   };
   
-  const handleSaveEvent = async (eventData: Omit<Event, 'id'>, id?: string) => {
+  const handleSaveEvent = async (eventData: Omit<UIEvent, 'id'>, id?: string) => {
       try {
+        const backendEventData = adaptUIEventToBackend(eventData);
         if (id) {
-          await calendarService.update(id, eventData);
+          await calendarService.update(id, backendEventData);
         } else {
-          await calendarService.create(eventData);
+          await calendarService.create(backendEventData);
         }
         await loadData();
         setIsModalOpen(false);
@@ -164,7 +212,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
       }
   };
 
-  const handleDeleteRequest = (event: Event) => {
+  const handleDeleteRequest = (event: UIEvent) => {
     setIsModalOpen(false);
     setEventToDelete(event);
   };
