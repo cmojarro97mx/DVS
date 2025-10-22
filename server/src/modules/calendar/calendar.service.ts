@@ -5,8 +5,36 @@ import { PrismaService } from '../../common/prisma.service';
 export class CalendarService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll() {
-    return this.prisma.event.findMany();
+  async findAll(userId: string, organizationId: string, emailAccountId?: string) {
+    const where: any = {
+      userId,
+      organizationId,
+    };
+
+    // Filter by emailAccountId if provided
+    // Special value 'local' means events without an associated email account
+    if (emailAccountId) {
+      if (emailAccountId === 'local') {
+        where.emailAccountId = null;
+      } else {
+        where.emailAccountId = emailAccountId;
+      }
+    }
+
+    return this.prisma.event.findMany({
+      where,
+      include: {
+        emailAccount: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        startDate: 'asc',
+      },
+    });
   }
 
   async findOne(id: string) {

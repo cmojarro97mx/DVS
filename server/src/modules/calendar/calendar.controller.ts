@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, Request, Query } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { CalendarService } from './calendar.service';
 
@@ -8,8 +8,9 @@ export class CalendarController {
   constructor(private readonly calendarService: CalendarService) {}
 
   @Get()
-  findAll() {
-    return this.calendarService.findAll();
+  findAll(@Request() req, @Query('emailAccountId') emailAccountId?: string) {
+    const user = req.user as any;
+    return this.calendarService.findAll(user.userId, user.organizationId, emailAccountId);
   }
 
   @Get(':id')

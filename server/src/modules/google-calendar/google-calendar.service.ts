@@ -167,6 +167,7 @@ export class GoogleCalendarService {
           source: 'google',
           googleEventId: gEvent.id,
           googleCalendarId: 'primary',
+          emailAccountId: accountId,
           userId,
           organizationId: account.user.organizationId,
         };
