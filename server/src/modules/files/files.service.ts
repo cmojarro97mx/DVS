@@ -172,10 +172,28 @@ export class FilesService {
 
     // Process email files
     const emailFiles = [];
+    let htmlCount = 0;
+    let attachmentCount = 0;
+    let skippedHtml = 0;
+    let skippedAttachments = 0;
+    
+    // Sample first email for debugging
+    if (emailMessages.length > 0) {
+      const sample = emailMessages[0];
+      console.log('[FilesService] Sample email:', {
+        hasHtmlBodyKey: !!sample.htmlBodyKey,
+        hasHtmlBodyUrl: !!sample.htmlBodyUrl,
+        hasAttachmentsKey: !!sample.attachmentsKey,
+        hasAttachmentsData: !!sample.attachmentsData,
+        attachmentsDataType: typeof sample.attachmentsData,
+        attachmentsDataIsArray: Array.isArray(sample.attachmentsData),
+      });
+    }
     
     for (const email of emailMessages) {
       // Add HTML body file if exists
       if (email.htmlBodyKey && email.htmlBodyUrl) {
+        htmlCount++;
         emailFiles.push({
           id: `email-html-${email.id}`,
           name: `${email.subject || 'Sin asunto'}.html`,
@@ -191,12 +209,15 @@ export class FilesService {
           operationReference: null,
           emailReference: `De: ${email.from}`,
         });
+      } else if (email.htmlBodyKey || email.htmlBodyUrl) {
+        skippedHtml++;
       }
 
       // Add attachments if exist
       if (email.attachmentsData && Array.isArray(email.attachmentsData)) {
         for (const attachment of email.attachmentsData as any[]) {
           if (attachment.b2Key && attachment.b2Url) {
+            attachmentCount++;
             emailFiles.push({
               id: `email-attachment-${email.id}-${attachment.filename}`,
               name: attachment.filename || 'attachment',
@@ -212,12 +233,20 @@ export class FilesService {
               operationReference: null,
               emailReference: `De: ${email.from}`,
             });
+          } else {
+            skippedAttachments++;
           }
         }
       }
     }
     
-    console.log('[FilesService] Processed', emailFiles.length, 'email files (HTML + attachments)');
+    console.log('[FilesService] Email files breakdown:', {
+      htmlFiles: htmlCount,
+      attachmentFiles: attachmentCount,
+      skippedHtml,
+      skippedAttachments,
+      total: emailFiles.length
+    });
 
     // Transform to unified format
     const unifiedFiles = [
