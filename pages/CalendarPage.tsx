@@ -121,9 +121,9 @@ const UpcomingEvents: React.FC<{
     };
 
     return (
-        <div className="bg-white rounded-lg border border-slate-200 flex flex-col flex-shrink-0" style={{ maxHeight: '300px' }}>
+        <div className="bg-white rounded-lg border border-slate-200 flex flex-col flex-shrink-0">
             <h3 className="text-sm font-bold text-slate-800 p-3 border-b border-slate-200 flex-shrink-0">Próximos eventos</h3>
-            <div className="flex-grow overflow-y-auto p-3 space-y-2 min-h-0">
+            <div className="overflow-y-auto p-3 space-y-2" style={{ maxHeight: '400px' }}>
                 {upcomingEvents.length > 0 ? (
                     upcomingEvents.map(event => {
                         const categoryStyle = EVENT_CATEGORIES[event.category] || EVENT_CATEGORIES['Other'];
@@ -370,36 +370,38 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
           icon={CalendarDaysIcon}
       />
       
-      <div className="bg-white rounded-lg border border-slate-200 p-3 md:p-6 flex flex-col flex-1 min-h-0">
+      <div className="bg-white rounded-lg border border-slate-200 p-3 md:p-6 flex flex-col h-full overflow-hidden">
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 md:mb-4 gap-2 flex-shrink-0">
-          <div className="flex flex-wrap items-center gap-2 md:gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
             <span className="text-lg md:text-xl font-bold text-slate-800 tracking-tight capitalize">
               {currentDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}
             </span>
-            <div className="flex items-center gap-1">
-              <button onClick={handlePrevMonth} className="p-1.5 rounded text-slate-600 hover:bg-slate-100 transition-colors">
-                <ChevronLeftIcon className="w-4 h-4" />
-              </button>
-              <button onClick={handleNextMonth} className="p-1.5 rounded text-slate-600 hover:bg-slate-100 transition-colors">
-                <ChevronRightIcon className="w-4 h-4" />
-              </button>
+            <div className="flex items-center justify-between sm:justify-start gap-2">
+              <div className="flex items-center gap-1">
+                <button onClick={handlePrevMonth} className="p-1.5 rounded text-slate-600 hover:bg-slate-100 transition-colors">
+                  <ChevronLeftIcon className="w-4 h-4" />
+                </button>
+                <button onClick={handleNextMonth} className="p-1.5 rounded text-slate-600 hover:bg-slate-100 transition-colors">
+                  <ChevronRightIcon className="w-4 h-4" />
+                </button>
+              </div>
+              <span className="text-[10px] md:text-xs text-slate-400 whitespace-nowrap">
+                {lastUpdate.toLocaleTimeString('es-ES')}
+              </span>
             </div>
-            <span className="text-[10px] md:text-xs text-slate-400">
-              Última actualización: {lastUpdate.toLocaleTimeString('es-ES')}
-            </span>
           </div>
-          <button onClick={() => openAddModal(new Date())} className="flex items-center bg-red-600 text-white px-3 py-1.5 md:py-2 rounded text-xs md:text-sm font-semibold hover:bg-red-700 w-full sm:w-auto justify-center">
+          <button onClick={() => openAddModal(new Date())} className="flex items-center bg-red-600 text-white px-3 py-1.5 md:py-2 rounded text-xs md:text-sm font-semibold hover:bg-red-700 w-full sm:w-auto justify-center flex-shrink-0">
             <PlusIcon className="w-4 h-4 mr-1.5" />
             Crear Evento
           </button>
         </header>
         
-        <div className="flex-1 flex flex-col lg:flex-row gap-3 md:gap-4 min-h-0">
-            <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col lg:flex-row gap-3 md:gap-4 overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="grid grid-cols-7 text-center font-semibold text-[10px] md:text-xs text-slate-500 flex-shrink-0">
                     {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => <div key={day} className="py-1 md:py-1.5 border-b border-slate-200">{day}</div>)}
                 </div>
-                <div className="grid grid-cols-7 flex-1 border-l border-slate-200 overflow-auto min-h-0" style={{ gridAutoRows: 'minmax(70px, 1fr)' }}>
+                <div className="grid grid-cols-7 flex-1 border-l border-slate-200 overflow-y-auto" style={{ gridAutoRows: 'minmax(80px, 1fr)' }}>
                     {daysInMonth.map((day, index) => {
                     const isToday = new Date().toDateString() === day.toDateString();
                     const isCurrentMonth = day.getMonth() === currentDate.getMonth();
@@ -458,7 +460,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                 </div>
             </div>
 
-            <div className="lg:w-72 xl:w-80 flex flex-col gap-3 min-h-0 lg:max-h-full overflow-y-auto flex-shrink-0">
+            <div className="lg:w-80 xl:w-96 flex flex-col gap-3 overflow-y-auto flex-shrink-0">
                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex-shrink-0">
                     <h3 className="text-sm font-semibold text-slate-800 mb-2 flex items-center gap-2">
                         <LinkIcon className="w-4 h-4 text-slate-500"/> 
@@ -476,7 +478,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                     </label>
                     
                     {emailAccounts.length > 0 ? (
-                        <div className="mt-2 space-y-1">
+                        <div className="mt-2 space-y-1 max-h-48 overflow-y-auto">
                             <p className="text-[10px] font-medium text-slate-500 px-2 mb-1">Cuentas Vinculadas</p>
                             {emailAccounts.map(account => (
                                 <label key={account.id} className="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer transition-colors group">
