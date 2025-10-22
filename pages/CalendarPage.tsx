@@ -274,8 +274,24 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
   }, [currentDate]);
 
   const filteredEvents = useMemo(() => {
-    return events.filter(e => e.status !== 'deleted');
-  }, [events]);
+    const hasNoFiltersSelected = !includeLocalEvents && selectedAccountIds.length === 0;
+    
+    if (hasNoFiltersSelected) {
+      return [];
+    }
+    
+    return events.filter(e => {
+      if (e.status === 'deleted') return false;
+      
+      const isLocalEvent = e.source !== 'google';
+      const isGoogleEvent = e.source === 'google';
+      
+      if (isLocalEvent && includeLocalEvents) return true;
+      if (isGoogleEvent && selectedAccountIds.length > 0) return true;
+      
+      return false;
+    });
+  }, [events, includeLocalEvents, selectedAccountIds]);
 
   const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
