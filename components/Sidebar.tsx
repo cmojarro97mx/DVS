@@ -56,7 +56,7 @@ const NavItem: React.FC<{
             {isSidebarOpen && <span className={`ml-3 truncate font-medium text-sm ${isActive ? 'text-red-700' : 'text-gray-800'}`}>{label}</span>}
         </button>
         {!isSidebarOpen && (
-            <div className="absolute left-full ml-4 px-3 py-1.5 bg-gray-800 text-white text-xs font-semibold rounded-md whitespace-nowrap opacity-0 group-hover/navitem:opacity-100 transition-opacity pointer-events-none z-50">
+            <div className="absolute left-full ml-2 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-md whitespace-nowrap opacity-0 group-hover/navitem:opacity-100 transition-opacity duration-200 pointer-events-none z-[9999] shadow-lg">
                 {label}
             </div>
         )}
@@ -105,7 +105,7 @@ const CollapsibleNavItem: React.FC<{
                 {isSidebarOpen && <ChevronDownIcon className={`w-5 h-5 ml-auto flex-shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />}
             </button>
              {!isSidebarOpen && (
-                <div className="absolute left-full ml-4 px-3 py-1.5 bg-gray-800 text-white text-xs font-semibold rounded-md whitespace-nowrap opacity-0 group-hover/collapsible:opacity-100 transition-opacity pointer-events-none z-50">
+                <div className="absolute left-full ml-2 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-md whitespace-nowrap opacity-0 group-hover/collapsible:opacity-100 transition-opacity duration-200 pointer-events-none z-[9999] shadow-lg">
                     {label}
                 </div>
             )}
@@ -183,7 +183,7 @@ const UserMenu: React.FC<{ onLogout: () => void, isSidebarOpen: boolean }> = ({ 
                     <UserAvatar name={userName} className="w-9 h-9 text-sm" />
                  </button>
                  {!isOpen && (
-                    <div className="absolute left-full ml-4 px-3 py-1.5 bg-gray-800 text-white text-xs font-semibold rounded-md whitespace-nowrap opacity-0 group-hover/usermenu:opacity-100 transition-opacity pointer-events-none z-50 top-1/2 -translate-y-1/2">
+                    <div className="absolute left-full ml-2 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-md whitespace-nowrap opacity-0 group-hover/usermenu:opacity-100 transition-opacity duration-200 pointer-events-none z-[9999] shadow-lg top-1/2 -translate-y-1/2">
                         {userName}
                     </div>
                  )}
@@ -258,7 +258,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <button onClick={() => setActiveView('dashboard')} className="flex items-center justify-center w-full h-full" title="Dashboard">
                        <ShipNowIcon className="w-8 h-8 text-red-600 flex-shrink-0" />
                     </button>
-                    <div className="absolute left-full ml-4 px-3 py-1.5 bg-gray-800 text-white text-xs font-semibold rounded-md whitespace-nowrap opacity-0 group-hover/logo:opacity-100 transition-opacity pointer-events-none z-50">
+                    <div className="absolute left-full ml-2 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-md whitespace-nowrap opacity-0 group-hover/logo:opacity-100 transition-opacity duration-200 pointer-events-none z-[9999] shadow-lg">
                         SHIPNOW - Dashboard
                     </div>
                 </div>
