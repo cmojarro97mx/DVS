@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { google } from 'googleapis';
 import { PrismaService } from '../../common/prisma.service';
 import { GoogleAuthService } from '../google-auth/google-auth.service';
@@ -265,5 +266,47 @@ export class EmailSyncService {
   private extractName(fromHeader: string): string {
     const match = fromHeader.match(/(.+?)\s*<.+?>/) || fromHeader.match(/(.+)/);
     return match ? match[1].trim().replace(/"/g, '') : '';
+  }
+
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async autoSyncEmails() {
+    this.logger.log('Starting automatic email sync for all accounts...');
+    
+    try {
+      const accounts = await this.prisma.emailAccount.findMany({
+        where: {
+          provider: 'google',
+          status: 'connected',
+          syncEmail: true,
+          refreshToken: { not: null },
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      this.logger.log(`Found ${accounts.length} accounts with email sync enabled`);
+
+      for (const account of accounts) {
+        try {
+          this.logger.log(`Syncing emails for account ${account.email} (${account.id})`);
+          await this.syncEmailsForAccount(account.user.id, account.id);
+        } catch (error) {
+          this.logger.error(
+            `Failed to auto-sync emails for account ${account.email}:`,
+            error.message,
+          );
+        }
+      }
+
+      this.logger.log('Automatic email sync completed');
+    } catch (error) {
+      this.logger.error('Error in automatic email sync:', error.message);
+    }
   }
 }
