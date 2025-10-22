@@ -869,7 +869,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
   };
 
   return (
-    <div className="flex h-screen bg-slate-100">
+    <div className="flex h-screen bg-slate-100 overflow-hidden">
       <Sidebar 
         activeView={activeView} 
         setActiveView={setActiveView} 
@@ -878,9 +878,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
         onLogout={onLogout}
       />
       
-      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-20'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-20'}`}>
         <TopHeader onLogout={onLogout} />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 p-6">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 p-4 md:p-6">
           {renderContent()}
         </main>
       </div>

@@ -83,25 +83,25 @@ const DashboardPageContent: React.FC<DashboardPageContentProps> = ({ projects, c
     }, [projects, clients, invoices, tasks, columns]);
 
     return (
-        <div className="animate-fade-in space-y-6">
+        <div className="animate-fade-in space-y-4 md:space-y-6">
             <Banner
                 title="Logistics Command Center"
                 description="Real-time overview of your global supply chain operations."
                 icon={GridIcon}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
                 <StatCard title="Active Shipments" value={activeProjects.toString()} icon={TruckIcon} change="+2" changeType="increase" />
                 <StatCard title="Total Revenue (USD)" value={`$${(totalRevenue / 1000).toFixed(1)}k`} icon={ChartPieIcon} change="+12.1%" changeType="increase" />
                 <StatCard title="Total Clients" value={totalClients.toString()} icon={UsersIcon} change="+1" changeType="increase" />
                 <StatCard title="Pending Tasks" value={pendingTasks.toString()} icon={TasksIcon} change="-3" changeType="decrease" />
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
+                <div className="xl:col-span-2 min-w-0">
                     <GlobalShipmentsMap projects={projects} />
                 </div>
-                <div className="space-y-6">
+                <div className="space-y-4 md:space-y-6 min-w-0">
                     <ShipmentStatusChart projects={projects} />
                     <UpcomingTasksCard tasks={tasks} columns={columns} projects={projects} onViewOperation={onViewOperation} />
                 </div>

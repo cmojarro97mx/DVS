@@ -239,8 +239,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     ];
 
     return (
-        <aside className={`fixed top-0 left-0 h-full bg-white border-r border-slate-200 z-30 transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
-            <div className="flex flex-col h-full relative">
+        <aside className={`fixed top-0 left-0 h-screen bg-white border-r border-slate-200 z-30 transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-20'} overflow-hidden`}>
+            <div className="flex flex-col h-full relative overflow-hidden">
                  <div className="flex-shrink-0 h-16 border-b border-slate-200 flex items-center justify-center">
                     <button onClick={() => setActiveView('dashboard')} className="flex items-center gap-2" title="Go to Dashboard">
                        <ShipNowIcon className="w-8 h-8 text-red-600 flex-shrink-0" />

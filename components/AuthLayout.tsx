@@ -40,11 +40,11 @@ const AuthVisuals = () => (
 
 const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-slate-100 flex">
+    <div className="min-h-screen bg-slate-100 flex overflow-hidden">
       <div className="hidden md:block md:w-1/2 lg:w-3/5">
         <AuthVisuals />
       </div>
-      <div className="w-full md:w-1/2 lg:w-2/5 flex flex-col justify-center items-center p-8">
+      <div className="w-full md:w-1/2 lg:w-2/5 flex flex-col justify-center items-center p-4 sm:p-6 md:p-8 overflow-y-auto">
         <div className="max-w-sm w-full">
             {children}
         </div>
