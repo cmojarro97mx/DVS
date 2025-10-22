@@ -26,13 +26,19 @@ export class FilesController {
   }
 
   @Get('manager/all')
-  getAllFiles(@Req() req: any) {
-    return this.filesService.getAllOrganizationFiles(req.user.organizationId);
+  async getAllFiles(@Req() req: any) {
+    console.log('[FilesController] Getting all files for organization:', req.user.organizationId);
+    const files = await this.filesService.getAllOrganizationFiles(req.user.organizationId);
+    console.log('[FilesController] Returning', files.length, 'files');
+    return files;
   }
 
   @Get('manager/stats')
-  getStats(@Req() req: any) {
-    return this.filesService.getFileStats(req.user.organizationId);
+  async getStats(@Req() req: any) {
+    console.log('[FilesController] Getting stats for organization:', req.user.organizationId);
+    const stats = await this.filesService.getFileStats(req.user.organizationId);
+    console.log('[FilesController] Stats:', stats);
+    return stats;
   }
 
   @Get('folders')

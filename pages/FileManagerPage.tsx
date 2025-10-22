@@ -56,14 +56,17 @@ export default function FileManagerPage() {
   const loadData = async () => {
     try {
       setLoading(true);
+      console.log('[FileManager] Loading files and stats...');
       const [filesResponse, statsResponse] = await Promise.all([
         api.get('/files/manager/all'),
         api.get('/files/manager/stats'),
       ]);
+      console.log('[FileManager] Files received:', filesResponse.data.length);
+      console.log('[FileManager] Stats received:', statsResponse.data);
       setFiles(filesResponse.data);
       setStats(statsResponse.data);
     } catch (error) {
-      console.error('Error loading files:', error);
+      console.error('[FileManager] Error loading files:', error);
     } finally {
       setLoading(false);
     }
