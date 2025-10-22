@@ -246,7 +246,6 @@ const EmployeesPage: React.FC<EmployeesPageProps> = () => {
             if (employeeToEdit) {
                 await employeesService.update(employeeToEdit.id, userData);
             } else {
-                userData.password = Math.random().toString(36).slice(-8);
                 await employeesService.create(userData);
             }
             await loadData();

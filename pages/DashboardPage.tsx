@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Sidebar } from '../components/Sidebar';
 import { TopHeader } from '../components/TopHeader';
 import DashboardPageContent from './DashboardPageContent';
@@ -27,6 +27,7 @@ import CompanyProfilePage from './CompanyProfilePage'; // New Company Profile Pa
 import LinkedAccountsPage from './LinkedAccountsPage'; // New Linked Accounts Page
 import AIAgentsPage from './AIAgentsPage';
 import AIOperationCreatorPage from './AIOperationCreatorPage';
+import { employeesService } from '../src/services/employeesService';
 import { 
     initialProjects, 
     initialClients, 
@@ -471,6 +472,27 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
   const [reconciliationHistory, setReconciliationHistory] = useState<ReconciliationSession[]>(initialReconciliationHistory);
   const [emails, setEmails] = useState<EmailMessage[]>(initialEmails);
   const [emailAccounts, setEmailAccounts] = useState<EmailAccount[]>(initialAccounts);
+
+  useEffect(() => {
+    const loadEmployees = async () => {
+      try {
+        const employees = await employeesService.getAll();
+        const teamMembersData: TeamMember[] = employees.map(emp => ({
+          id: emp.id,
+          name: emp.name,
+          email: emp.email,
+          role: emp.role,
+          phone: emp.phone,
+          hireDate: emp.createdAt,
+          status: emp.status as 'Active' | 'Inactive',
+        }));
+        setTeamMembers(teamMembersData);
+      } catch (error) {
+        console.error('Error loading employees:', error);
+      }
+    };
+    loadEmployees();
+  }, []);
 
   const projectsWithRealProgress = useMemo(() => {
     // FIX: Explicitly cast Object.values results to fix 'unknown' type errors,
