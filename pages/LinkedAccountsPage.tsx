@@ -82,9 +82,13 @@ const LinkedAccountsPage: React.FC<LinkedAccountsPageProps> = ({ setActiveView }
     const [activeTab, setActiveTab] = useState<'overview' | 'activity'>('overview');
     const [loading, setLoading] = useState(true);
     const [loadingEmails, setLoadingEmails] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [lastSync, setLastSync] = useState<Date | null>(null);
+    const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     const [currentPage, setCurrentPage] = useState(1);
     const EMAILS_PER_PAGE = 10;
+    const AUTO_REFRESH_INTERVAL = 30000;
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -107,6 +111,24 @@ const LinkedAccountsPage: React.FC<LinkedAccountsPageProps> = ({ setActiveView }
     useEffect(() => {
         if (selectedAccountId) {
             fetchEmails(selectedAccountId);
+        }
+    }, [selectedAccountId]);
+
+    useEffect(() => {
+        if (selectedAccountId) {
+            if (syncIntervalRef.current) {
+                clearInterval(syncIntervalRef.current);
+            }
+
+            syncIntervalRef.current = setInterval(() => {
+                fetchEmails(selectedAccountId, true);
+            }, AUTO_REFRESH_INTERVAL);
+
+            return () => {
+                if (syncIntervalRef.current) {
+                    clearInterval(syncIntervalRef.current);
+                }
+            };
         }
     }, [selectedAccountId]);
 
@@ -134,9 +156,13 @@ const LinkedAccountsPage: React.FC<LinkedAccountsPageProps> = ({ setActiveView }
         }
     };
 
-    const fetchEmails = async (accountId: string) => {
+    const fetchEmails = async (accountId: string, silent: boolean = false) => {
         try {
-            setLoadingEmails(true);
+            if (!silent) {
+                setLoadingEmails(true);
+            } else {
+                setIsSyncing(true);
+            }
             const token = localStorage.getItem('accessToken');
             const response = await fetch(`/api/gmail/messages?accountId=${accountId}&maxResults=100`, {
                 headers: {
@@ -169,11 +195,16 @@ const LinkedAccountsPage: React.FC<LinkedAccountsPageProps> = ({ setActiveView }
                 const emails = await Promise.all(emailPromises);
                 const validEmails = emails.filter((e): e is EmailMessage => e !== null);
                 setEmailMessages(validEmails);
+                setLastSync(new Date());
             }
         } catch (error) {
             console.error('Error fetching emails:', error);
         } finally {
-            setLoadingEmails(false);
+            if (!silent) {
+                setLoadingEmails(false);
+            } else {
+                setIsSyncing(false);
+            }
         }
     };
 
@@ -303,7 +334,20 @@ const LinkedAccountsPage: React.FC<LinkedAccountsPageProps> = ({ setActiveView }
                                 <AtSymbolIcon className="w-7 h-7 text-slate-600"/>
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-gray-800">Análisis de Correo</h2>
+                                <div className="flex items-center gap-3">
+                                    <h2 className="text-2xl font-bold text-gray-800">Análisis de Correo</h2>
+                                    {isSyncing && (
+                                        <div className="flex items-center gap-2 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                                            <span>Sincronizando...</span>
+                                        </div>
+                                    )}
+                                    {lastSync && !isSyncing && (
+                                        <span className="text-xs text-slate-400">
+                                            Última actualización: {lastSync.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    )}
+                                </div>
                                 <p className="text-sm text-gray-500">Revisa la actividad y estadísticas de tus cuentas conectadas.</p>
                             </div>
                         </div>
