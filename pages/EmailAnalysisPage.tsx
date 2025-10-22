@@ -378,12 +378,9 @@ const EmailAnalysisPage: React.FC<EmailAnalysisPageProps> = ({ setActiveView }) 
                         <div className="p-12 text-center">
                             <InboxIcon className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                             <p className="text-slate-500">No hay correos sincronizados aún</p>
-                            <button
-                                onClick={handleSync}
-                                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                            >
-                                Sincronizar Ahora
-                            </button>
+                            <p className="text-xs text-slate-400 mt-2">
+                                La sincronización automática está en progreso. Los correos aparecerán aquí pronto.
+                            </p>
                         </div>
                     ) : (
                         emails.map((email) => (
