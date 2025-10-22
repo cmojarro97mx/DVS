@@ -11,7 +11,7 @@ export class GoogleAuthController {
   @UseGuards(JwtAuthGuard)
   async authorize(@Req() req: Request, @Res() res: Response) {
     const user = req.user as any;
-    const authUrl = await this.googleAuthService.getAuthorizationUrl(user.sub);
+    const authUrl = await this.googleAuthService.getAuthorizationUrl(user.userId);
     res.redirect(authUrl);
   }
 
@@ -19,7 +19,7 @@ export class GoogleAuthController {
   @UseGuards(JwtAuthGuard)
   async getAuthUrl(@Req() req: Request) {
     const user = req.user as any;
-    const authUrl = await this.googleAuthService.getAuthorizationUrl(user.sub);
+    const authUrl = await this.googleAuthService.getAuthorizationUrl(user.userId);
     return { url: authUrl };
   }
 
@@ -42,14 +42,14 @@ export class GoogleAuthController {
   @UseGuards(JwtAuthGuard)
   async getStatus(@Req() req: Request) {
     const user = req.user as any;
-    return this.googleAuthService.getConnectionStatus(user.sub);
+    return this.googleAuthService.getConnectionStatus(user.userId);
   }
 
   @Get('disconnect')
   @UseGuards(JwtAuthGuard)
   async disconnect(@Req() req: Request) {
     const user = req.user as any;
-    await this.googleAuthService.disconnect(user.sub);
+    await this.googleAuthService.disconnect(user.userId);
     return { message: 'Google account disconnected successfully' };
   }
 }

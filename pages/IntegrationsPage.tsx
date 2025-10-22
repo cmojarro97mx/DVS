@@ -218,16 +218,6 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
                             onClick={handleConnectGoogle}
                         />
                     </IntegrationSection>
-                    
-                    <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                        <h4 className="text-sm font-semibold text-blue-900 mb-2">Features:</h4>
-                        <ul className="text-xs text-blue-800 space-y-1">
-                            <li>• Send emails directly from Nexxio</li>
-                            <li>• Sync operation events to Calendar</li>
-                            <li>• Access your Gmail inbox</li>
-                            <li>• Manage calendar appointments</li>
-                        </ul>
-                    </div>
                 </div>
                 
                 <div className="lg:col-span-2">
