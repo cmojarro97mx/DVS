@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Mail, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Calendar, Mail, AlertCircle, Loader2, Clock, Database } from 'lucide-react';
 
 interface EmailSyncWizardProps {
   accountId: string;
@@ -15,6 +15,13 @@ interface DiscoveryData {
   cached: boolean;
 }
 
+interface PresetOption {
+  id: string;
+  label: string;
+  description: string;
+  icon: string;
+}
+
 const EmailSyncWizard: React.FC<EmailSyncWizardProps> = ({
   accountId,
   accountEmail,
@@ -27,6 +34,15 @@ const EmailSyncWizard: React.FC<EmailSyncWizardProps> = ({
   const [discoveryData, setDiscoveryData] = useState<DiscoveryData | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [presetOption, setPresetOption] = useState<string>('6months');
+
+  const presetOptions: PresetOption[] = [
+    { id: '3months', label: '3 meses', description: 'Últimos 90 días', icon: '📅' },
+    { id: '6months', label: '6 meses', description: 'Recomendado', icon: '⭐' },
+    { id: '1year', label: '1 año', description: 'Últimos 365 días', icon: '📆' },
+    { id: '2years', label: '2 años', description: 'Últimos 2 años', icon: '🗓️' },
+    { id: 'all', label: 'Todo', description: 'Historial completo', icon: '♾️' },
+    { id: 'custom', label: 'Personalizado', description: 'Elige fecha', icon: '🎯' },
+  ];
 
   useEffect(() => {
     discoverDateRange();
@@ -105,38 +121,22 @@ const EmailSyncWizard: React.FC<EmailSyncWizardProps> = ({
         return;
     }
 
-    if (discoveryData?.oldestEmailDate) {
-      const oldestDate = new Date(discoveryData.oldestEmailDate);
-      if (date < oldestDate) {
-        date = oldestDate;
-      }
-    }
-
     setSelectedDate(date.toISOString().split('T')[0]);
   };
 
   const getEstimatedMessages = (): number => {
-    if (!discoveryData || !selectedDate || !discoveryData.oldestEmailDate || !discoveryData.newestEmailDate) {
-      return discoveryData?.estimatedTotalMessages || 0;
-    }
+    if (!discoveryData || !selectedDate) return 0;
 
-    const oldest = new Date(discoveryData.oldestEmailDate).getTime();
-    const newest = new Date(discoveryData.newestEmailDate).getTime();
-    const selected = new Date(selectedDate).getTime();
+    const totalMessages = discoveryData.estimatedTotalMessages;
+    const oldestDate = new Date(discoveryData.oldestEmailDate || new Date());
+    const newestDate = new Date(discoveryData.newestEmailDate || new Date());
+    const selectedDateObj = new Date(selectedDate);
 
-    if (selected <= oldest) {
-      return discoveryData.estimatedTotalMessages;
-    }
+    const totalDays = Math.max(1, (newestDate.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
+    const selectedDays = Math.max(1, (newestDate.getTime() - selectedDateObj.getTime()) / (1000 * 60 * 60 * 24));
 
-    if (selected >= newest) {
-      return 0;
-    }
-
-    const totalRange = newest - oldest;
-    const selectedRange = newest - selected;
-    const percentage = selectedRange / totalRange;
-
-    return Math.round(discoveryData.estimatedTotalMessages * percentage);
+    const messagesPerDay = totalMessages / totalDays;
+    return Math.round(messagesPerDay * selectedDays);
   };
 
   const formatNumber = (num: number): string => {
@@ -148,7 +148,7 @@ const EmailSyncWizard: React.FC<EmailSyncWizardProps> = ({
     const date = new Date(dateStr);
     return new Intl.DateTimeFormat('es-MX', {
       year: 'numeric',
-      month: 'long',
+      month: 'short',
       day: 'numeric',
     }).format(date);
   };
@@ -189,11 +189,11 @@ const EmailSyncWizard: React.FC<EmailSyncWizardProps> = ({
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
-          <div className="flex flex-col items-center justify-center py-8">
-            <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
-            <p className="text-gray-600">Analizando tu cuenta de correo...</p>
-            <p className="text-sm text-gray-500 mt-2">Esto puede tomar unos segundos</p>
+        <div className="bg-white rounded-lg p-8 max-w-sm w-full mx-4">
+          <div className="flex flex-col items-center justify-center py-6">
+            <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
+            <p className="text-gray-700 font-medium">Analizando cuenta...</p>
+            <p className="text-xs text-gray-500 mt-1">Esto puede tomar unos segundos</p>
           </div>
         </div>
       </div>
@@ -201,202 +201,147 @@ const EmailSyncWizard: React.FC<EmailSyncWizardProps> = ({
   }
 
   const estimatedMessages = getEstimatedMessages();
-  const estimatedSizeGB = (estimatedMessages * 0.05).toFixed(2);
+  const estimatedSizeGB = (estimatedMessages * 0.05).toFixed(1);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Configurar Sincronización de Correos</h2>
-            <p className="text-sm text-gray-600 mt-1">{accountEmail}</p>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-semibold text-gray-900 truncate">Sincronización de Correos</h2>
+            <p className="text-xs text-gray-500 truncate mt-0.5">{accountEmail}</p>
           </div>
           <button
             onClick={onCancel}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="ml-4 text-gray-400 hover:text-gray-600 transition-colors"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
-            <AlertCircle className="w-5 h-5 text-red-600 mr-3 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-800">{error}</p>
-          </div>
-        )}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {error && (
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start">
+              <AlertCircle className="w-4 h-4 text-red-600 mr-2 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
 
-        {discoveryData && (
-          <>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <div className="flex items-start">
-                <Mail className="w-5 h-5 text-blue-600 mr-3 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <h3 className="font-semibold text-blue-900 mb-2">Información de tu cuenta</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-blue-700">Correo más antiguo:</p>
-                      <p className="font-medium text-blue-900">
-                        {formatDate(discoveryData.oldestEmailDate)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-blue-700">Correo más reciente:</p>
-                      <p className="font-medium text-blue-900">
-                        {formatDate(discoveryData.newestEmailDate)}
-                      </p>
-                    </div>
-                    <div className="col-span-2">
-                      <p className="text-blue-700">Total de mensajes en Gmail:</p>
-                      <p className="font-medium text-blue-900">
-                        {formatNumber(discoveryData.estimatedTotalMessages)} correos
-                      </p>
-                    </div>
+          {discoveryData && (
+            <>
+              {/* Info compacta */}
+              <div className="bg-blue-50 rounded-lg p-3 mb-4">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center text-blue-700">
+                    <Mail className="w-3.5 h-3.5 mr-1.5" />
+                    <span>{formatNumber(discoveryData.estimatedTotalMessages)} correos totales</span>
+                  </div>
+                  <div className="text-blue-600">
+                    {formatDate(discoveryData.oldestEmailDate)} - Hoy
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                <Calendar className="w-4 h-4 inline mr-2" />
-                ¿Desde cuándo quieres sincronizar tus correos?
-              </label>
-              
-              <div className="space-y-3 mb-4">
-                <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                  <input
-                    type="radio"
-                    name="preset"
-                    value="3months"
-                    checked={presetOption === '3months'}
-                    onChange={(e) => handlePresetChange(e.target.value)}
-                    className="mr-3"
-                  />
-                  <span className="flex-1">Últimos 3 meses</span>
+              {/* Selector de rango */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Selecciona el período a sincronizar
                 </label>
-
-                <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                  <input
-                    type="radio"
-                    name="preset"
-                    value="6months"
-                    checked={presetOption === '6months'}
-                    onChange={(e) => handlePresetChange(e.target.value)}
-                    className="mr-3"
-                  />
-                  <span className="flex-1">Últimos 6 meses (Recomendado)</span>
-                </label>
-
-                <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                  <input
-                    type="radio"
-                    name="preset"
-                    value="1year"
-                    checked={presetOption === '1year'}
-                    onChange={(e) => handlePresetChange(e.target.value)}
-                    className="mr-3"
-                  />
-                  <span className="flex-1">Último año</span>
-                </label>
-
-                <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                  <input
-                    type="radio"
-                    name="preset"
-                    value="2years"
-                    checked={presetOption === '2years'}
-                    onChange={(e) => handlePresetChange(e.target.value)}
-                    className="mr-3"
-                  />
-                  <span className="flex-1">Últimos 2 años</span>
-                </label>
-
-                <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                  <input
-                    type="radio"
-                    name="preset"
-                    value="all"
-                    checked={presetOption === 'all'}
-                    onChange={(e) => handlePresetChange(e.target.value)}
-                    className="mr-3"
-                  />
-                  <span className="flex-1">Todos los correos (puede tomar mucho tiempo)</span>
-                </label>
-
-                <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                  <input
-                    type="radio"
-                    name="preset"
-                    value="custom"
-                    checked={presetOption === 'custom'}
-                    onChange={(e) => setPresetOption(e.target.value)}
-                    className="mr-3"
-                  />
-                  <span className="flex-1">Fecha personalizada</span>
-                </label>
-              </div>
-
-              {presetOption === 'custom' && (
-                <div className="mt-3">
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    min={discoveryData.oldestEmailDate?.split('T')[0] || undefined}
-                    max={new Date().toISOString().split('T')[0]}
-                    className="w-full border rounded-lg px-4 py-2"
-                  />
+                
+                {/* Tarjetas deslizables */}
+                <div className="overflow-x-auto pb-2 -mx-2 px-2">
+                  <div className="flex gap-2 min-w-max">
+                    {presetOptions.map((option) => (
+                      <button
+                        key={option.id}
+                        onClick={() => handlePresetChange(option.id)}
+                        className={`
+                          flex-shrink-0 w-28 p-3 rounded-lg border-2 transition-all
+                          ${presetOption === option.id
+                            ? 'border-blue-500 bg-blue-50 shadow-sm'
+                            : 'border-gray-200 bg-white hover:border-gray-300'
+                          }
+                        `}
+                      >
+                        <div className="text-2xl mb-1">{option.icon}</div>
+                        <div className="text-sm font-medium text-gray-900">{option.label}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">{option.description}</div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              )}
-            </div>
 
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-              <h3 className="font-semibold text-green-900 mb-2">Estimación de sincronización</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-green-700">Mensajes a sincronizar:</p>
-                  <p className="font-medium text-green-900 text-lg">
-                    {formatNumber(estimatedMessages)} correos
-                  </p>
-                </div>
-                <div>
-                  <p className="text-green-700">Espacio estimado:</p>
-                  <p className="font-medium text-green-900 text-lg">
-                    ~{estimatedSizeGB} GB
-                  </p>
-                </div>
-              </div>
-              <p className="text-xs text-green-600 mt-2">
-                Los correos se sincronizarán automáticamente cada 10 minutos en segundo plano
-              </p>
-            </div>
-
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={onCancel}
-                disabled={saving}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving || !selectedDate}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Guardando...
-                  </>
-                ) : (
-                  'Iniciar Sincronización'
+                {/* Date picker personalizado */}
+                {presetOption === 'custom' && (
+                  <div className="mt-3">
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      min={discoveryData.oldestEmailDate?.split('T')[0] || undefined}
+                      max={new Date().toISOString().split('T')[0]}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                 )}
-              </button>
-            </div>
-          </>
-        )}
+              </div>
+
+              {/* Estimación compacta */}
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold text-green-900">Estimación</h3>
+                  <Database className="w-4 h-4 text-green-600" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-green-700">Mensajes</p>
+                    <p className="text-lg font-bold text-green-900">
+                      {formatNumber(estimatedMessages)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-green-700">Espacio aprox.</p>
+                    <p className="text-lg font-bold text-green-900">
+                      ~{estimatedSizeGB} GB
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center mt-2 pt-2 border-t border-green-200">
+                  <Clock className="w-3 h-3 text-green-600 mr-1.5" />
+                  <p className="text-xs text-green-700">
+                    Sincronización automática cada 10 min
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Footer con botones */}
+        <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-2">
+          <button
+            onClick={onCancel}
+            disabled={saving}
+            className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || !selectedDate}
+            className="px-5 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Guardando...
+              </>
+            ) : (
+              'Iniciar Sincronización'
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
