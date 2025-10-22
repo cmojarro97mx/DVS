@@ -246,71 +246,68 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { label: 'Employees', view: 'employees' as View, icon: UsersIcon },
     ];
 
+    // Always keep sidebar collapsed
+    React.useEffect(() => {
+        setIsSidebarOpen(false);
+    }, []);
+
     return (
-        <aside className={`fixed top-0 left-0 h-screen bg-white border-r border-slate-200 z-30 transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
+        <aside className="fixed top-0 left-0 h-screen bg-white border-r border-slate-200 z-30 transition-all duration-300 w-20">
             <div className="flex flex-col h-full relative">
-                 <div className="flex-shrink-0 h-16 border-b border-slate-200 flex items-center justify-center">
-                    <button onClick={() => setActiveView('dashboard')} className="flex items-center gap-2" title="Go to Dashboard">
+                 <div className="flex-shrink-0 h-16 border-b border-slate-200 flex items-center justify-center relative group/logo">
+                    <button onClick={() => setActiveView('dashboard')} className="flex items-center justify-center w-full h-full" title="Dashboard">
                        <ShipNowIcon className="w-8 h-8 text-red-600 flex-shrink-0" />
-                       <div className={`transition-all duration-200 ease-in-out overflow-hidden ${isSidebarOpen ? 'max-w-xs' : 'max-w-0'}`}>
-                           <span className="font-bold text-xl text-gray-800 tracking-tighter whitespace-nowrap">SHIPNOW</span>
-                       </div>
                     </button>
+                    <div className="absolute left-full ml-4 px-3 py-1.5 bg-gray-800 text-white text-xs font-semibold rounded-md whitespace-nowrap opacity-0 group-hover/logo:opacity-100 transition-opacity pointer-events-none z-50">
+                        SHIPNOW - Dashboard
+                    </div>
                 </div>
-                
-                <button 
-                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                    className="absolute top-6 -right-3 w-6 h-6 bg-white border-2 border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 hover:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-300 z-40 transition-all"
-                    title={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-                >
-                    <ChevronDoubleLeftIcon className={`w-4 h-4 transition-transform duration-300 ${!isSidebarOpen ? 'rotate-180' : ''}`} />
-                </button>
 
 
                 <nav className="flex-1 p-2 overflow-y-auto overflow-x-hidden sidebar-nav-scroll min-h-0">
-                    <NavSection title="Análisis" isSidebarOpen={isSidebarOpen}>
-                         <NavItem icon={DashboardIcon} label="Dashboard" isActive={activeView === 'dashboard'} onClick={() => setActiveView('dashboard')} isSidebarOpen={isSidebarOpen} />
+                    <NavSection title="Análisis" isSidebarOpen={false}>
+                         <NavItem icon={DashboardIcon} label="Dashboard" isActive={activeView === 'dashboard'} onClick={() => setActiveView('dashboard')} isSidebarOpen={false} />
                     </NavSection>
 
-                     <NavSection title="Gestión" isSidebarOpen={isSidebarOpen}>
-                        <NavItem icon={TruckIcon} label="Operations" isActive={['operations', 'create-operation', 'detail-operation'].includes(activeView)} onClick={() => setActiveView('operations')} isSidebarOpen={isSidebarOpen} />
+                     <NavSection title="Gestión" isSidebarOpen={false}>
+                        <NavItem icon={TruckIcon} label="Operations" isActive={['operations', 'create-operation', 'detail-operation'].includes(activeView)} onClick={() => setActiveView('operations')} isSidebarOpen={false} />
                     </NavSection>
                     
-                    <NavSection title="Finanzas" isSidebarOpen={isSidebarOpen}>
+                    <NavSection title="Finanzas" isSidebarOpen={false}>
                         <NavItem 
                             icon={CurrencyDollarOutlineIcon} 
                             label="Finance" 
                             isActive={['finance-hub', 'quotations', 'all_invoices', 'all_payments', 'all_expenses', 'bank_accounts', 'bank-reconciliation', 'finance'].includes(activeView)} 
                             onClick={() => setActiveView('finance-hub')} 
-                            isSidebarOpen={isSidebarOpen} 
+                            isSidebarOpen={false} 
                         />
                     </NavSection>
 
-                    <NavSection title="Herramientas" isSidebarOpen={isSidebarOpen}>
-                        <NavItem icon={CalendarIcon} label="Calendar" isActive={activeView === 'calendar'} onClick={() => setActiveView('calendar')} isSidebarOpen={isSidebarOpen} />
-                        <NavItem icon={FolderIcon} label="Files" isActive={activeView === 'files'} onClick={() => setActiveView('files')} isSidebarOpen={isSidebarOpen} />
+                    <NavSection title="Herramientas" isSidebarOpen={false}>
+                        <NavItem icon={CalendarIcon} label="Calendar" isActive={activeView === 'calendar'} onClick={() => setActiveView('calendar')} isSidebarOpen={false} />
+                        <NavItem icon={FolderIcon} label="Files" isActive={activeView === 'files'} onClick={() => setActiveView('files')} isSidebarOpen={false} />
                         <NavItem 
                             icon={MailIcon} 
                             label="Email & Calendario" 
                             isActive={['email-hub', 'integrations', 'email-analysis', 'ai-operation-creator'].includes(activeView)} 
                             onClick={() => setActiveView('email-hub')} 
-                            isSidebarOpen={isSidebarOpen} 
+                            isSidebarOpen={false} 
                         />
                     </NavSection>
 
-                    <NavSection title="Administración" isSidebarOpen={isSidebarOpen}>
+                    <NavSection title="Administración" isSidebarOpen={false}>
                         <NavItem 
                             icon={CompanyIcon} 
                             label="Empresa" 
                             isActive={['company-hub', 'company-profile', 'employees', 'clients', 'create-client', 'client-detail'].includes(activeView)} 
                             onClick={() => setActiveView('company-hub')} 
-                            isSidebarOpen={isSidebarOpen} 
+                            isSidebarOpen={false} 
                         />
                     </NavSection>
                 </nav>
 
                 <div className="mt-auto border-t border-slate-200 flex-shrink-0">
-                     <UserMenu onLogout={onLogout} isSidebarOpen={isSidebarOpen} />
+                     <UserMenu onLogout={onLogout} isSidebarOpen={false} />
                 </div>
             </div>
             <style>{`
