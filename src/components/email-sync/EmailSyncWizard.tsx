@@ -36,6 +36,7 @@ const EmailSyncWizard: React.FC<EmailSyncWizardProps> = ({
   const [presetOption, setPresetOption] = useState<string>('6months');
 
   const presetOptions: PresetOption[] = [
+    { id: 'currentMonth', label: 'Mes actual', description: 'Solo este mes', icon: '📬' },
     { id: '3months', label: '3 meses', description: 'Últimos 90 días', icon: '📅' },
     { id: '6months', label: '6 meses', description: 'Recomendado', icon: '⭐' },
     { id: '1year', label: '1 año', description: 'Últimos 365 días', icon: '📆' },
@@ -98,6 +99,9 @@ const EmailSyncWizard: React.FC<EmailSyncWizardProps> = ({
     let date = new Date();
 
     switch (preset) {
+      case 'currentMonth':
+        date = new Date(today.getFullYear(), today.getMonth(), 1);
+        break;
       case '3months':
         date.setMonth(today.getMonth() - 3);
         break;
