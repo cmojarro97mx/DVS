@@ -20,6 +20,12 @@ The frontend uses React with TypeScript, styled using Tailwind CSS, and bundled 
 -   **Multi-Tenancy**: All data is isolated by `organizationId`, enforced through JWT validation and database queries.
 -   **Core Modules**: Logistics Operations, Client/Supplier Management, Financial Management (Invoices, Payments, Expenses), Employee Management, Task Management (Kanban), Notes, File Management, Calendar and Events, Lead and Quotation Management.
 -   **File Storage**: Integrated with Backblaze B2 for secure and scalable file storage of documents, attachments, and logos.
+-   **File Manager Module**: Read-only unified view of all files stored in Backblaze B2 across the system.
+    -   **Unified View**: Aggregates files from both the Files module (general files with folders) and Operation Documents.
+    -   **Features**: Grid/list view modes, advanced filtering (by source, file type, date), search functionality, file size statistics, and type categorization.
+    -   **File Sources**: Displays files from `files` table (general files with folder organization) and `documents` table (operation-related documents).
+    -   **Read-Only**: View and download only; no editing or deletion capabilities (managed through respective modules).
+    -   **Statistics Dashboard**: Shows total file count, storage usage, breakdown by file type, and counts for general files vs operation documents.
 -   **Operation Management**: Includes notes, tasks (with assignees and Kanban board integration), documents (stored in Backblaze B2), and commission tracking.
 -   **Financial Management**: Invoices, Payments, and Expenses modules enforce organization-level data scoping and validation.
 -   **Google Workspace Integration (Multi-Account)**:

@@ -121,17 +121,15 @@ export class FilesService {
     // Get operation documents
     const documents = await this.prisma.document.findMany({
       where: {
+        operationId: {
+          not: null,
+        },
         operation: {
           organizationId,
         },
       },
       include: {
-        operation: {
-          select: {
-            id: true,
-            referenceNumber: true,
-          },
-        },
+        operation: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -157,16 +155,16 @@ export class FilesService {
       ...documents.map((doc) => ({
         id: doc.id,
         name: doc.name,
-        url: doc.url,
-        storageKey: doc.url, // Documents store URL directly
-        size: doc.size,
-        mimeType: doc.mimeType,
+        url: doc.url || '',
+        storageKey: doc.url || '', // Documents store URL directly
+        size: doc.size || 0,
+        mimeType: doc.mimeType || 'application/octet-stream',
         preview: null,
         createdAt: doc.createdAt,
         updatedAt: doc.updatedAt,
         source: 'operations' as const,
         folder: null,
-        operationReference: doc.operation.referenceNumber,
+        operationReference: doc.operation?.projectName || null,
       })),
     ];
 
