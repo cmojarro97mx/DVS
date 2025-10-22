@@ -1,11 +1,9 @@
 
 #!/bin/bash
 
-# Build DATABASE_URL from Replit PostgreSQL environment variables
-if [ -n "$PGHOST" ] && [ -n "$PGUSER" ] && [ -n "$PGDATABASE" ]; then
-  export DATABASE_URL="postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}?sslmode=disable"
-  echo "Using Replit PostgreSQL database: $PGDATABASE"
-fi
+# Force the correct DATABASE_URL from .env
+export DATABASE_URL="postgresql://neondb_owner:npg_fK01vAmLVObW@ep-holy-glitter-adsfdor9-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require"
+echo "Using Neon database"
 
 # Install dependencies if needed
 if [ ! -d "node_modules" ]; then
