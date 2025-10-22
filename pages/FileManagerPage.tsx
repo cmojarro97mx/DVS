@@ -62,11 +62,13 @@ export default function FileManagerPage() {
         api.get('/files/manager/stats'),
       ]);
       console.log('[FileManager] Files received:', filesResponse.data.length);
+      console.log('[FileManager] First file sample:', filesResponse.data[0]);
       console.log('[FileManager] Stats received:', statsResponse.data);
       setFiles(filesResponse.data);
       setStats(statsResponse.data);
     } catch (error) {
       console.error('[FileManager] Error loading files:', error);
+      console.error('[FileManager] Error details:', error.message, error.response?.data);
     } finally {
       setLoading(false);
     }
