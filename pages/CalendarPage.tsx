@@ -363,18 +363,18 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
   };
 
   return (
-    <div className="animate-fade-in h-full flex flex-col space-y-4 md:space-y-6">
+    <div className="animate-fade-in h-full flex flex-col space-y-4 md:space-y-6 overflow-hidden">
       <Banner
           title="Calendario"
           description="Organiza fechas límite, envíos y reuniones con sincronización automática."
           icon={CalendarDaysIcon}
       />
       
-      <div className="bg-white rounded-lg border border-slate-200 p-3 md:p-6 flex flex-col flex-grow min-h-0">
+      <div className="bg-white rounded-lg border border-slate-200 p-3 md:p-6 flex flex-col flex-grow min-h-0 overflow-hidden">
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-3 flex-shrink-0">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-4 w-full sm:w-auto">
               <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
-                <span className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight capitalize">{currentDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}</span>
+                <span className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 tracking-tight capitalize">{currentDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}</span>
                 <div className="flex items-center">
                     <button onClick={handlePrevMonth} className="p-1.5 md:p-2 rounded text-slate-600 hover:bg-slate-100 transition-colors"><ChevronLeftIcon className="w-4 h-4 md:w-5 md:h-5" /></button>
                     <button onClick={handleNextMonth} className="p-1.5 md:p-2 rounded text-slate-600 hover:bg-slate-100 transition-colors"><ChevronRightIcon className="w-4 h-4 md:w-5 md:h-5" /></button>
@@ -394,18 +394,18 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                 </span>
               </div>
           </div>
-          <button onClick={() => openAddModal(new Date())} className="flex items-center bg-red-600 text-white px-3 md:px-4 py-2 rounded text-xs md:text-sm font-semibold hover:bg-red-700 w-full sm:w-auto justify-center">
+          <button onClick={() => openAddModal(new Date())} className="flex items-center bg-red-600 text-white px-3 md:px-4 py-2 rounded text-xs md:text-sm font-semibold hover:bg-red-700 w-full sm:w-auto justify-center flex-shrink-0">
               <PlusIcon className="w-4 h-4 md:w-5 md:h-5 mr-1.5 md:mr-2" />
               Crear Evento
           </button>
         </header>
         
-        <div className="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-6 min-h-0">
-            <div className="lg:col-span-2 flex flex-col overflow-hidden">
-                <div className="grid grid-cols-7 text-center font-semibold text-[10px] md:text-sm text-slate-500 flex-shrink-0">
+        <div className="flex-grow grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6 min-h-0 overflow-hidden">
+            <div className="xl:col-span-2 flex flex-col overflow-hidden min-h-[400px]">
+                <div className="grid grid-cols-7 text-center font-semibold text-[10px] sm:text-xs md:text-sm text-slate-500 flex-shrink-0">
                     {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => <div key={day} className="py-1.5 md:py-2 border-b border-slate-200">{day}</div>)}
                 </div>
-                <div className="grid grid-cols-7 auto-rows-fr flex-grow min-h-0 border-l border-slate-200 overflow-auto">
+                <div className="grid grid-cols-7 flex-grow min-h-0 border-l border-slate-200 overflow-auto" style={{ gridAutoRows: '1fr' }}>
                     {daysInMonth.map((day, index) => {
                     const isToday = new Date().toDateString() === day.toDateString();
                     const isCurrentMonth = day.getMonth() === currentDate.getMonth();
@@ -420,11 +420,11 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                         <div
                         key={index}
                         onClick={() => openAddModal(day)}
-                        className={`relative p-1 md:p-2 flex flex-col group border-b border-r border-slate-200 cursor-pointer min-h-[60px] md:min-h-[80px] ${isCurrentMonth ? 'bg-white hover:bg-slate-50' : 'bg-slate-50'} transition-colors`}
+                        className={`relative p-1 sm:p-1.5 md:p-2 flex flex-col group border-b border-r border-slate-200 cursor-pointer ${isCurrentMonth ? 'bg-white hover:bg-slate-50' : 'bg-slate-50'} transition-colors overflow-hidden`}
                         >
                         <time
                             dateTime={day.toISOString()}
-                            className={`text-[10px] md:text-xs font-semibold self-end mb-1 flex items-center justify-center w-5 h-5 md:w-6 md:h-6 rounded-full ${
+                            className={`text-[10px] md:text-xs font-semibold self-end mb-1 flex items-center justify-center w-5 h-5 md:w-6 md:h-6 rounded-full flex-shrink-0 ${
                             isToday ? 'bg-red-600 text-white' : isCurrentMonth ? 'text-slate-700' : 'text-slate-400'
                             }`}
                         >
@@ -438,7 +438,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                                     const isCancelled = event.status === 'cancelled';
                                     
                                     return (
-                                        <div key={event.id} onClick={(e) => { e.stopPropagation(); openEditModal(event); }} className={`w-full text-left px-1 py-0.5 md:p-1 rounded text-[9px] md:text-xs truncate flex items-center gap-1 ${categoryStyle.bg} ${categoryStyle.text} font-semibold transition-colors hover:brightness-95 ${(isCompleted || isCancelled) ? 'opacity-60' : ''}`} title={event.title}>
+                                        <div key={event.id} onClick={(e) => { e.stopPropagation(); openEditModal(event); }} className={`w-full text-left px-1 py-0.5 md:p-1 rounded text-[8px] sm:text-[9px] md:text-xs truncate flex items-center gap-1 ${categoryStyle.bg} ${categoryStyle.text} font-semibold transition-colors hover:brightness-95 ${(isCompleted || isCancelled) ? 'opacity-60' : ''}`} title={event.title}>
                                             <div className={`w-1 h-1 md:w-1.5 md:h-1.5 rounded-full ${categoryStyle.dot} flex-shrink-0`}></div>
                                             <span className={`truncate ${isCompleted || isCancelled ? 'line-through' : ''}`}>{event.title}</span>
                                             {isCompleted && <CheckCircleIcon className="w-2.5 h-2.5 md:w-3 md:h-3 flex-shrink-0" />}
@@ -453,7 +453,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                                 </div>
                             )}
                             {dayEvents.length > 2 && (
-                                <div className="text-[9px] md:text-xs font-bold text-slate-500 pl-0.5 md:pl-1">
+                                <div className="text-[8px] sm:text-[9px] md:text-xs font-bold text-slate-500 pl-0.5 md:pl-1">
                                     +{dayEvents.length - 2} más
                                 </div>
                             )}
@@ -464,8 +464,8 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                 </div>
             </div>
 
-            <div className="lg:col-span-1 flex flex-col gap-3 md:gap-4 min-h-0">
-                <div className="p-3 md:p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <div className="xl:col-span-1 flex flex-col gap-3 md:gap-4 min-h-0 overflow-hidden max-h-[600px] xl:max-h-none">
+                <div className="p-3 md:p-4 bg-slate-50 rounded-lg border border-slate-200 flex-shrink-0 overflow-auto max-h-[300px] xl:max-h-none">
                     <h3 className="text-sm md:text-base font-semibold text-slate-800 mb-3 flex items-center gap-2">
                         <LinkIcon className="w-4 h-4 md:w-5 md:h-5 text-slate-500"/> 
                         Filtrar eventos por fuente
@@ -498,8 +498,8 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                                         }}
                                         className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-600 border-slate-300 rounded focus:ring-red-500 focus:ring-1"
                                     />
-                                    <ProviderIcon provider={account.provider} className="w-4 h-4 md:w-5 md:h-5" />
-                                    <div className="flex-grow truncate">
+                                    <ProviderIcon provider={account.provider} className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" />
+                                    <div className="flex-grow truncate min-w-0">
                                         <span className="font-semibold text-xs md:text-sm text-slate-800 block truncate">{account.email}</span>
                                         {account.calendarSyncEnabled && (
                                             <span className="text-[10px] text-green-600">✓ Sincronización activa</span>
@@ -525,7 +525,9 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                     </button>
                 </div>
                 
-                <UpcomingEvents events={filteredEvents} currentDate={currentDate} onEdit={openEditModal} />
+                <div className="flex-grow min-h-0 overflow-hidden">
+                  <UpcomingEvents events={filteredEvents} currentDate={currentDate} onEdit={openEditModal} />
+                </div>
             </div>
         </div>
       </div>
