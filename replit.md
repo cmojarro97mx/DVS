@@ -42,14 +42,18 @@ The frontend uses React 19 with TypeScript, styled using Tailwind CSS, and bundl
 -   **Google Workspace Integration** (October 2025):
     -   **Gmail API**: Full email management including sending, reading, replying, and labeling messages. OAuth tokens stored securely in User model.
     -   **Google Calendar API**: Complete calendar management with support for listing calendars, creating/updating/deleting events, and syncing operation events to Google Calendar.
+        -   **Automatic Background Sync**: Cron job runs every 5 minutes to sync Google Calendar events for users with `calendarSyncEnabled = true`.
+        -   **Visual Indicators**: Synced events display a Google Calendar icon badge in the Calendar UI.
+        -   **Individual Toggles**: Users can enable/disable Gmail and Calendar sync independently from the Integrations page.
+        -   **Multi-Tenant Security (October 2025)**: Event sync enforces strict user and organization scoping with composite unique constraint `@@unique([userId, googleEventId])` in Prisma schema. Events without valid googleEventId are skipped and logged. All sync operations include organizationId validation and ownership verification before updates to prevent cross-tenant data leakage.
     -   **OAuth Flow**: Secure OAuth 2.0 flow with automatic token refresh, state validation, and persistent storage of access/refresh tokens in database.
         -   **Desktop**: Popup window for OAuth (600x700px) with automatic closure on success/error. Uses window.postMessage for communication.
         -   **Mobile**: Full-page redirect flow (detects iOS/Android devices) with seamless return to dashboard.
         -   **Security**: State-based CSRF protection with 10-minute expiry, secure token storage in PostgreSQL.
     -   **Endpoints**:
-        -   Google Auth: `/api/google-auth/auth-url` (get OAuth URL), `/api/google-auth/callback` (OAuth callback), `/api/google-auth/status` (connection status), `/api/google-auth/disconnect` (disconnect account)
+        -   Google Auth: `/api/google-auth/auth-url` (get OAuth URL), `/api/google-auth/callback` (OAuth callback), `/api/google-auth/status` (connection status), `/api/google-auth/disconnect` (disconnect account), `/api/google-auth/sync/gmail/enable`, `/api/google-auth/sync/gmail/disable`, `/api/google-auth/sync/calendar/enable`, `/api/google-auth/sync/calendar/disable`
         -   Gmail: `/api/gmail/messages`, `/api/gmail/messages/send`, `/api/gmail/messages/:id/reply`, `/api/gmail/labels`
-        -   Calendar: `/api/google-calendar/calendars`, `/api/google-calendar/events`, `/api/google-calendar/sync-events`
+        -   Calendar: `/api/google-calendar/calendars`, `/api/google-calendar/events`, `/api/google-calendar/sync-events`, `/api/google-calendar/sync-from-google`
 -   **API Endpoints**: Comprehensive CRUD operations for all modules, including:
     -   Authentication and organization management
     -   Google OAuth flow with persistent connections
