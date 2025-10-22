@@ -363,14 +363,14 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
   };
 
   return (
-    <div className="animate-fade-in flex flex-col space-y-4 md:space-y-6 h-full">
+    <div className="animate-fade-in flex flex-col space-y-4 md:space-y-6" style={{ height: 'calc(100vh - 100px)' }}>
       <Banner
           title="Calendario"
           description="Organiza fechas límite, envíos y reuniones con sincronización automática."
           icon={CalendarDaysIcon}
       />
       
-      <div className="bg-white rounded-lg border border-slate-200 p-3 md:p-6 flex flex-col h-full overflow-hidden">
+      <div className="bg-white rounded-lg border border-slate-200 p-3 md:p-6 flex flex-col flex-1 overflow-hidden">
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 md:mb-4 gap-2 flex-shrink-0">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
             <span className="text-lg md:text-xl font-bold text-slate-800 tracking-tight capitalize">
@@ -401,7 +401,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ setActiveView }) => {
                 <div className="grid grid-cols-7 text-center font-semibold text-xs text-slate-500 flex-shrink-0">
                     {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => <div key={day} className="py-1.5 border-b border-slate-200">{day}</div>)}
                 </div>
-                <div className="grid grid-cols-7 flex-1 border-l border-slate-200 overflow-y-auto" style={{ gridAutoRows: 'minmax(90px, 1fr)' }}>
+                <div className="grid grid-cols-7 flex-1 border-l border-slate-200 overflow-y-auto" style={{ gridAutoRows: 'minmax(120px, 1fr)' }}>
                     {daysInMonth.map((day, index) => {
                     const isToday = new Date().toDateString() === day.toDateString();
                     const isCurrentMonth = day.getMonth() === currentDate.getMonth();
