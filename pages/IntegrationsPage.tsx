@@ -114,6 +114,29 @@ const IntegrationSection: React.FC<{ title: string; children: React.ReactNode }>
 const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) => {
     const [googleStatus, setGoogleStatus] = useState<GoogleConnectionStatus | null>(null);
     const [loading, setLoading] = useState(true);
+    const [showOAuthModal, setShowOAuthModal] = useState(false);
+    const [oauthUrl, setOauthUrl] = useState('');
+
+    useEffect(() => {
+        const styleTag = document.createElement('style');
+        styleTag.id = 'modal-styles';
+        styleTag.innerHTML = `
+            @keyframes slideUp {
+                from { opacity: 0; transform: translateY(20px) scale(0.95); }
+                to { opacity: 1; transform: translateY(0) scale(1); }
+            }
+            .animate-slide-up {
+                animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+        `;
+        if (!document.getElementById('modal-styles')) {
+            document.head.appendChild(styleTag);
+        }
+        return () => {
+            const tag = document.getElementById('modal-styles');
+            if (tag) tag.remove();
+        };
+    }, []);
 
     useEffect(() => {
         fetchGoogleStatus();
@@ -165,41 +188,24 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
                     // En móvil, usar redirección completa
                     window.location.href = data.url;
                 } else {
-                    // En escritorio, abrir popup
-                    const width = 600;
-                    const height = 700;
-                    const left = (window.screen.width - width) / 2;
-                    const top = (window.screen.height - height) / 2;
+                    // En escritorio, mostrar modal
+                    setOauthUrl(data.url);
+                    setShowOAuthModal(true);
                     
-                    const popup = window.open(
-                        data.url,
-                        'Google OAuth',
-                        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
-                    );
-                    
-                    // Escuchar el mensaje del callback
+                    // Escuchar mensaje del iframe
                     const messageHandler = (event: MessageEvent) => {
                         if (event.data.type === 'oauth-success') {
-                            popup?.close();
+                            setShowOAuthModal(false);
                             fetchGoogleStatus();
                             window.removeEventListener('message', messageHandler);
                         } else if (event.data.type === 'oauth-error') {
-                            popup?.close();
+                            setShowOAuthModal(false);
                             alert('Error al conectar con Google. Por favor intenta de nuevo.');
                             window.removeEventListener('message', messageHandler);
                         }
                     };
                     
                     window.addEventListener('message', messageHandler);
-                    
-                    // Limpiar si el popup se cierra manualmente
-                    const checkPopup = setInterval(() => {
-                        if (popup?.closed) {
-                            clearInterval(checkPopup);
-                            window.removeEventListener('message', messageHandler);
-                            fetchGoogleStatus();
-                        }
-                    }, 1000);
                 }
             } else {
                 const errorData = await response.text();
@@ -237,12 +243,51 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
     const isGoogleConnected = googleStatus?.connected || false;
 
     return (
-        <div className="animate-fade-in space-y-8">
-            <Banner
-                title="Integrations & Connected Apps"
-                description="Connect your favorite tools to streamline your workflow. Link your Google account to sync emails and calendar events automatically."
-                icon={LinkIcon}
-            />
+        <>
+            {showOAuthModal && (
+                <div 
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 animate-fade-in"
+                    onClick={() => setShowOAuthModal(false)}
+                >
+                    <div 
+                        className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-[400px] sm:max-w-[480px] overflow-hidden animate-slide-up"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3 sm:px-5 sm:py-4 flex items-center justify-between">
+                            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                                <div className="bg-white/20 p-1.5 sm:p-2 rounded-lg flex-shrink-0">
+                                    <LinkIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="text-white font-semibold text-sm sm:text-base truncate">Conectar con Google</h3>
+                                    <p className="text-white/80 text-xs hidden sm:block">Autoriza el acceso a tu cuenta</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowOAuthModal(false)}
+                                className="text-white/80 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10 flex-shrink-0 ml-2"
+                                aria-label="Cerrar"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <iframe
+                            src={oauthUrl}
+                            className="w-full h-[450px] sm:h-[520px] border-0"
+                            title="Google OAuth"
+                        />
+                    </div>
+                </div>
+            )}
+            
+            <div className="animate-fade-in space-y-8">
+                <Banner
+                    title="Integrations & Connected Apps"
+                    description="Connect your favorite tools to streamline your workflow. Link your Google account to sync emails and calendar events automatically."
+                    icon={LinkIcon}
+                />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                 <div className="lg:col-span-1">
@@ -288,6 +333,7 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ setActiveView }) =>
                 </div>
             </div>
         </div>
+        </>
     );
 };
 
