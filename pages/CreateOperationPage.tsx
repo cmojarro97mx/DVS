@@ -310,8 +310,10 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async (e?: React.FormEvent) => {
+        if (e) {
+            e.preventDefault();
+        }
         
         // Only allow submission if we're on the last step
         if (currentStep !== STEPS.length - 1) {
@@ -439,15 +441,7 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
                     </div>
 
                     <div className="md:w-2/3 p-8 flex flex-col">
-                         <form 
-                            onSubmit={handleSubmit} 
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                }
-                            }}
-                            className="flex flex-col flex-grow"
-                         >
+                         <div className="flex flex-col flex-grow">
                              <div className="flex-grow">
                                 <div key={currentStep}>
                                     <h3 className="text-xl font-semibold text-gray-800 mb-6">{STEPS[currentStep].name}</h3>
@@ -573,7 +567,7 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
                             <div className="flex justify-between gap-4 pt-4 mt-8 border-t border-gray-200">
                                 <div>{currentStep > 0 && (<button type="button" onClick={prevStep} disabled={isSaving} className="px-6 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>)}</div>
                                 <div>{currentStep < STEPS.length - 1 ? (<button type="button" onClick={nextStep} disabled={isSaving} className="px-6 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Next</button>) : (
-                                    <button type="submit" disabled={isSaving} className="px-6 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                                    <button type="button" onClick={() => handleSubmit()} disabled={isSaving} className="px-6 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                                         {isSaving ? (
                                             <>
                                                 <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -586,7 +580,7 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
                                     </button>
                                 )}</div>
                             </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
             </div>
