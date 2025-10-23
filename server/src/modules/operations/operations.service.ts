@@ -584,32 +584,38 @@ export class OperationsService {
       },
     });
 
-    // Procesar archivos adjuntos y buscar patrones
+    // Buscar patrones en el texto ya extraído de los adjuntos
     for (const email of emailsWithAttachments) {
       const attachments = email.attachmentsData as any;
       if (!attachments || !Array.isArray(attachments)) continue;
 
       try {
-        // Procesar adjuntos y extraer texto
-        const extractedTexts = await this.documentProcessor.processEmailAttachments(attachments);
-        
-        // Verificar si algún patrón coincide
-        for (const pattern of attachmentPatterns) {
-          if (this.documentProcessor.searchInExtractedTexts(extractedTexts, pattern)) {
-            additionalEmailIds.add(email.id);
-            // Incluir todas las propiedades requeridas
-            emails.push({
-              ...email,
-              body: '',
-              htmlBodyUrl: '',
-              cc: null,
-            });
-            break; // Ya encontramos una coincidencia, no seguir buscando
+        // Buscar en el texto ya extraído (no procesar OCR en tiempo real)
+        let found = false;
+        for (const attachment of attachments) {
+          if (!attachment.extractedText) continue;
+          
+          const extractedText = attachment.extractedText.toLowerCase();
+          
+          // Verificar si algún patrón coincide
+          for (const pattern of attachmentPatterns) {
+            if (extractedText.includes(pattern.toLowerCase())) {
+              additionalEmailIds.add(email.id);
+              emails.push({
+                ...email,
+                body: '',
+                htmlBodyUrl: '',
+                cc: null,
+              });
+              found = true;
+              break;
+            }
           }
+          
+          if (found) break;
         }
       } catch (error) {
-        // Silenciosamente fallar el procesamiento de este email
-        console.error(`Error processing attachments for email ${email.id}:`, error);
+        console.error(`Error searching attachments for email ${email.id}:`, error);
       }
     }
 
