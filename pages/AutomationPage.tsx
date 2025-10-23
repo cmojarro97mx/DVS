@@ -3,12 +3,13 @@ import { View } from './DashboardPage';
 import { automationsService, Automation } from '../src/services/automationsService';
 import { MailIcon } from '../components/icons/MailIcon';
 import { CpuChipIcon } from '../components/icons/CpuChipIcon';
-import { ArrowLeftIcon } from '../components/icons/ArrowLeftIcon';
 import { PlusIcon } from '../components/icons/PlusIcon';
 import { TrashIcon } from '../components/icons/TrashIcon';
 import { PencilIcon } from '../components/icons/PencilIcon';
 import { CheckCircleIcon } from '../components/icons/CheckCircleIcon';
 import { XIcon } from '../components/icons/XIcon';
+import { CreateRuleLinkingModal, RuleFormData } from '../components/CreateRuleLinkingModal';
+import { EditRuleLinkingModal } from '../components/EditRuleLinkingModal';
 
 interface AutomationPageProps {
   setActiveView: (view: View) => void;
@@ -20,21 +21,6 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingAutomation, setEditingAutomation] = useState<Automation | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    type: 'email_to_operation',
-    enabled: true,
-    conditions: {
-      subjectPatterns: [''],
-      searchIn: ['subject', 'body'],
-      useClientEmail: true,
-      useBookingTracking: true,
-      useMBL: true,
-      useHBL: true,
-      useOperationId: true,
-    },
-  });
 
   useEffect(() => {
     loadAutomations();
@@ -54,41 +40,20 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
     }
   };
 
-  const handleCreateAutomation = async () => {
-    try {
-      if (editingAutomation) {
-        await automationsService.update(editingAutomation.id, formData);
-      } else {
-        await automationsService.create(formData);
-      }
-      setShowCreateModal(false);
-      setEditingAutomation(null);
-      setFormData({
-        name: '',
-        description: '',
-        type: 'email_to_operation',
-        enabled: true,
-        conditions: {
-          subjectPatterns: [''],
-          searchIn: ['subject', 'body'],
-          useClientEmail: true,
-          useBookingTracking: true,
-          useMBL: true,
-          useHBL: true,
-          useOperationId: true,
-        },
-      });
-      loadAutomations();
-    } catch (error) {
-      console.error('Error saving automation:', error);
-      alert('Error al guardar la automatización');
-    }
+  const handleCreateAutomation = async (data: RuleFormData) => {
+    await automationsService.create(data);
+    await loadAutomations();
+  };
+
+  const handleUpdateAutomation = async (id: string, data: RuleFormData) => {
+    await automationsService.update(id, data);
+    await loadAutomations();
   };
 
   const handleToggleAutomation = async (id: string) => {
     try {
       await automationsService.toggleEnabled(id);
-      loadAutomations();
+      await loadAutomations();
     } catch (error) {
       console.error('Error toggling automation:', error);
       alert('Error al cambiar el estado de la automatización');
@@ -102,7 +67,7 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
 
     try {
       await automationsService.delete(id);
-      loadAutomations();
+      await loadAutomations();
     } catch (error) {
       console.error('Error deleting automation:', error);
       alert('Error al eliminar la automatización');
@@ -111,23 +76,6 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
 
   const handleEditAutomation = (automation: Automation) => {
     setEditingAutomation(automation);
-    const conditions = automation.conditions as any || {};
-    setFormData({
-      name: automation.name,
-      description: automation.description || '',
-      type: automation.type,
-      enabled: automation.enabled,
-      conditions: {
-        subjectPatterns: conditions.subjectPatterns || [''],
-        searchIn: conditions.searchIn || ['subject', 'body'],
-        useClientEmail: conditions.useClientEmail !== false,
-        useBookingTracking: conditions.useBookingTracking !== false,
-        useMBL: conditions.useMBL !== false,
-        useHBL: conditions.useHBL !== false,
-        useOperationId: conditions.useOperationId !== false,
-      },
-    });
-    setShowCreateModal(true);
   };
 
   const getAutomationIcon = (type: string) => {
@@ -160,25 +108,7 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
               </p>
             </div>
             <button
-              onClick={() => {
-                setEditingAutomation(null);
-                setFormData({
-                  name: '',
-                  description: '',
-                  type: 'email_to_operation',
-                  enabled: true,
-                  conditions: {
-                    subjectPatterns: [''],
-                    searchIn: ['subject', 'body'],
-                    useClientEmail: true,
-                    useBookingTracking: true,
-                    useMBL: true,
-                    useHBL: true,
-                    useOperationId: true,
-                  },
-                });
-                setShowCreateModal(true);
-              }}
+              onClick={() => setShowCreateModal(true)}
               className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               <PlusIcon className="w-5 h-5 mr-2" />
@@ -235,25 +165,7 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
               Crea tu primera regla para comenzar a vincular correos con operaciones
             </p>
             <button
-              onClick={() => {
-                setEditingAutomation(null);
-                setFormData({
-                  name: '',
-                  description: '',
-                  type: 'email_to_operation',
-                  enabled: true,
-                  conditions: {
-                    subjectPatterns: [''],
-                    searchIn: ['subject', 'body'],
-                    useClientEmail: true,
-                    useBookingTracking: true,
-                    useMBL: true,
-                    useHBL: true,
-                    useOperationId: true,
-                  },
-                });
-                setShowCreateModal(true);
-              }}
+              onClick={() => setShowCreateModal(true)}
               className="inline-flex items-center bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
             >
               <PlusIcon className="w-5 h-5 mr-2" />
@@ -335,340 +247,18 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
         )}
       </div>
 
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowCreateModal(false)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl z-10">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">
-                  {editingAutomation ? 'Editar Regla' : 'Nueva Regla'}
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setEditingAutomation(null);
-                  }}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <XIcon className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nombre de la regla
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Ej: Vincular emails de clientes a operaciones"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Descripción
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={3}
-                  placeholder="Describe qué hace esta regla"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tipo de Regla
-                </label>
-                <select
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="email_to_operation">Vincular Emails a Operaciones</option>
-                </select>
-              </div>
+      <CreateRuleLinkingModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSave={handleCreateAutomation}
+      />
 
-              <div className="border-t border-gray-200 pt-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-2">Criterios de Vinculación</h3>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Patrones a buscar en correos
-                  </label>
-                  <p className="text-xs text-gray-500 mb-3">
-                    Ejemplos: "OP-019", "MOPC-", "{projectName}", "{operationId}"
-                  </p>
-
-                  {/* Variables disponibles */}
-                  <div className="mb-3 p-4 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
-                    <p className="text-xs font-semibold text-indigo-900 mb-2 flex items-center">
-                      <span className="bg-indigo-600 text-white px-2 py-0.5 rounded text-[10px] mr-2">VARIABLES</span>
-                      Variables dinámicas disponibles:
-                    </p>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="bg-white p-2 rounded border border-indigo-100">
-                        <code className="text-indigo-700 font-mono font-semibold">{'{projectName}'}</code>
-                        <p className="text-gray-600 mt-0.5">Nombre de la operación</p>
-                      </div>
-                      <div className="bg-white p-2 rounded border border-indigo-100">
-                        <code className="text-indigo-700 font-mono font-semibold">{'{operationId}'}</code>
-                        <p className="text-gray-600 mt-0.5">ID de la operación</p>
-                      </div>
-                      <div className="bg-white p-2 rounded border border-indigo-100">
-                        <code className="text-indigo-700 font-mono font-semibold">{'{bookingTracking}'}</code>
-                        <p className="text-gray-600 mt-0.5">Número de Booking</p>
-                      </div>
-                      <div className="bg-white p-2 rounded border border-indigo-100">
-                        <code className="text-indigo-700 font-mono font-semibold">{'{mbl_awb}'}</code>
-                        <p className="text-gray-600 mt-0.5">MBL / AWB</p>
-                      </div>
-                      <div className="bg-white p-2 rounded border border-indigo-100">
-                        <code className="text-indigo-700 font-mono font-semibold">{'{hbl_awb}'}</code>
-                        <p className="text-gray-600 mt-0.5">HBL / HAWB</p>
-                      </div>
-                    </div>
-                    <p className="text-xs text-indigo-800 mt-2 italic">
-                      Los patrones pueden ser texto fijo o variables dinámicas.
-                    </p>
-                  </div>
-
-                  <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-xs font-medium text-blue-900 mb-2">🔍 Buscar patrones en:</p>
-                    <div className="flex flex-wrap gap-3">
-                      <label className="flex items-center text-xs text-blue-800 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData.conditions.searchIn?.includes('subject')}
-                          onChange={(e) => {
-                            const current = formData.conditions.searchIn || [];
-                            const newSearchIn = e.target.checked
-                              ? [...current, 'subject']
-                              : current.filter(s => s !== 'subject');
-                            setFormData({
-                              ...formData,
-                              conditions: {
-                                ...formData.conditions,
-                                searchIn: newSearchIn,
-                              },
-                            });
-                          }}
-                          className="w-3 h-3 mr-1.5 text-blue-600 border-blue-300 rounded"
-                        />
-                        📧 Asunto del email
-                      </label>
-                      <label className="flex items-center text-xs text-blue-800 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData.conditions.searchIn?.includes('body')}
-                          onChange={(e) => {
-                            const current = formData.conditions.searchIn || [];
-                            const newSearchIn = e.target.checked
-                              ? [...current, 'body']
-                              : current.filter(s => s !== 'body');
-                            setFormData({
-                              ...formData,
-                              conditions: {
-                                ...formData.conditions,
-                                searchIn: newSearchIn,
-                              },
-                            });
-                          }}
-                          className="w-3 h-3 mr-1.5 text-blue-600 border-blue-300 rounded"
-                        />
-                        📄 Contenido del email
-                      </label>
-                      <label className="flex items-center text-xs text-blue-800 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData.conditions.searchIn?.includes('attachments')}
-                          onChange={(e) => {
-                            const current = formData.conditions.searchIn || [];
-                            const newSearchIn = e.target.checked
-                              ? [...current, 'attachments']
-                              : current.filter(s => s !== 'attachments');
-                            setFormData({
-                              ...formData,
-                              conditions: {
-                                ...formData.conditions,
-                                searchIn: newSearchIn,
-                              },
-                            });
-                          }}
-                          className="w-3 h-3 mr-1.5 text-blue-600 border-blue-300 rounded"
-                        />
-                        📎 Archivos adjuntos (PDFs, imágenes con OCR)
-                      </label>
-                    </div>
-                  </div>
-                  {formData.conditions.subjectPatterns.map((pattern, index) => (
-                    <div key={index} className="flex gap-2 mb-2">
-                      <input
-                        type="text"
-                        value={pattern}
-                        onChange={(e) => {
-                          const newPatterns = [...formData.conditions.subjectPatterns];
-                          newPatterns[index] = e.target.value;
-                          setFormData({
-                            ...formData,
-                            conditions: {
-                              ...formData.conditions,
-                              subjectPatterns: newPatterns,
-                            },
-                          });
-                        }}
-                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Ej: OP-019, MOPC-, {projectName}"
-                      />
-                      {formData.conditions.subjectPatterns.length > 1 && (
-                        <button
-                          onClick={() => {
-                            const newPatterns = formData.conditions.subjectPatterns.filter((_, i) => i !== index);
-                            setFormData({
-                              ...formData,
-                              conditions: {
-                                ...formData.conditions,
-                                subjectPatterns: newPatterns,
-                              },
-                            });
-                          }}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <XIcon className="w-5 h-5" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <button
-                    onClick={() => {
-                      setFormData({
-                        ...formData,
-                        conditions: {
-                          ...formData.conditions,
-                          subjectPatterns: [...formData.conditions.subjectPatterns, ''],
-                        },
-                      });
-                    }}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    + Agregar patrón
-                  </button>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Métodos de detección</p>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="useClientEmail"
-                      checked={formData.conditions.useClientEmail}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        conditions: {
-                          ...formData.conditions,
-                          useClientEmail: e.target.checked,
-                        },
-                      })}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label htmlFor="useClientEmail" className="ml-2 text-sm text-gray-700">
-                      Email del cliente
-                    </label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="useBookingTracking"
-                      checked={formData.conditions.useBookingTracking}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        conditions: {
-                          ...formData.conditions,
-                          useBookingTracking: e.target.checked,
-                        },
-                      })}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label htmlFor="useBookingTracking" className="ml-2 text-sm text-gray-700">
-                      Número de Booking/Tracking
-                    </label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="useMBL"
-                      checked={formData.conditions.useMBL}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        conditions: {
-                          ...formData.conditions,
-                          useMBL: e.target.checked,
-                        },
-                      })}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label htmlFor="useMBL" className="ml-2 text-sm text-gray-700">
-                      Número MBL/AWB
-                    </label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="useHBL"
-                      checked={formData.conditions.useHBL}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        conditions: {
-                          ...formData.conditions,
-                          useHBL: e.target.checked,
-                        },
-                      })}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label htmlFor="useHBL" className="ml-2 text-sm text-gray-700">
-                      Número HBL
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center pt-4 border-t border-gray-200">
-                <input
-                  type="checkbox"
-                  id="enabled"
-                  checked={formData.enabled}
-                  onChange={(e) => setFormData({ ...formData, enabled: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <label htmlFor="enabled" className="ml-2 text-sm text-gray-700">
-                  Activar inmediatamente
-                </label>
-              </div>
-            </div>
-            <div className="sticky bottom-0 bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end gap-3 rounded-b-xl">
-              <button
-                onClick={() => {
-                  setShowCreateModal(false);
-                  setEditingAutomation(null);
-                }}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleCreateAutomation}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                disabled={!formData.name}
-              >
-                {editingAutomation ? 'Guardar Cambios' : 'Crear Regla'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <EditRuleLinkingModal
+        isOpen={!!editingAutomation}
+        onClose={() => setEditingAutomation(null)}
+        onSave={handleUpdateAutomation}
+        automation={editingAutomation}
+      />
     </div>
   );
 };
