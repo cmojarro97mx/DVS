@@ -1113,32 +1113,6 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
                                   />}
         {activeTab === 'emails' && (
             <div className="space-y-4">
-              {linkingCriteria && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="text-sm font-semibold text-blue-900 mb-2">Criterios de vinculación activos:</h4>
-                  <div className="text-xs text-blue-800 space-y-1">
-                    {linkingCriteria.useClientEmail && linkingCriteria.clientEmail && (
-                      <div>• Email del cliente: {linkingCriteria.clientEmail}</div>
-                    )}
-                    {linkingCriteria.useOperationId && (
-                      <div>• ID de operación: {linkingCriteria.operationId}</div>
-                    )}
-                    {linkingCriteria.useBookingTracking && linkingCriteria.bookingTracking && (
-                      <div>• Booking/Tracking: {linkingCriteria.bookingTracking}</div>
-                    )}
-                    {linkingCriteria.useMBL && linkingCriteria.mbl_awb && (
-                      <div>• MBL/AWB: {linkingCriteria.mbl_awb}</div>
-                    )}
-                    {linkingCriteria.useHBL && linkingCriteria.hbl_awb && (
-                      <div>• HBL/HAWB: {linkingCriteria.hbl_awb}</div>
-                    )}
-                    {linkingCriteria.customPatterns && linkingCriteria.customPatterns.length > 0 && (
-                      <div>• Patrones personalizados: {linkingCriteria.customPatterns.join(', ')}</div>
-                    )}
-                  </div>
-                </div>
-              )}
-
               {loadingEmails ? (
                 <div className="text-center py-8">
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
