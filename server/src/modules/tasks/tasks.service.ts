@@ -63,11 +63,27 @@ export class TasksService {
   async create(data: any, organizationId: string) {
     const { assignees, ...taskData } = data;
 
+    // Si no se proporciona columnId, buscar la columna "To Do"
+    let columnId = taskData.columnId;
+    if (!columnId) {
+      const toDoColumn = await this.prisma.column.findFirst({
+        where: {
+          title: { in: ['To Do', 'Por Hacer', 'Pendiente'] },
+        },
+      });
+      
+      if (!toDoColumn) {
+        throw new Error('No se encontró una columna "To Do" en el sistema. Por favor, crea las columnas del Kanban primero.');
+      }
+      
+      columnId = toDoColumn.id;
+    }
+
     // Limpiar campos opcionales
     const cleanedData: any = {
       title: taskData.title,
       priority: taskData.priority || 'Medium',
-      columnId: taskData.columnId,
+      columnId: columnId,
       organizationId,
     };
 

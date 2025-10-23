@@ -131,13 +131,10 @@ const TaskManager: React.FC<TaskManagerProps> = ({
                 
                 savedTask = await tasksService.update(editingTask.id, updateData);
             } else {
-                // Crear nueva tarea - usar la primera columna disponible
-                const firstColumn = columnOrder && columnOrder.length > 0 ? columnOrder[0] : 'todo';
-                
+                // Crear nueva tarea - NO enviar columnId, el backend lo asignará automáticamente
                 const createData: any = {
                     title: task.title,
                     priority: task.priority || 'Medium',
-                    columnId: firstColumn,
                     operationId: operationId,
                 };
                 
