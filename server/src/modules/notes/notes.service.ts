@@ -35,12 +35,17 @@ export class NotesService {
       select: { name: true },
     });
 
+    const { operationId, content, attachmentUrl, attachmentName } = data;
+
     return this.prisma.note.create({
       data: {
-        ...data,
+        content,
         author: user?.name || 'Usuario',
         userId,
         organizationId,
+        ...(operationId && { operationId }),
+        ...(attachmentUrl && { attachmentUrl }),
+        ...(attachmentName && { attachmentName }),
       },
     });
   }
