@@ -176,7 +176,6 @@ export interface InvoiceItem {
   itemName: string;
   description: string;
   quantity: number;
-  unit: string;
   unitPrice: number;
   tax: number;
   amount: number;
@@ -615,8 +614,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
     return newClient;
   }, []);
 
-  const handleViewOperation = (projectId: string) => {
-    setSelectedProjectId(projectId);
+  const handleViewOperation = (operationId: string) => {
+    setSelectedProjectId(operationId);
+    setOperationDetailInitialState(null);
     setActiveView('detail-operation');
   };
 
@@ -714,9 +714,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
         />;
       case 'operations':
         return <LogisticsProjectsPage 
+          projects={projectsWithRealProgress} 
           setActiveView={setActiveView} 
           onViewOperation={handleViewOperation} 
-          projects={projectsWithRealProgress}
           onOperationsLoaded={setProjects}
         />;
       case 'create-operation':

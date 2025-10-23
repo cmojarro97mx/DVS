@@ -133,9 +133,15 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
                 </select>
             </div>
         </div>
-        <button onClick={() => setActiveView('create-operation')} className="w-full md:w-auto flex items-center justify-center bg-red-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors shadow-sm">
-            <PlusIcon className="w-5 h-5 mr-2" />
-            Create Operation
+        <button 
+          onClick={() => {
+            console.log('Navigating to create-operation view');
+            setActiveView('create-operation');
+          }} 
+          className="w-full md:w-auto flex items-center justify-center bg-red-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors shadow-sm"
+        >
+          <PlusIcon className="w-5 h-5 mr-2" />
+          Create Operation
         </button>
       </div>
 
@@ -241,9 +247,15 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
                     : `Get started by creating your first logistics operation.`
                 }
               </p>
-               <button onClick={() => setActiveView('create-operation')} className="mt-6 flex items-center bg-red-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors">
-                  <PlusIcon className="w-5 h-5 mr-2" />
-                  Create Your First Operation
+               <button 
+                onClick={() => {
+                  console.log('Navigating to create-operation view from empty state');
+                  setActiveView('create-operation');
+                }} 
+                className="mt-6 flex items-center bg-red-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors"
+              >
+                <PlusIcon className="w-5 h-5 mr-2" />
+                Create Your First Operation
               </button>
           </div>
         )}
