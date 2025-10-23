@@ -59,17 +59,18 @@ export class OperationsService {
   }
 
   async create(data: any, organizationId: string, userId: string) {
-    const { assignees, ...operationData } = data;
+    try {
+      const { assignees, ...operationData } = data;
 
-    const cleanData = this.cleanOperationData(operationData);
+      const cleanData = this.cleanOperationData(operationData);
 
-    const operation = await this.prisma.operation.create({
-      data: {
-        ...cleanData,
-        organizationId,
-        createdById: userId,
-      },
-    });
+      const operation = await this.prisma.operation.create({
+        data: {
+          ...cleanData,
+          organizationId,
+          createdById: userId,
+        },
+      });
 
     if (assignees && assignees.length > 0) {
       for (const userId of assignees) {
@@ -98,6 +99,10 @@ export class OperationsService {
     }
 
     return this.findOne(operation.id, organizationId);
+    } catch (error) {
+      console.error('Error creating operation:', error);
+      throw error;
+    }
   }
 
   private cleanOperationData(data: any) {

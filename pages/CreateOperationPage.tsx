@@ -27,7 +27,6 @@ const STEPS = [
     { name: 'Project Details', description: 'Basic project information.', icon: ClipboardListIcon, fields: ['projectName', 'clientId', 'projectCategory', 'startDate', 'status', 'assignees', 'currency', 'operationType', 'shippingMode', 'insurance'] },
     { name: 'Shipment Information', description: 'Details about the transport.', icon: ShipmentInfoIcon, fields: [] },
     { name: 'Tracking & Dates', description: 'Key dates and tracking numbers.', icon: CalendarIcon, fields: [] },
-    { name: 'Documents & Notes', description: 'Files and additional notes.', icon: PaperClipIcon, fields: [] },
 ];
 
 
@@ -358,20 +357,7 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
                 });
                 
                 console.log('Operation created successfully:', newOperation);
-                
-                // Upload files if any
-                if (files.length > 0) {
-                    console.log(`Uploading ${files.length} files to operation ${newOperation.id}`);
-                    for (const fileItem of files) {
-                        try {
-                            await operationsService.uploadDocument(newOperation.id, fileItem.file);
-                        } catch (uploadErr) {
-                            console.error('Failed to upload file:', fileItem.file.name, uploadErr);
-                        }
-                    }
-                }
-                
-                setActiveView('logistics-projects');
+                setActiveView('operations');
             } catch (err) {
                 setSaveError(err instanceof Error ? err.message : 'Failed to create operation');
                 console.error(err);
@@ -561,15 +547,6 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
                                             <FormField label="ETA" id="eta"><Input type="date" name="eta" value={formData.eta} onChange={handleChange} /></FormField>
                                             <FormField label="MBL / AWB" id="mbl_awb"><Input name="mbl_awb" value={formData.mbl_awb} onChange={handleChange} /></FormField>
                                             <FormField label="HBL / AWB" id="hbl_awb"><Input name="hbl_awb" value={formData.hbl_awb} onChange={handleChange} /></FormField>
-                                        </>)}
-                                        {currentStep === 3 && (<>
-                                            <FormField label="Files" id="files" className="md:col-span-2">
-                                                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                                                    <div className="space-y-1 text-center"><UploadCloudIcon className="mx-auto h-12 w-12 text-gray-400" /><div className="flex text-sm text-gray-600"><label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"><span>Upload files</span><input id="file-upload" name="file-upload" type="file" className="sr-only" multiple onChange={handleFileChange} /></label><p className="pl-1">or drag and drop</p></div><p className="text-xs text-gray-500">Any file type. Important documents for the operation.</p></div>
-                                                </div>
-                                                {files.length > 0 && (<div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">{files.map((f, i) => (<div key={i} className="relative group border rounded-lg overflow-hidden aspect-square"><button type="button" onClick={() => removeFile(i)} className="absolute top-1 right-1 z-10 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"><XIcon className="w-3 h-3" /></button>{f.file.type.startsWith('image/') ? <img src={f.preview} alt={f.file.name} className="h-full w-full object-cover" /> : <div className="h-full w-full bg-gray-100 flex flex-col items-center justify-center p-2"><FileTypeIcon fileType={f.file.type} className="w-8 h-8 text-gray-400" /><p className="text-xs text-center text-gray-500 mt-1 truncate w-full">{f.file.name}</p></div>}<div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" /></div>))}</div>)}
-                                            </FormField>
-                                            <FormField label="Notes" id="notes" className="md:col-span-2"><Textarea name="notes" value={formData.notes} onChange={handleChange} /></FormField>
                                         </>)}
                                     </div>
                                 </div>
