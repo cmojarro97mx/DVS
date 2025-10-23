@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../common/prisma.service';
 
 @Injectable()
 export class AssistantToolsService {
@@ -73,7 +73,6 @@ export class AssistantToolsService {
           startDate: new Date(data.startDate),
           endDate: new Date(data.endDate),
           location: data.location,
-          type: data.type || 'meeting',
           status: data.status || 'scheduled',
         },
       });
@@ -93,13 +92,27 @@ export class AssistantToolsService {
 
   async createTask(organizationId: string, data: any) {
     try {
+      const toDoColumn = await this.prisma.column.findFirst({
+        where: {
+          title: { in: ['To Do', 'Por Hacer', 'Pendiente'] },
+        },
+      });
+
+      if (!toDoColumn) {
+        return {
+          success: false,
+          error: 'No se encontró una columna para tareas pendientes',
+          message: 'No se puede crear la tarea sin una columna válida',
+        };
+      }
+
       const task = await this.prisma.task.create({
         data: {
           organizationId,
+          columnId: toDoColumn.id,
           title: data.title,
           description: data.description,
-          status: data.status || 'To Do',
-          priority: data.priority || 'medium',
+          priority: data.priority || 'Medium',
           dueDate: data.dueDate ? new Date(data.dueDate) : null,
           operationId: data.operationId,
         },
@@ -207,11 +220,20 @@ export class AssistantToolsService {
 
   async getPendingTasks(organizationId: string) {
     try {
+      const pendingColumns = await this.prisma.column.findMany({
+        where: {
+          title: { in: ['To Do', 'In Progress', 'Por Hacer', 'En Progreso'] },
+        },
+        select: {
+          id: true,
+        },
+      });
+
       const tasks = await this.prisma.task.findMany({
         where: {
           organizationId,
-          status: {
-            in: ['To Do', 'In Progress'],
+          columnId: {
+            in: pendingColumns.map((col) => col.id),
           },
         },
         take: 15,

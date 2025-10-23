@@ -55,6 +55,13 @@ The frontend uses React with TypeScript, styled using Tailwind CSS, and bundled 
 -   **Push Notifications**: Integrated SendPulse web push notifications for real-time alerts.
     -   **User Controls**: `NotificationSettings` model allows users to manage preferences for various event types (operations, tasks, invoices, payments, expenses, calendar, emails).
     -   **Event-Driven**: Notifications triggered for new operations, tasks, invoices, payments, expenses, calendar events, and important emails.
+-   **Virtual Assistant (Voice-Enabled AI)**:
+    -   **Backend**: NestJS WebSocket Gateway for real-time bidirectional communication with Gemini AI.
+    -   **Frontend**: React components with Web Speech API for native browser voice recognition and synthesis.
+    -   **Access Control**: Token-based system for secure, authentication-free access via unique UUID links.
+    -   **AI Integration**: Powered by Google Gemini Flash API with function calling capabilities to query and create operations, clients, events, and tasks.
+    -   **Real-Time Conversation**: Full duplex communication through Socket.IO WebSockets for instant voice interactions.
+    -   **Voice Interface**: Browser-native speech recognition and synthesis for hands-free operation management.
 
 **System Design Choices:**
 -   **Modular Design**: Structured into distinct modules for maintainability and scalability.

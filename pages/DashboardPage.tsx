@@ -31,6 +31,7 @@ import EmailHubPage from './EmailHubPage'; // Import new Email Hub Page
 import NotificationsSettingsPage from './NotificationsSettingsPage'; // Notifications Settings Page
 import FileManagerPage from './FileManagerPage'; // File Manager Page
 import AutomationPage from './AutomationPage'; // Automation Page
+import VirtualAssistantConfigPage from '../src/pages/VirtualAssistant/VirtualAssistantConfigPage'; // Virtual Assistant Config Page
 import { employeesService } from '../src/services/employeesService';
 import { clientsService } from '../src/services/clientsService';
 import { 
@@ -420,7 +421,8 @@ export type View =
   | 'company-hub'
   | 'email-hub'
   | 'notifications-settings'
-  | 'automations';
+  | 'automations'
+  | 'virtual-assistant';
 
 const viewTitles: Record<View, string> = {
   dashboard: 'Dashboard',
@@ -452,6 +454,7 @@ const viewTitles: Record<View, string> = {
   'ai-operation-creator': 'AI Operation Creator',
   'company-hub': 'Empresa',
   'email-hub': 'Email & Calendario',
+  'virtual-assistant': 'Asistente Virtual',
   'notifications-settings': 'Configuración de Notificaciones'
 };
 
@@ -913,6 +916,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
         return <NotificationsSettingsPage />;
       case 'automations':
         return <AutomationPage setActiveView={setActiveView} />;
+      case 'virtual-assistant':
+        return <VirtualAssistantConfigPage />;
       default:
         return <div className="p-6">{viewTitles[activeView] || 'Not Implemented'}</div>;
     }

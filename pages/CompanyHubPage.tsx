@@ -4,6 +4,7 @@ import { CompanyIcon } from '../components/icons/CompanyIcon';
 import { UsersIcon } from '../components/icons/UsersIcon';
 import { UserGroupIcon } from '../components/icons/UserGroupIcon';
 import { CogIcon } from '../components/icons/CogIcon';
+import { MicrophoneIcon } from '../components/icons/MicrophoneIcon';
 import { Banner } from '../components/Banner';
 import { ChevronRightIcon } from '../components/icons/ChevronRightIcon';
 
@@ -76,6 +77,15 @@ const CompanyHubPage: React.FC<CompanyHubPageProps> = ({ setActiveView }) => {
                         description="Gestiona tu base de datos de clientes y sus operaciones."
                         icon={UserGroupIcon}
                         onClick={() => setActiveView('clients')}
+                    />
+                </CompanySection>
+
+                <CompanySection title="Herramientas">
+                    <HubCard
+                        title="Asistente Virtual"
+                        description="Accede a tu asistente de voz con IA para gestionar operaciones y consultas."
+                        icon={MicrophoneIcon}
+                        onClick={() => setActiveView('virtual-assistant')}
                     />
                 </CompanySection>
 

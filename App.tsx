@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
+import VirtualAssistantPage from './src/pages/VirtualAssistant/VirtualAssistantPage';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 
 type AuthView = 'login' | 'register';
@@ -35,7 +37,12 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <Router>
+        <Routes>
+          <Route path="/assistant/:token" element={<VirtualAssistantPage />} />
+          <Route path="*" element={<AppContent />} />
+        </Routes>
+      </Router>
     </AuthProvider>
   );
 }

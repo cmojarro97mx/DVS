@@ -9,7 +9,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { VirtualAssistantService } from './virtual-assistant.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 
 @Controller('virtual-assistant')
 @UseGuards(JwtAuthGuard)
