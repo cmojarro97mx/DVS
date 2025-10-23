@@ -12,5 +12,5 @@ npx prisma generate
 # Push schema to database
 npx prisma db push --accept-data-loss
 
-# Start in dev mode
-npm run start:dev
+# Start in dev mode with increased memory
+NODE_OPTIONS="--max-old-space-size=4096" npm run start:dev
