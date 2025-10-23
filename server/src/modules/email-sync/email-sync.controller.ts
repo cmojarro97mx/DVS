@@ -331,9 +331,43 @@ export class EmailSyncController {
     @Param('b2Key') b2Key: string,
     @Req() req: any,
   ) {
-    // Decode the b2Key from URL encoding
     const decodedKey = decodeURIComponent(b2Key);
     const url = await this.emailSyncService.getAttachmentUrl(decodedKey);
     return { url };
+  }
+
+  @Get('fresh-email/:accountId/:gmailMessageId')
+  async getFreshEmail(
+    @Req() req: Request,
+    @Param('accountId') accountId: string,
+    @Param('gmailMessageId') gmailMessageId: string,
+  ) {
+    const user = req.user as any;
+    
+    const account = await this.prisma.emailAccount.findFirst({
+      where: { id: accountId, userId: user.userId },
+    });
+
+    if (!account) {
+      return { error: 'Account not found' };
+    }
+
+    try {
+      const freshEmail = await this.emailSyncService.getFreshEmailFromGmail(
+        user.userId,
+        accountId,
+        gmailMessageId,
+      );
+
+      return {
+        success: true,
+        email: freshEmail,
+      };
+    } catch (error) {
+      return {
+        error: 'Failed to fetch email from Gmail',
+        message: error.message,
+      };
+    }
   }
 }

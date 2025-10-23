@@ -588,6 +588,71 @@ export class EmailSyncService {
   }
 
   async getMessage(accountId: string, messageId: string, organizationId: string) {
-    // This method is intentionally left empty as per the provided changes.
+    return null;
+  }
+
+  async getFreshEmailFromGmail(userId: string, accountId: string, gmailMessageId: string): Promise<any> {
+    this.logger.log(`Fetching fresh email from Gmail: ${gmailMessageId}`);
+
+    const account = await this.prisma.emailAccount.findFirst({
+      where: { id: accountId, userId },
+    });
+
+    if (!account) {
+      throw new Error('Account not found');
+    }
+
+    const accessToken = await this.googleAuthService.getAccessToken(userId, accountId);
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({ access_token: accessToken });
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+    const response = await gmail.users.messages.get({
+      userId: 'me',
+      id: gmailMessageId,
+      format: 'full',
+    });
+
+    const message = response.data;
+    const headers = message.payload?.headers || [];
+
+    const getHeader = (name: string) =>
+      headers.find((h: any) => h.name?.toLowerCase() === name.toLowerCase())?.value || '';
+
+    const from = getHeader('from');
+    const to = getHeader('to');
+    const cc = getHeader('cc');
+    const subject = getHeader('subject');
+    const date = getHeader('date');
+
+    const { textBody, htmlBody } = this.extractBodies(message.payload);
+
+    const attachments = [];
+    if (message.payload?.parts) {
+      for (const part of message.payload.parts) {
+        if (part.filename && part.body?.attachmentId) {
+          attachments.push({
+            filename: part.filename,
+            mimeType: part.mimeType,
+            size: part.body.size,
+            attachmentId: part.body.attachmentId,
+          });
+        }
+      }
+    }
+
+    return {
+      from,
+      fromName: this.extractName(from),
+      to: this.parseEmailList(to),
+      cc: cc ? this.parseEmailList(cc) : null,
+      subject: subject || '(Sin asunto)',
+      date: date ? new Date(date) : new Date(parseInt(message.internalDate)),
+      textBody,
+      htmlBody,
+      attachments,
+      labels: message.labelIds || [],
+      threadId: message.threadId,
+    };
   }
 }
