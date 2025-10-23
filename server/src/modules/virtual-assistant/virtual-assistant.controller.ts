@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Delete,
   Param,
   Body,
@@ -30,6 +31,28 @@ export class VirtualAssistantController {
   async getAll(@Request() req) {
     return this.assistantService.getAssistantsByOrganization(
       req.user.organizationId,
+    );
+  }
+
+  @Put(':id')
+  @UseGuards(JwtAuthGuard)
+  async update(
+    @Request() req,
+    @Param('id') id: string,
+    @Body()
+    body: {
+      name?: string;
+      settings?: {
+        welcomeMessage?: string;
+        systemInstructions?: string;
+        personality?: string;
+      };
+    },
+  ) {
+    return this.assistantService.updateAssistant(
+      id,
+      req.user.organizationId,
+      body,
     );
   }
 

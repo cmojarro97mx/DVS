@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, Power, Copy, Check, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, Power, Copy, Check, ExternalLink, Edit } from 'lucide-react';
 import api from '../../services/api';
 
 interface VirtualAssistant {
@@ -10,6 +10,11 @@ interface VirtualAssistant {
   lastUsedAt: string | null;
   usageCount: number;
   createdAt: string;
+  settings?: {
+    welcomeMessage?: string;
+    systemInstructions?: string;
+    personality?: string;
+  };
 }
 
 export default function VirtualAssistantConfigPage() {
@@ -18,6 +23,15 @@ export default function VirtualAssistantConfigPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newAssistantName, setNewAssistantName] = useState('');
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingAssistant, setEditingAssistant] = useState<VirtualAssistant | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    welcomeMessage: '',
+    systemInstructions: '',
+    personality: '',
+  });
 
   useEffect(() => {
     fetchAssistants();
@@ -77,6 +91,38 @@ export default function VirtualAssistantConfigPage() {
 
   const openAssistant = (token: string) => {
     window.open(`/assistant/${token}`, '_blank');
+  };
+
+  const openEditModal = (assistant: VirtualAssistant) => {
+    setEditingAssistant(assistant);
+    setEditForm({
+      name: assistant.name,
+      welcomeMessage: assistant.settings?.welcomeMessage || 'Hola! Soy tu asistente virtual. ¿En qué puedo ayudarte hoy?',
+      systemInstructions: assistant.settings?.systemInstructions || 'Eres un asistente virtual profesional y amigable. Ayudas con información sobre operaciones, clientes, tareas y eventos.',
+      personality: assistant.settings?.personality || 'profesional',
+    });
+    setShowEditModal(true);
+  };
+
+  const updateAssistant = async () => {
+    if (!editingAssistant) return;
+    
+    try {
+      await api.put(`/virtual-assistant/${editingAssistant.id}`, {
+        name: editForm.name,
+        settings: {
+          welcomeMessage: editForm.welcomeMessage,
+          systemInstructions: editForm.systemInstructions,
+          personality: editForm.personality,
+        },
+      });
+      setShowEditModal(false);
+      setEditingAssistant(null);
+      fetchAssistants();
+    } catch (error) {
+      console.error('Error updating assistant:', error);
+      alert('Error al actualizar el asistente');
+    }
   };
 
   if (loading) {
@@ -179,6 +225,13 @@ export default function VirtualAssistantConfigPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openEditModal(assistant)}
+                      className="p-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200"
+                      title="Editar"
+                    >
+                      <Edit className="w-5 h-5" />
+                    </button>
                     <button
                       onClick={() => toggleAssistant(assistant.id)}
                       className={`p-2 rounded-lg ${
@@ -304,6 +357,98 @@ export default function VirtualAssistantConfigPage() {
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
               >
                 Crear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && editingAssistant && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+              Editar Asistente
+            </h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre del Asistente
+                </label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                  placeholder="Nombre del asistente"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">El nombre que se mostrará al usuario</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mensaje de Bienvenida
+                </label>
+                <textarea
+                  value={editForm.welcomeMessage}
+                  onChange={(e) => setEditForm({...editForm, welcomeMessage: e.target.value})}
+                  placeholder="Mensaje inicial que verá el usuario"
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">El primer mensaje que verá el usuario al abrir el asistente</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Instrucciones del Sistema (Prompt)
+                </label>
+                <textarea
+                  value={editForm.systemInstructions}
+                  onChange={(e) => setEditForm({...editForm, systemInstructions: e.target.value})}
+                  placeholder="Define cómo debe comportarse el asistente..."
+                  rows={5}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Instrucciones que definirán el comportamiento y personalidad del asistente
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Personalidad
+                </label>
+                <select
+                  value={editForm.personality}
+                  onChange={(e) => setEditForm({...editForm, personality: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="profesional">Profesional</option>
+                  <option value="amigable y profesional">Amigable y Profesional</option>
+                  <option value="casual">Casual</option>
+                  <option value="formal">Formal</option>
+                  <option value="entusiasta">Entusiasta</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">El tono general de las respuestas del asistente</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingAssistant(null);
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={updateAssistant}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Guardar Cambios
               </button>
             </div>
           </div>

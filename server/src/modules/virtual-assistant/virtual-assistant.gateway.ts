@@ -81,7 +81,8 @@ export class VirtualAssistantGateway
 
       this.conversationHistories.set(client.id, []);
 
-      const welcomeMessage = `Hola! Soy ${assistant.name}, tu asistente virtual. ¿En qué puedo ayudarte hoy?`;
+      const settings = (assistant.settings as any) || {};
+      const welcomeMessage = settings.welcomeMessage || `Hola! Soy ${assistant.name}, tu asistente virtual. ¿En qué puedo ayudarte hoy?`;
       
       console.log(`💬 Enviando mensaje de bienvenida: ${welcomeMessage}`);
       
@@ -191,8 +192,13 @@ export class VirtualAssistantGateway
 
   private buildSystemPrompt(context: any): string {
     const { assistant, context: orgContext, organizationId } = context;
+    const settings = (assistant.settings as any) || {};
+    const systemInstructions = settings.systemInstructions || 
+      'Eres un asistente virtual profesional y amigable. Ayudas con información sobre operaciones, clientes, tareas y eventos.';
 
     return `Eres ${assistant.name}, un asistente virtual inteligente para la plataforma Nexxio de gestión logística y CRM.
+
+${systemInstructions}
 
 Tu rol es ayudar al usuario con:
 - Consultar información sobre operaciones, clientes, empleados, eventos y tareas
@@ -221,7 +227,7 @@ IMPORTANTE:
 - Si te piden crear algo, confirma los detalles antes de hacerlo
 - Si no tienes información suficiente, pregunta por los detalles necesarios
 - Sé conciso pero completo en tus respuestas
-- Usa un tono amigable y profesional`;
+- Usa un tono ${settings.personality || 'amigable y profesional'}`;
   }
 
   private async detectToolCall(

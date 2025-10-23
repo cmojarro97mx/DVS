@@ -13,15 +13,56 @@ export class VirtualAssistantService {
   }
 
   async createAssistant(userId: string, organizationId: string, name?: string) {
+    const defaultSettings = {
+      welcomeMessage: 'Hola! Soy tu asistente virtual. ¿En qué puedo ayudarte hoy?',
+      systemInstructions: 'Eres un asistente virtual profesional y amigable. Ayudas con información sobre operaciones, clientes, tareas y eventos.',
+      personality: 'profesional',
+    };
+
     const assistant = await this.prisma.virtualAssistant.create({
       data: {
         userId,
         organizationId,
         name: name || 'Asistente Virtual',
+        settings: defaultSettings,
       },
     });
 
     return assistant;
+  }
+
+  async updateAssistant(
+    id: string,
+    organizationId: string,
+    data: {
+      name?: string;
+      settings?: {
+        welcomeMessage?: string;
+        systemInstructions?: string;
+        personality?: string;
+      };
+    },
+  ) {
+    const assistant = await this.prisma.virtualAssistant.findFirst({
+      where: { id, organizationId },
+    });
+
+    if (!assistant) {
+      throw new NotFoundException('Asistente no encontrado');
+    }
+
+    const currentSettings = (assistant.settings as any) || {};
+    const updatedSettings = data.settings
+      ? { ...currentSettings, ...data.settings }
+      : currentSettings;
+
+    return this.prisma.virtualAssistant.update({
+      where: { id },
+      data: {
+        name: data.name,
+        settings: updatedSettings,
+      },
+    });
   }
 
   async getAssistantByToken(token: string) {
