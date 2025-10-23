@@ -176,8 +176,8 @@ export class AutomationsService {
     let useMBL = false;
     let useHBL = false;
     let useOperationId = false;
+    let searchInAttachments = true;
 
-    // Construir condiciones de búsqueda basadas en las automaciones
     for (const automation of automations) {
       const config = automation.conditions as any;
       
@@ -196,8 +196,10 @@ export class AutomationsService {
       if (config?.useOperationId !== false) {
         useOperationId = true;
       }
+      if (config?.searchInAttachments === false) {
+        searchInAttachments = false;
+      }
 
-      // Procesar patrones personalizados
       if (config?.subjectPatterns && Array.isArray(config.subjectPatterns)) {
         const searchIn = config.searchIn || ['subject', 'body'];
         
@@ -205,7 +207,6 @@ export class AutomationsService {
           if (pattern && typeof pattern === 'string' && pattern.trim()) {
             let processedPattern = pattern;
             
-            // Reemplazar variables
             if (pattern.includes('{operationId}') && operation.id) {
               processedPattern = processedPattern.replace(/\{operationId\}/g, operation.id);
             }
@@ -222,7 +223,6 @@ export class AutomationsService {
               processedPattern = processedPattern.replace(/\{hbl_awb\}/g, operation.hbl_awb);
             }
             
-            // Agregar condiciones de búsqueda
             const patternConditions = [];
             if (searchIn.includes('subject')) {
               patternConditions.push({ subject: { contains: processedPattern, mode: 'insensitive' as any } });
@@ -239,7 +239,6 @@ export class AutomationsService {
       }
     }
 
-    // Agregar condiciones estándar
     if (useClientEmail && operation.client?.email) {
       const clientEmail = operation.client.email.toLowerCase();
       searchConditions.push({
@@ -295,25 +294,30 @@ export class AutomationsService {
       return 0;
     }
 
-    // Buscar emails que coincidan y que NO estén ya vinculados a esta operación
     const matchingEmails = await this.prisma.emailMessage.findMany({
       where: {
         accountId: { in: accountIds },
         OR: searchConditions,
-        operationId: null, // Solo emails sin vincular
+        operationId: null,
       },
       select: {
         id: true,
       },
-      take: 50, // Limitar para no procesar demasiados de una vez
+      take: 50,
     });
 
-    if (matchingEmails.length === 0) {
+    let matchingEmailIds = new Set(matchingEmails.map(e => e.id));
+
+    if (searchInAttachments) {
+      const additionalMatches = await this.searchInEmailAttachments(operation, accountIds);
+      additionalMatches.forEach(id => matchingEmailIds.add(id));
+    }
+
+    if (matchingEmailIds.size === 0) {
       return 0;
     }
 
-    // Vincular emails a la operación
-    const emailIds = matchingEmails.map(e => e.id);
+    const emailIds = Array.from(matchingEmailIds);
     await this.prisma.emailMessage.updateMany({
       where: {
         id: { in: emailIds },
@@ -324,5 +328,67 @@ export class AutomationsService {
     });
 
     return emailIds.length;
+  }
+
+  private async searchInEmailAttachments(operation: any, accountIds: string[]): Promise<string[]> {
+    const searchPatterns = [];
+    
+    if (operation.id) searchPatterns.push(operation.id);
+    if (operation.bookingTracking) searchPatterns.push(operation.bookingTracking);
+    if (operation.mbl_awb) searchPatterns.push(operation.mbl_awb);
+    if (operation.hbl_awb) searchPatterns.push(operation.hbl_awb);
+    if (operation.projectName) searchPatterns.push(operation.projectName);
+    
+    if (searchPatterns.length === 0) {
+      return [];
+    }
+
+    const emailsWithAttachments = await this.prisma.emailMessage.findMany({
+      where: {
+        accountId: { in: accountIds },
+        operationId: null,
+        hasAttachments: true,
+        attachmentsData: { not: null },
+      },
+      select: {
+        id: true,
+        attachmentsData: true,
+      },
+      take: 100,
+    });
+
+    if (emailsWithAttachments.length === 0) {
+      return [];
+    }
+
+    const matchedEmailIds: string[] = [];
+
+    for (const email of emailsWithAttachments) {
+      try {
+        const attachments = email.attachmentsData as any[];
+        if (!attachments || attachments.length === 0) continue;
+
+        for (const attachment of attachments) {
+          const extractedText = await this.documentProcessor.processAttachment(attachment);
+          
+          if (extractedText) {
+            const textLower = extractedText.toLowerCase();
+            const foundMatch = searchPatterns.some(pattern => 
+              textLower.includes(pattern.toLowerCase())
+            );
+
+            if (foundMatch) {
+              this.logger.log(`📎 Encontrada referencia en adjunto de email ${email.id}: ${attachment.filename}`);
+              matchedEmailIds.push(email.id);
+              break;
+            }
+          }
+        }
+      } catch (error) {
+        this.logger.error(`Error procesando adjuntos del email ${email.id}:`, error.message);
+      }
+    }
+
+    return matchedEmailIds;
   }
 }

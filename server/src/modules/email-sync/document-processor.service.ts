@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { createWorker } from 'tesseract.js';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { Readable } from 'stream';
@@ -7,17 +8,22 @@ import { Readable } from 'stream';
 export class DocumentProcessorService {
   private readonly logger = new Logger(DocumentProcessorService.name);
   private s3Client: S3Client;
+  private bucketName: string;
   private ocrWorker: any = null;
 
-  constructor() {
+  constructor(private configService: ConfigService) {
+    const endpoint = this.configService.get<string>('BACKBLAZE_ENDPOINT');
+    const keyId = this.configService.get<string>('BACKBLAZE_KEY_ID');
+    const applicationKey = this.configService.get<string>('BACKBLAZE_APPLICATION_KEY');
+    this.bucketName = this.configService.get<string>('BACKBLAZE_BUCKET_NAME');
+
     this.s3Client = new S3Client({
-      region: process.env.AWS_REGION || 'us-east-1',
+      endpoint: `https://${endpoint}`,
+      region: 'us-west-002',
       credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+        accessKeyId: keyId,
+        secretAccessKey: applicationKey,
       },
-      endpoint: process.env.S3_ENDPOINT,
-      forcePathStyle: true,
     });
   }
 
@@ -39,18 +45,23 @@ export class DocumentProcessorService {
 
   async processAttachment(attachment: any): Promise<string | null> {
     try {
-      const { contentType, s3Key, filename } = attachment;
+      const mimeType = attachment.mimeType || attachment.contentType;
+      const key = attachment.key || attachment.s3Key;
+      const filename = attachment.filename;
 
-      if (!s3Key) {
-        this.logger.warn(`Attachment ${filename} has no S3 key, skipping`);
+      if (!key) {
+        this.logger.warn(`Attachment ${filename} has no key, skipping`);
         return null;
       }
 
-      // Determine the type of document
-      if (contentType === 'application/pdf') {
-        return await this.extractTextFromPDF(s3Key);
-      } else if (contentType?.startsWith('image/')) {
-        return await this.extractTextFromImage(s3Key);
+      if (mimeType === 'application/pdf') {
+        return await this.extractTextFromPDF(key);
+      } else if (mimeType?.startsWith('image/')) {
+        return await this.extractTextFromImage(key);
+      } else if (['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 
+                   'text/csv', 'application/csv'].includes(mimeType)) {
+        this.logger.log(`Skipping ${mimeType} file (spreadsheet/CSV): ${filename}`);
+        return null;
       }
 
       return null;
@@ -103,7 +114,7 @@ export class DocumentProcessorService {
   private async downloadFromS3(s3Key: string): Promise<Buffer | null> {
     try {
       const command = new GetObjectCommand({
-        Bucket: process.env.S3_BUCKET_NAME,
+        Bucket: this.bucketName,
         Key: s3Key,
       });
 
@@ -123,7 +134,7 @@ export class DocumentProcessorService {
 
       return Buffer.concat(chunks);
     } catch (error) {
-      this.logger.error(`Error downloading from S3 ${s3Key}: ${error.message}`);
+      this.logger.error(`Error downloading from Backblaze ${s3Key}: ${error.message}`);
       return null;
     }
   }
