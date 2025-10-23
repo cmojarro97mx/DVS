@@ -494,6 +494,8 @@ export class OperationsService {
       take: 100,
       select: {
         id: true,
+        accountId: true,
+        gmailMessageId: true,
         from: true,
         fromName: true,
         to: true,
@@ -502,6 +504,7 @@ export class OperationsService {
         snippet: true,
         body: true,
         htmlBodyUrl: true,
+        htmlBodyKey: true,
         date: true,
         unread: true,
         starred: true,
@@ -568,6 +571,8 @@ export class OperationsService {
       take: 200, // Limitar para no procesar demasiados
       select: {
         id: true,
+        accountId: true,
+        gmailMessageId: true,
         from: true,
         fromName: true,
         to: true,
@@ -576,6 +581,7 @@ export class OperationsService {
         snippet: true,
         body: true,
         htmlBodyUrl: true,
+        htmlBodyKey: true,
         date: true,
         unread: true,
         starred: true,
@@ -621,9 +627,21 @@ export class OperationsService {
       }
     }
 
-    // Generar URLs firmadas para los adjuntos de todos los correos
+    // Generar URLs firmadas para los adjuntos y cuerpo HTML de todos los correos
     const emailsWithSignedUrls = await Promise.all(
       emails.map(async (email) => {
+        const emailWithUrls: any = { ...email };
+
+        // Generar URL firmada para el cuerpo HTML si está en B2
+        if (email.htmlBodyKey) {
+          try {
+            emailWithUrls.htmlBodyUrl = await this.emailStorageService.getSignedUrl(email.htmlBodyKey);
+          } catch (error) {
+            console.error(`Error generating signed URL for HTML body ${email.htmlBodyKey}:`, error);
+          }
+        }
+
+        // Generar URLs firmadas para los adjuntos
         if (email.attachmentsData && Array.isArray(email.attachmentsData) && email.attachmentsData.length > 0) {
           const attachmentsWithUrls = await Promise.all(
             email.attachmentsData.map(async (att: any) => {
@@ -643,12 +661,10 @@ export class OperationsService {
               return att;
             })
           );
-          return {
-            ...email,
-            attachmentsData: attachmentsWithUrls,
-          };
+          emailWithUrls.attachmentsData = attachmentsWithUrls;
         }
-        return email;
+
+        return emailWithUrls;
       })
     );
 
