@@ -853,6 +853,7 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [relatedEmails, setRelatedEmails] = useState<any[]>([]);
   const [loadingEmails, setLoadingEmails] = useState(false);
+  const [emailSearchQuery, setEmailSearchQuery] = useState('');
   const [linkingCriteria, setLinkingCriteria] = useState<any>(null);
   const [selectedEmailForView, setSelectedEmailForView] = useState<any>(null);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
@@ -891,6 +892,18 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
     };
     loadRelatedEmails();
   }, [activeTab, project.id]);
+
+  const filteredRelatedEmails = useMemo(() => {
+    if (!emailSearchQuery.trim()) return relatedEmails;
+
+    const query = emailSearchQuery.toLowerCase();
+    return relatedEmails.filter(email => 
+      email.subject?.toLowerCase().includes(query) ||
+      email.fromName?.toLowerCase().includes(query) ||
+      email.from?.toLowerCase().includes(query) ||
+      email.snippet?.toLowerCase().includes(query)
+    );
+  }, [relatedEmails, emailSearchQuery]);
 
 
   useEffect(() => {
@@ -1120,18 +1133,30 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
                 </div>
               ) : relatedEmails.length > 0 ? (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-                  <div className="p-4 border-b border-gray-200">
-                    <h3 className="text-md font-bold text-gray-800 flex items-center gap-2">
-                      <MailIcon className="w-5 h-5 text-blue-600" />
-                      Correos Vinculados ({relatedEmails.length})
-                    </h3>
+                  <div className="p-3 border-b border-gray-200">
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                        <MailIcon className="w-4 h-4 text-blue-600" />
+                        Correos Vinculados ({relatedEmails.length})
+                      </h3>
+                    </div>
+                    <div className="relative">
+                      <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Buscar correos..."
+                        value={emailSearchQuery}
+                        onChange={(e) => setEmailSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
                   </div>
-                  <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
-                    {relatedEmails.map(email => (
+                  <div className="divide-y divide-gray-100 max-h-[400px] overflow-y-auto">
+                    {filteredRelatedEmails.map(email => (
                       <div 
                         key={email.id} 
                         onClick={() => handleViewEmail(email)}
-                        className="p-4 hover:bg-gray-50 transition-colors cursor-pointer group"
+                        className="p-3 hover:bg-gray-50 transition-colors cursor-pointer group"
                       >
                         <div className="flex items-start gap-3">
                           <div className="flex-shrink-0">

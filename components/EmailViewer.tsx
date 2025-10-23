@@ -83,17 +83,17 @@ export const EmailViewer: React.FC<EmailViewerProps> = ({ email, isOpen, onClose
 
   return (
     <div 
-      className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-2 sm:p-4"
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-xl shadow-sm border border-gray-200 max-w-3xl w-full max-h-[85vh] flex flex-col"
+        className="bg-white rounded-xl shadow-sm border border-gray-200 w-full max-w-4xl max-h-[90vh] sm:max-h-[85vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex justify-between items-center px-5 py-3 border-b border-gray-200">
-          <div className="flex-1 min-w-0 pr-4">
-            <h3 className="text-base font-bold text-gray-900 truncate">
+        <div className="flex justify-between items-center px-3 sm:px-5 py-2 sm:py-3 border-b border-gray-200">
+          <div className="flex-1 min-w-0 pr-2 sm:pr-4">
+            <h3 className="text-sm sm:text-base font-bold text-gray-900 truncate">
               {email.subject || '(Sin asunto)'}
             </h3>
           </div>
@@ -107,25 +107,25 @@ export const EmailViewer: React.FC<EmailViewerProps> = ({ email, isOpen, onClose
         </div>
 
         {/* Email Info */}
-        <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50">
-          <div className="flex items-start gap-3">
+        <div className="px-3 sm:px-5 py-2 sm:py-3 border-b border-gray-100 bg-gray-50/50">
+          <div className="flex items-start gap-2 sm:gap-3">
             <div className="flex-shrink-0">
-              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-600 flex items-center justify-center">
+                <span className="text-white font-bold text-xs sm:text-sm">
                   {(email.fromName || email.from).charAt(0).toUpperCase()}
                 </span>
               </div>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-baseline gap-2">
-                <p className="font-semibold text-gray-900 text-sm">
+              <div className="flex items-baseline gap-1 sm:gap-2 flex-wrap">
+                <p className="font-semibold text-gray-900 text-xs sm:text-sm">
                   {email.fromName || email.from}
                 </p>
-                <p className="text-xs text-gray-500 truncate">
+                <p className="text-xs text-gray-500 truncate hidden sm:inline">
                   &lt;{email.from}&gt;
                 </p>
               </div>
-              <div className="mt-1.5 text-xs space-y-0.5">
+              <div className="mt-1 sm:mt-1.5 text-xs space-y-0.5">
                 <div className="flex items-start">
                   <span className="text-gray-500 font-medium w-10 flex-shrink-0">Para:</span>
                   <span className="text-gray-700">
@@ -162,14 +162,14 @@ export const EmailViewer: React.FC<EmailViewerProps> = ({ email, isOpen, onClose
         {/* Email Body */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex items-center justify-center h-full py-12">
+            <div className="flex items-center justify-center h-full py-8 sm:py-12">
               <div className="text-center">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-blue-600 mb-3"></div>
-                <p className="text-gray-600 text-sm">Cargando contenido...</p>
+                <div className="inline-block animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-2 border-gray-200 border-t-blue-600 mb-2 sm:mb-3"></div>
+                <p className="text-gray-600 text-xs sm:text-sm">Cargando contenido...</p>
               </div>
             </div>
           ) : (
-            <div className="p-5">
+            <div className="p-3 sm:p-5">
               <div className="bg-white rounded-lg">
                 <iframe
                   srcDoc={emailHtml}
@@ -203,12 +203,12 @@ export const EmailViewer: React.FC<EmailViewerProps> = ({ email, isOpen, onClose
 
         {/* Attachments */}
         {email.hasAttachments && email.attachmentsData && Array.isArray(email.attachmentsData) && email.attachmentsData.length > 0 && (
-          <div className="px-5 py-3 border-t border-gray-200 bg-gray-50/50">
-            <h4 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-2">
-              <PaperClipIcon className="w-4 h-4 text-gray-500" />
+          <div className="px-3 sm:px-5 py-2 sm:py-3 border-t border-gray-200 bg-gray-50/50">
+            <h4 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1.5 sm:gap-2">
+              <PaperClipIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
               Adjuntos ({email.attachmentsData.length})
             </h4>
-            <div className="grid grid-cols-1 gap-2">
+            <div className="grid grid-cols-1 gap-1.5 sm:gap-2">
               {email.attachmentsData.map((att: any, index: number) => {
                 const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(
                   att.filename?.split('.').pop()?.toLowerCase() || ''
@@ -217,10 +217,12 @@ export const EmailViewer: React.FC<EmailViewerProps> = ({ email, isOpen, onClose
                 return (
                   <div
                     key={index}
-                    className="group relative flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 hover:border-blue-400 hover:bg-blue-50/30 transition-all"
+                    className="group relative flex items-center gap-1.5 sm:gap-2 bg-white border border-gray-200 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:border-blue-400 hover:bg-blue-50/30 transition-all"
                   >
                     <div className="flex-shrink-0">
-                      {getFileIcon(att.filename)}
+                      <div className="scale-90 sm:scale-100">
+                        {getFileIcon(att.filename)}
+                      </div>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-gray-900 truncate" title={att.filename}>
@@ -230,7 +232,7 @@ export const EmailViewer: React.FC<EmailViewerProps> = ({ email, isOpen, onClose
                         {formatFileSize(att.size)}
                       </p>
                     </div>
-                    <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       {isImage && att.url && (
                         <button
                           onClick={() => window.open(att.url, '_blank')}
