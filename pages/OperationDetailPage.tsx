@@ -1119,39 +1119,55 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
                   <p className="mt-2 text-sm text-slate-600">Cargando correos relacionados...</p>
                 </div>
               ) : relatedEmails.length > 0 ? (
-                <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-                  <div className="max-h-96 overflow-y-auto">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                  <div className="p-4 border-b border-gray-200">
+                    <h3 className="text-md font-bold text-gray-800 flex items-center gap-2">
+                      <MailIcon className="w-5 h-5 text-blue-600" />
+                      Correos Vinculados ({relatedEmails.length})
+                    </h3>
+                  </div>
+                  <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
                     {relatedEmails.map(email => (
                       <div 
                         key={email.id} 
                         onClick={() => handleViewEmail(email)}
-                        className="border-b border-slate-200 last:border-b-0 p-3 hover:bg-slate-50 transition-colors cursor-pointer"
+                        className="p-4 hover:bg-gray-50 transition-colors cursor-pointer group"
                       >
-                        <div className="flex justify-between items-start gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              {email.unread && (
-                                <div className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></div>
-                              )}
-                              <h4 className="font-semibold text-slate-900 text-sm truncate">{email.subject || '(Sin asunto)'}</h4>
-                            </div>
-                            <p className="text-xs text-slate-600 mt-1 truncate">De: {email.fromName || email.from}</p>
-                            <p className="text-xs text-slate-500 mt-1 line-clamp-1">{email.snippet}</p>
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0">
+                            <EmailAvatar name={email.fromName || email.from} />
                           </div>
-                          <div className="text-right flex-shrink-0">
-                            <p className="text-xs text-slate-500">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              {email.unread && (
+                                <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></div>
+                              )}
+                              <h4 className={`text-sm truncate ${email.unread ? 'font-bold text-gray-900' : 'font-semibold text-gray-800'}`}>
+                                {email.subject || '(Sin asunto)'}
+                              </h4>
+                              {email.hasAttachments && (
+                                <PaperClipIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-600 mb-1">
+                              <span className="font-medium">{email.fromName || email.from}</span>
+                            </p>
+                            <p className="text-xs text-gray-500 line-clamp-2">{email.snippet}</p>
+                          </div>
+                          <div className="flex-shrink-0 text-right">
+                            <p className="text-xs text-gray-500 whitespace-nowrap">
                               {new Date(email.date).toLocaleDateString('es-ES', {
                                 day: '2-digit',
                                 month: 'short',
+                                year: new Date(email.date).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+                              })}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              {new Date(email.date).toLocaleTimeString('es-ES', {
                                 hour: '2-digit',
                                 minute: '2-digit'
                               })}
                             </p>
-                            {email.hasAttachments && (
-                              <div className="mt-1 flex items-center justify-end gap-1 text-xs text-slate-500">
-                                <PaperClipIcon className="w-3 h-3" />
-                              </div>
-                            )}
                           </div>
                         </div>
                       </div>
@@ -1159,10 +1175,10 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-12 bg-slate-50 rounded-lg">
-                  <MailIcon className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                  <p className="text-slate-600 font-medium">No hay correos vinculados</p>
-                  <p className="text-sm text-slate-500 mt-1">Los correos relacionados aparecerán aquí automáticamente</p>
+                <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
+                  <MailIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-700 font-medium">No hay correos vinculados</p>
+                  <p className="text-sm text-gray-500 mt-1">Los correos relacionados aparecerán aquí automáticamente</p>
                 </div>
               )}
             </div>
