@@ -569,8 +569,11 @@ export class OperationsService {
         from: true,
         fromName: true,
         to: true,
+        cc: true,
         subject: true,
         snippet: true,
+        body: true,
+        htmlBodyUrl: true,
         date: true,
         unread: true,
         starred: true,
@@ -594,7 +597,13 @@ export class OperationsService {
         for (const pattern of attachmentPatterns) {
           if (this.documentProcessor.searchInExtractedTexts(extractedTexts, pattern)) {
             additionalEmailIds.add(email.id);
-            emails.push(email);
+            // Incluir todas las propiedades requeridas
+            emails.push({
+              ...email,
+              body: '',
+              htmlBodyUrl: '',
+              cc: null,
+            });
             break; // Ya encontramos una coincidencia, no seguir buscando
           }
         }
