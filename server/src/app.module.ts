@@ -24,6 +24,7 @@ import { EmailSyncModule } from './modules/email-sync/email-sync.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AppConfigModule } from './modules/config/config.module';
 import { AutomationsModule } from './modules/automations/automations.module';
+import { VirtualAssistantModule } from './modules/virtual-assistant/virtual-assistant.module';
 import { PrismaService } from './common/prisma.service';
 
 @Module({
@@ -55,6 +56,7 @@ import { PrismaService } from './common/prisma.service';
     NotificationsModule,
     AppConfigModule,
     AutomationsModule,
+    VirtualAssistantModule,
   ],
   providers: [PrismaService],
 })
