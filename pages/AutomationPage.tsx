@@ -143,13 +143,6 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
     <div className="flex-1 overflow-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <button
-            onClick={() => setActiveView('settings')}
-            className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <ArrowLeftIcon className="w-5 h-5 mr-2" />
-            Volver a Configuración
-          </button>
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Automatizaciones</h1>
@@ -310,15 +303,17 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
       </div>
 
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              {editingAutomation ? 'Editar Automatización' : 'Nueva Automatización'}
-            </h2>
-            <div className="space-y-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl">
+              <h2 className="text-xl font-bold text-gray-900">
+                {editingAutomation ? 'Editar Automatización' : 'Nueva Automatización'}
+              </h2>
+            </div>
+            <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nombre
+                  Nombre de la automatización
                 </label>
                 <input
                   type="text"
@@ -354,17 +349,14 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
               </div>
 
               <div className="border-t border-gray-200 pt-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Configuración de Detección</h3>
-                <p className="text-xs text-gray-500 mb-4">
-                  Configura cómo el sistema detectará emails relacionados con cada operación específica
-                </p>
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">Criterios de Vinculación</h3>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Patrones en el Asunto del Email
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Palabras clave en el asunto
                   </label>
                   <p className="text-xs text-gray-500 mb-2">
-                    Agrega patrones que identifican esta operación. Usa <code className="bg-gray-100 px-1 rounded">{'{operationId}'}</code> para el ID de la operación o <code className="bg-gray-100 px-1 rounded">{'{projectName}'}</code> para el nombre del proyecto.
+                    Detecta automáticamente emails que contengan estas palabras. Ejemplo: "OP-019", "MOPC-"
                   </p>
                   {formData.conditions.subjectPatterns.map((pattern, index) => (
                     <div key={index} className="flex gap-2 mb-2">
@@ -421,7 +413,7 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Criterios Adicionales</p>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Métodos de detección</p>
                   <div className="flex items-center">
                     <input
                       type="checkbox"
@@ -437,7 +429,7 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
                     <label htmlFor="useClientEmail" className="ml-2 text-sm text-gray-700">
-                      Usar email del cliente (detecta emails del cliente asociado)
+                      Email del cliente
                     </label>
                   </div>
                   <div className="flex items-center">
@@ -455,7 +447,7 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
                     <label htmlFor="useBookingTracking" className="ml-2 text-sm text-gray-700">
-                      Usar Booking/Tracking (detecta número de seguimiento en asunto)
+                      Número de Booking/Tracking
                     </label>
                   </div>
                   <div className="flex items-center">
@@ -473,7 +465,7 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
                     <label htmlFor="useMBL" className="ml-2 text-sm text-gray-700">
-                      Usar MBL/AWB (detecta número de guía maestra en asunto)
+                      Número MBL/AWB
                     </label>
                   </div>
                   <div className="flex items-center">
@@ -491,7 +483,7 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
                     <label htmlFor="useHBL" className="ml-2 text-sm text-gray-700">
-                      Usar HBL (detecta número de guía hija en asunto)
+                      Número HBL
                     </label>
                   </div>
                 </div>
@@ -510,7 +502,7 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
                 </label>
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-6">
+            <div className="sticky bottom-0 bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end gap-3 rounded-b-xl">
               <button
                 onClick={() => {
                   setShowCreateModal(false);
