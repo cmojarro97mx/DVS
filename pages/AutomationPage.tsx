@@ -17,6 +17,7 @@ interface AutomationPageProps {
 const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingAutomation, setEditingAutomation] = useState<Automation | null>(null);
   const [formData, setFormData] = useState({
@@ -42,10 +43,12 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
   const loadAutomations = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await automationsService.getAll();
       setAutomations(data);
     } catch (error) {
       console.error('Error loading automations:', error);
+      setError(error instanceof Error ? error.message : 'Error al cargar las automatizaciones');
     } finally {
       setLoading(false);
     }
@@ -199,6 +202,26 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600"></div>
+          </div>
+        ) : error ? (
+          <div className="bg-white rounded-xl shadow-sm border border-red-200 p-12 text-center">
+            <div className="bg-red-100 rounded-full p-6 inline-block mb-4">
+              <svg className="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Error al cargar las automatizaciones
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {error}
+            </p>
+            <button
+              onClick={loadAutomations}
+              className="inline-flex items-center bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Reintentar
+            </button>
           </div>
         ) : automations.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
