@@ -857,6 +857,7 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
   const [linkingCriteria, setLinkingCriteria] = useState<any>(null);
   const [selectedEmailForView, setSelectedEmailForView] = useState<any>(null);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [emailsLoaded, setEmailsLoaded] = useState(false);
 
   useEffect(() => {
     if (initialState) {
@@ -874,7 +875,7 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
 
   useEffect(() => {
     const loadRelatedEmails = async () => {
-      if (activeTab === 'emails') {
+      if (activeTab === 'emails' && !emailsLoaded) {
         setLoadingEmails(true);
         try {
           const [emails, criteria] = await Promise.all([
@@ -883,6 +884,7 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
           ]);
           setRelatedEmails(emails);
           setLinkingCriteria(criteria);
+          setEmailsLoaded(true);
         } catch (error) {
           console.error('Error loading related emails:', error);
         } finally {
@@ -891,7 +893,7 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
       }
     };
     loadRelatedEmails();
-  }, [activeTab, project.id]);
+  }, [activeTab, project.id, emailsLoaded]);
 
   const filteredRelatedEmails = useMemo(() => {
     if (!emailSearchQuery.trim()) return relatedEmails;
@@ -1126,86 +1128,113 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
                                   />}
         {activeTab === 'emails' && (
             <div className="space-y-4">
-              {loadingEmails ? (
-                <div className="text-center py-8">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
-                  <p className="mt-2 text-sm text-slate-600">Cargando correos relacionados...</p>
-                </div>
-              ) : relatedEmails.length > 0 ? (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-                  <div className="p-3 border-b border-gray-200">
-                    <div className="flex items-center justify-between gap-3 mb-2">
-                      <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                        <MailIcon className="w-4 h-4 text-blue-600" />
-                        Correos Vinculados ({relatedEmails.length})
-                      </h3>
-                    </div>
-                    <div className="relative">
-                      <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="Buscar correos..."
-                        value={emailSearchQuery}
-                        onChange={(e) => setEmailSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div className="p-3 border-b border-gray-200">
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                      <MailIcon className="w-4 h-4 text-blue-600" />
+                      Correos Vinculados {!loadingEmails && relatedEmails.length > 0 && `(${relatedEmails.length})`}
+                    </h3>
                   </div>
-                  <div className="divide-y divide-gray-100 max-h-[400px] overflow-y-auto">
-                    {filteredRelatedEmails.map(email => (
-                      <div 
-                        key={email.id} 
-                        onClick={() => handleViewEmail(email)}
-                        className="p-3 hover:bg-gray-50 transition-colors cursor-pointer group"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="flex-shrink-0">
-                            <EmailAvatar name={email.fromName || email.from} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              {email.unread && (
-                                <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></div>
-                              )}
-                              <h4 className={`text-sm truncate ${email.unread ? 'font-bold text-gray-900' : 'font-semibold text-gray-800'}`}>
-                                {email.subject || '(Sin asunto)'}
-                              </h4>
-                              {email.hasAttachments && (
-                                <PaperClipIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                              )}
+                  <div className="relative">
+                    <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Buscar correos..."
+                      value={emailSearchQuery}
+                      onChange={(e) => setEmailSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      disabled={loadingEmails}
+                    />
+                  </div>
+                </div>
+                
+                <div className="divide-y divide-gray-100 max-h-[400px] overflow-y-auto">
+                  {loadingEmails ? (
+                    // Skeleton loader
+                    <>
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className="p-3 animate-pulse">
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0">
+                              <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
                             </div>
-                            <p className="text-xs text-gray-600 mb-1">
-                              <span className="font-medium">{email.fromName || email.from}</span>
-                            </p>
-                            <p className="text-xs text-gray-500 line-clamp-2">{email.snippet}</p>
-                          </div>
-                          <div className="flex-shrink-0 text-right">
-                            <p className="text-xs text-gray-500 whitespace-nowrap">
-                              {new Date(email.date).toLocaleDateString('es-ES', {
-                                day: '2-digit',
-                                month: 'short',
-                                year: new Date(email.date).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
-                              })}
-                            </p>
-                            <p className="text-xs text-gray-400 mt-0.5">
-                              {new Date(email.date).toLocaleTimeString('es-ES', {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </p>
+                            <div className="flex-1 min-w-0 space-y-2">
+                              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                              <div className="h-3 bg-gray-200 rounded w-full"></div>
+                            </div>
+                            <div className="flex-shrink-0 space-y-1">
+                              <div className="h-3 bg-gray-200 rounded w-16"></div>
+                              <div className="h-3 bg-gray-200 rounded w-12"></div>
+                            </div>
                           </div>
                         </div>
+                      ))}
+                    </>
+                  ) : relatedEmails.length > 0 ? (
+                    filteredRelatedEmails.length > 0 ? (
+                      filteredRelatedEmails.map(email => (
+                        <div 
+                          key={email.id} 
+                          onClick={() => handleViewEmail(email)}
+                          className="p-3 hover:bg-gray-50 transition-colors cursor-pointer group"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0">
+                              <EmailAvatar name={email.fromName || email.from} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                {email.unread && (
+                                  <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></div>
+                                )}
+                                <h4 className={`text-sm truncate ${email.unread ? 'font-bold text-gray-900' : 'font-semibold text-gray-800'}`}>
+                                  {email.subject || '(Sin asunto)'}
+                                </h4>
+                                {email.hasAttachments && (
+                                  <PaperClipIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-600 mb-1">
+                                <span className="font-medium">{email.fromName || email.from}</span>
+                              </p>
+                              <p className="text-xs text-gray-500 line-clamp-2">{email.snippet}</p>
+                            </div>
+                            <div className="flex-shrink-0 text-right">
+                              <p className="text-xs text-gray-500 whitespace-nowrap">
+                                {new Date(email.date).toLocaleDateString('es-ES', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: new Date(email.date).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+                                })}
+                              </p>
+                              <p className="text-xs text-gray-400 mt-0.5">
+                                {new Date(email.date).toLocaleTimeString('es-ES', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-12">
+                        <SearchIcon className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                        <p className="text-gray-600 font-medium">No se encontraron correos</p>
+                        <p className="text-sm text-gray-500 mt-1">Intenta con otros términos de búsqueda</p>
                       </div>
-                    ))}
-                  </div>
+                    )
+                  ) : (
+                    <div className="text-center py-12">
+                      <MailIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-700 font-medium">No hay correos vinculados</p>
+                      <p className="text-sm text-gray-500 mt-1">Los correos relacionados aparecerán aquí automáticamente</p>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
-                  <MailIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-700 font-medium">No hay correos vinculados</p>
-                  <p className="text-sm text-gray-500 mt-1">Los correos relacionados aparecerán aquí automáticamente</p>
-                </div>
-              )}
+              </div>
             </div>
           )}
         {activeTab === 'documents' && <ProjectDocuments documents={documents} onUpdateDocuments={onUpdateDocuments} />}
