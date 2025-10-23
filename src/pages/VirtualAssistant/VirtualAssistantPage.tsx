@@ -19,7 +19,6 @@ export default function VirtualAssistantPage() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [textInput, setTextInput] = useState('');
-  const [isStarted, setIsStarted] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   
   const [isRecording, setIsRecording] = useState(false);
@@ -145,7 +144,7 @@ export default function VirtualAssistantPage() {
         setMessages([welcomeMessage]);
         setIsProcessing(false);
         
-        if (isStarted && !isMuted) {
+        if (!isMuted) {
           speak(data.message);
         }
       });
@@ -182,33 +181,21 @@ export default function VirtualAssistantPage() {
         setError('Error de conexión. Por favor recarga la página.');
         setIsProcessing(false);
       });
+
+      // Auto-iniciar conversación cuando se conecta el socket
+      socket.on('connect', () => {
+        if (socket.connected) {
+          console.log('💬 Iniciando conversación automáticamente con token:', token);
+          setIsProcessing(true);
+          socket.emit('initialize', { token });
+        }
+      });
       
       setLoading(false);
     } catch (err: any) {
       console.error('Error al cargar asistente:', err);
       setError(err.response?.data?.message || 'Error al cargar el asistente');
       setLoading(false);
-    }
-  };
-
-  const startConversation = () => {
-    setIsStarted(true);
-    
-    if (socketRef.current && socketRef.current.connected) {
-      console.log('💬 Iniciando conversación con token:', token);
-      setIsProcessing(true);
-      socketRef.current.emit('initialize', { token });
-      
-      setTimeout(() => {
-        if (isProcessing) {
-          console.warn('⚠️ Tiempo de espera agotado, mostrando interfaz');
-          setIsProcessing(false);
-        }
-      }, 5000);
-    } else {
-      console.error('❌ Socket no conectado');
-      setError('No se pudo conectar con el servidor. Por favor recarga la página.');
-      setIsProcessing(false);
     }
   };
 
@@ -351,10 +338,10 @@ export default function VirtualAssistantPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="min-h-screen flex items-center justify-center bg-gray-950">
         <div className="text-center">
-          <div className="w-20 h-20 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-white text-lg">Cargando asistente...</p>
+          <div className="w-16 h-16 border-4 border-gray-700 border-t-gray-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400 text-lg">Cargando asistente...</p>
         </div>
       </div>
     );
@@ -362,8 +349,8 @@ export default function VirtualAssistantPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
-        <div className="bg-gray-900 rounded-2xl shadow-2xl p-8 max-w-md text-center border border-gray-800">
+      <div className="min-h-screen flex items-center justify-center bg-gray-950">
+        <div className="bg-gray-900 rounded-lg p-8 max-w-md text-center border border-gray-800">
           <div className="text-red-500 mb-4">
             <svg
               className="w-16 h-16 mx-auto"
@@ -386,107 +373,31 @@ export default function VirtualAssistantPage() {
     );
   }
 
-  if (!isStarted) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-black px-6">
-        <div className="text-center max-w-2xl w-full">
-          <div className="mb-8">
-            <div className="relative">
-              <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center mb-6 shadow-2xl">
-                <MessageCircle className="w-16 h-16 text-white" />
-              </div>
-              <div className="absolute inset-0 w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-red-600 to-orange-500 opacity-50 animate-ping"></div>
-            </div>
-          </div>
-          
-          <h1 className="text-4xl font-bold text-white mb-4">
-            {assistant?.name || 'Asistente Virtual'}
-          </h1>
-          <p className="text-xl text-gray-400 mb-8">
-            Tu asistente virtual inteligente con IA, voz y transcripción
-          </p>
-          
-          <button
-            onClick={startConversation}
-            className="group relative px-8 py-4 bg-gradient-to-r from-red-600 to-orange-500 text-white text-lg font-semibold rounded-full hover:shadow-2xl hover:shadow-red-500/50 transition-all duration-300 transform hover:scale-105"
-          >
-            <span className="flex items-center gap-3">
-              <MessageCircle className="w-6 h-6" />
-              Iniciar Conversación
-            </span>
-          </button>
-          
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-            <div className="bg-gray-900 p-6 rounded-xl border border-gray-800">
-              <div className="w-12 h-12 bg-red-600/20 rounded-lg flex items-center justify-center mb-4">
-                <Mic className="w-6 h-6 text-red-500" />
-              </div>
-              <h3 className="text-white font-semibold mb-2">Grabación de Audio</h3>
-              <p className="text-gray-400 text-sm">Habla y transcribe automáticamente con Whisper AI</p>
-            </div>
-            
-            <div className="bg-gray-900 p-6 rounded-xl border border-gray-800">
-              <div className="w-12 h-12 bg-orange-600/20 rounded-lg flex items-center justify-center mb-4">
-                <Volume2 className="w-6 h-6 text-orange-500" />
-              </div>
-              <h3 className="text-white font-semibold mb-2">Respuestas de Voz</h3>
-              <p className="text-gray-400 text-sm">El asistente te habla con voces naturales</p>
-            </div>
-            
-            <div className="bg-gray-900 p-6 rounded-xl border border-gray-800">
-              <div className="w-12 h-12 bg-yellow-600/20 rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <h3 className="text-white font-semibold mb-2">100% Open Source</h3>
-              <p className="text-gray-400 text-sm">Sin costos de APIs, completamente gratis</p>
-            </div>
-          </div>
-
-          {whisperStatus === 'loading' && (
-            <div className="mt-6 bg-blue-900/20 border border-blue-600/50 rounded-lg p-4">
-              <p className="text-blue-400 text-sm flex items-center gap-2 justify-center">
-                <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                {whisperMessage}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-black flex flex-col">
+    <div className="min-h-screen bg-gray-950 flex flex-col">
       {/* Header */}
       <div className="bg-gray-900 border-b border-gray-800">
-        <div className="max-w-5xl mx-auto px-4 md:px-6 py-4">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 md:gap-4">
               <div className="relative">
-                <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center ${
-                  isSpeaking || isProcessing || isTranscribing ? 'animate-pulse' : ''
+                <div className={`w-10 h-10 md:w-11 md:h-11 rounded-lg bg-gray-800 flex items-center justify-center ${
+                  isSpeaking || isProcessing ? 'ring-2 ring-blue-500' : ''
                 }`}>
-                  <MessageCircle className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                  <MessageCircle className="w-5 h-5 md:w-6 md:h-6 text-gray-300" />
                 </div>
-                {(isSpeaking || isProcessing || isTranscribing) && (
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-red-600 to-orange-500 opacity-50 animate-ping"></div>
-                )}
               </div>
               <div>
-                <h1 className="text-lg md:text-xl font-bold text-white">
+                <h1 className="text-base md:text-lg font-medium text-white">
                   {assistant?.name || 'Asistente Virtual'}
                 </h1>
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${
-                    isProcessing ? 'bg-yellow-500 animate-pulse' :
-                    isTranscribing ? 'bg-purple-500 animate-pulse' :
-                    isSpeaking ? 'bg-blue-500 animate-pulse' : 'bg-green-500'
+                  <div className={`w-1.5 h-1.5 rounded-full ${
+                    isProcessing ? 'bg-blue-500' :
+                    isSpeaking ? 'bg-blue-500' : 'bg-green-500'
                   }`}></div>
-                  <p className="text-xs md:text-sm text-gray-400">
+                  <p className="text-xs text-gray-500">
                     {isProcessing ? 'Procesando...' :
-                     isTranscribing ? 'Transcribiendo audio...' :
                      isSpeaking ? 'Hablando...' : 'En línea'}
                   </p>
                 </div>
@@ -495,37 +406,21 @@ export default function VirtualAssistantPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={toggleMute}
-                className={`p-2 md:p-3 rounded-xl transition-all ${
+                className={`p-2 rounded-lg transition-colors ${
                   isMuted
-                    ? 'bg-gray-800 text-gray-400'
-                    : 'bg-red-600/20 text-red-500'
+                    ? 'bg-gray-800 text-gray-500 hover:bg-gray-750'
+                    : 'bg-gray-800 text-blue-500 hover:bg-gray-750'
                 }`}
                 title={isMuted ? 'Activar sonido' : 'Silenciar'}
               >
                 {isMuted ? (
-                  <VolumeX className="w-4 h-4 md:w-5 md:h-5" />
+                  <VolumeX className="w-4 h-4" />
                 ) : (
-                  <Volume2 className="w-4 h-4 md:w-5 md:h-5" />
+                  <Volume2 className="w-4 h-4" />
                 )}
               </button>
             </div>
           </div>
-          {!isMuted && (
-            <div className="mt-2 bg-green-900/20 border border-green-600/50 rounded-lg px-3 py-2">
-              <p className="text-green-500 text-xs flex items-center gap-2">
-                <Volume2 className="w-4 h-4" />
-                Respuestas de voz activadas
-              </p>
-            </div>
-          )}
-          {whisperMessage && (
-            <div className="mt-2 bg-purple-900/20 border border-purple-600/50 rounded-lg px-3 py-2">
-              <p className="text-purple-400 text-xs flex items-center gap-2">
-                <div className="w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
-                {whisperMessage}
-              </p>
-            </div>
-          )}
         </div>
       </div>
 
@@ -540,22 +435,22 @@ export default function VirtualAssistantPage() {
                 message.role === 'user' ? 'flex-row-reverse' : ''
               }`}
             >
-              <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                 message.role === 'assistant'
-                  ? 'bg-gradient-to-br from-red-600 to-orange-500'
+                  ? 'bg-gray-800'
                   : 'bg-gray-700'
               }`}>
-                <span className="text-white font-semibold text-xs md:text-sm">
+                <span className="text-gray-300 font-medium text-xs">
                   {message.role === 'assistant' ? 'AI' : 'Tú'}
                 </span>
               </div>
               <div className={`flex-1 max-w-[80%] ${
                 message.role === 'user' ? 'text-right' : ''
               }`}>
-                <div className={`inline-block p-3 md:p-4 rounded-2xl ${
+                <div className={`inline-block p-3 rounded-lg ${
                   message.role === 'assistant'
                     ? 'bg-gray-900 border border-gray-800'
-                    : 'bg-gradient-to-r from-red-600 to-orange-500'
+                    : 'bg-blue-600'
                 }`}>
                   <p className="text-white text-sm md:text-base leading-relaxed">
                     {message.content}
@@ -570,14 +465,14 @@ export default function VirtualAssistantPage() {
 
           {isProcessing && (
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-semibold text-xs md:text-sm">AI</span>
+              <div className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center flex-shrink-0">
+                <span className="text-gray-300 font-medium text-xs">AI</span>
               </div>
-              <div className="bg-gray-900 border border-gray-800 p-3 md:p-4 rounded-2xl">
+              <div className="bg-gray-900 border border-gray-800 p-3 rounded-lg">
                 <div className="flex gap-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-blue-300 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 </div>
               </div>
             </div>
@@ -586,18 +481,18 @@ export default function VirtualAssistantPage() {
         </div>
 
         {/* Input Area */}
-        <form onSubmit={handleTextSubmit} className="bg-gray-900 rounded-2xl p-3 md:p-4 border border-gray-800">
-          <div className="flex items-center gap-2 md:gap-3">
+        <form onSubmit={handleTextSubmit} className="bg-gray-900 rounded-lg p-3 border border-gray-800">
+          <div className="flex items-center gap-2">
             {/* Microphone Button */}
             <button
               type="button"
               onClick={toggleVoiceRecognition}
               disabled={!recognitionRef.current}
-              className={`p-2 md:p-3 rounded-xl transition-all ${
+              className={`p-2 rounded-lg transition-colors ${
                 isRecording
-                  ? 'bg-red-600 text-white animate-pulse'
+                  ? 'bg-red-600 text-white'
                   : recognitionRef.current
-                  ? 'bg-purple-600/20 text-purple-500 hover:bg-purple-600/30'
+                  ? 'bg-gray-800 text-gray-400 hover:text-gray-300 hover:bg-gray-750'
                   : 'bg-gray-800 text-gray-600 cursor-not-allowed'
               }`}
               title={
@@ -606,9 +501,9 @@ export default function VirtualAssistantPage() {
               }
             >
               {isRecording ? (
-                <Square className="w-5 h-5 md:w-6 md:h-6" />
+                <Square className="w-5 h-5" />
               ) : (
-                <Mic className="w-5 h-5 md:w-6 md:h-6" />
+                <Mic className="w-5 h-5" />
               )}
             </button>
 
@@ -618,24 +513,24 @@ export default function VirtualAssistantPage() {
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
               placeholder={
-                isRecording ? 'Escuchando...' : 'Escribe o graba tu mensaje...'
+                isRecording ? 'Escuchando...' : 'Escribe tu mensaje...'
               }
-              className="flex-1 bg-gray-800 text-white px-3 md:px-4 py-2 md:py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 text-sm md:text-base disabled:opacity-50"
+              className="flex-1 bg-gray-800 text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm placeholder-gray-500 disabled:opacity-50"
               disabled={isProcessing}
               autoFocus
             />
             <button
               type="submit"
               disabled={!textInput.trim() || isProcessing}
-              className="bg-gradient-to-r from-red-600 to-orange-500 text-white p-2 md:p-3 rounded-xl hover:shadow-lg hover:shadow-red-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-800"
             >
-              <Send className="w-5 h-5 md:w-6 md:h-6" />
+              <Send className="w-5 h-5" />
             </button>
           </div>
-          <p className="text-gray-500 text-xs mt-2 flex items-center gap-1 flex-wrap">
+          <p className="text-gray-600 text-xs mt-2 flex items-center gap-1">
             <Mic className="w-3 h-3" />
-            Graba audio o escribe texto
-            {!isMuted && <span className="text-green-500">(🔊 Voz activada)</span>}
+            Habla o escribe
+            {!isMuted && <span className="text-blue-500 ml-1">• Voz activada</span>}
           </p>
         </form>
       </div>
