@@ -63,16 +63,22 @@ export class TasksService {
   async create(data: any, organizationId: string) {
     const { assignees, ...taskData } = data;
 
-    // Convertir cadenas vacías a null para campos de fecha
-    if (taskData.dueDate === '') {
-      taskData.dueDate = null;
-    }
+    // Limpiar campos opcionales
+    const cleanedData: any = {
+      title: taskData.title,
+      priority: taskData.priority || 'Medium',
+      columnId: taskData.columnId,
+      organizationId,
+    };
+
+    // Solo incluir campos opcionales si tienen valor
+    if (taskData.description) cleanedData.description = taskData.description;
+    if (taskData.dueDate) cleanedData.dueDate = taskData.dueDate;
+    if (taskData.operationId) cleanedData.operationId = taskData.operationId;
+    if (taskData.order !== undefined) cleanedData.order = taskData.order;
 
     const task = await this.prisma.task.create({
-      data: {
-        ...taskData,
-        organizationId,
-      },
+      data: cleanedData,
     });
 
     if (assignees && assignees.length > 0) {
@@ -114,14 +120,20 @@ export class TasksService {
 
     const { assignees, organizationId: _, ...taskData } = data;
 
-    // Convertir cadenas vacías a null para campos de fecha
-    if (taskData.dueDate === '') {
-      taskData.dueDate = null;
-    }
+    // Limpiar datos de actualización
+    const cleanedData: any = {};
+    
+    if (taskData.title !== undefined) cleanedData.title = taskData.title;
+    if (taskData.priority !== undefined) cleanedData.priority = taskData.priority;
+    if (taskData.columnId !== undefined) cleanedData.columnId = taskData.columnId;
+    if (taskData.description !== undefined) cleanedData.description = taskData.description || null;
+    if (taskData.dueDate !== undefined) cleanedData.dueDate = taskData.dueDate || null;
+    if (taskData.status !== undefined) cleanedData.status = taskData.status;
+    if (taskData.order !== undefined) cleanedData.order = taskData.order;
 
     const task = await this.prisma.task.update({
       where: { id },
-      data: taskData,
+      data: cleanedData,
     });
 
     if (assignees !== undefined) {

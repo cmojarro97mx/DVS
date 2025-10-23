@@ -55,16 +55,18 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, t
                     dueDate: task.dueDate || '',
                 });
             } else {
+                // Seleccionar el primer usuario por defecto al crear nueva tarea
+                const defaultAssignee = teamMembers.length > 0 ? [teamMembers[0].id] : [];
                 setFormData({
                     title: '',
                     description: '',
                     priority: 'Medium',
-                    assignees: [],
+                    assignees: defaultAssignee,
                     dueDate: '',
                 });
             }
         }
-    }, [task, isOpen]);
+    }, [task, isOpen, teamMembers]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -83,13 +85,15 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, t
             alert('El título es requerido.');
             return;
         }
+        
+        // Limpiar campos vacíos antes de enviar
         const taskToSave: Omit<Task, 'operationId'> = {
             id: task ? task.id : `task-${new Date().getTime()}`,
-            title: formData.title,
-            description: formData.description,
+            title: formData.title.trim(),
+            description: formData.description.trim() || undefined,
             priority: formData.priority,
-            assignees: formData.assignees,
-            dueDate: formData.dueDate,
+            assignees: formData.assignees.length > 0 ? formData.assignees : undefined,
+            dueDate: formData.dueDate || undefined,
         };
         onSave(taskToSave);
     };

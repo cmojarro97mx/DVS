@@ -118,26 +118,35 @@ const TaskManager: React.FC<TaskManagerProps> = ({
             let savedTask;
             if (editingTask) {
                 // Actualizar tarea existente
-                savedTask = await tasksService.update(editingTask.id, {
+                const updateData: any = {
                     title: task.title,
-                    description: task.description,
                     priority: task.priority,
-                    dueDate: task.dueDate,
                     columnId: task.columnId || editingTask.columnId,
-                    assignees: task.assignees,
-                });
+                };
+                
+                // Solo incluir campos opcionales si tienen valor
+                if (task.description) updateData.description = task.description;
+                if (task.dueDate) updateData.dueDate = task.dueDate;
+                if (task.assignees && task.assignees.length > 0) updateData.assignees = task.assignees;
+                
+                savedTask = await tasksService.update(editingTask.id, updateData);
             } else {
-                // Crear nueva tarea
-                const firstColumn = columnOrder[0];
-                savedTask = await tasksService.create({
+                // Crear nueva tarea - usar la primera columna disponible
+                const firstColumn = columnOrder && columnOrder.length > 0 ? columnOrder[0] : 'todo';
+                
+                const createData: any = {
                     title: task.title,
-                    description: task.description,
                     priority: task.priority || 'Medium',
-                    dueDate: task.dueDate,
                     columnId: firstColumn,
                     operationId: operationId,
-                    assignees: task.assignees,
-                });
+                };
+                
+                // Solo incluir campos opcionales si tienen valor
+                if (task.description) createData.description = task.description;
+                if (task.dueDate) createData.dueDate = task.dueDate;
+                if (task.assignees && task.assignees.length > 0) createData.assignees = task.assignees;
+                
+                savedTask = await tasksService.create(createData);
             }
             
             // Actualizar el estado local
