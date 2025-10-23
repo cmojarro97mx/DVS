@@ -26,10 +26,12 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
     enabled: true,
     conditions: {
       subjectPatterns: [''],
+      searchIn: ['subject', 'body'],
       useClientEmail: true,
       useBookingTracking: true,
       useMBL: true,
       useHBL: true,
+      useOperationId: true,
     },
   });
 
@@ -65,10 +67,12 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
         enabled: true,
         conditions: {
           subjectPatterns: [''],
+          searchIn: ['subject', 'body'],
           useClientEmail: true,
           useBookingTracking: true,
           useMBL: true,
           useHBL: true,
+          useOperationId: true,
         },
       });
       loadAutomations();
@@ -112,10 +116,12 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
       enabled: automation.enabled,
       conditions: {
         subjectPatterns: conditions.subjectPatterns || [''],
+        searchIn: conditions.searchIn || ['subject', 'body'],
         useClientEmail: conditions.useClientEmail !== false,
         useBookingTracking: conditions.useBookingTracking !== false,
         useMBL: conditions.useMBL !== false,
         useHBL: conditions.useHBL !== false,
+        useOperationId: conditions.useOperationId !== false,
       },
     });
     setShowCreateModal(true);
@@ -353,11 +359,80 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
 
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Palabras clave en el asunto
+                    Palabras clave para detectar
                   </label>
                   <p className="text-xs text-gray-500 mb-2">
-                    Detecta automáticamente emails que contengan estas palabras. Ejemplo: "OP-019", "MOPC-"
+                    Palabras clave para buscar en los correos. Ejemplo: "NAVI-", "MOPC-", "{projectName}"
                   </p>
+                  
+                  <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-xs font-medium text-blue-900 mb-2">Buscar en:</p>
+                    <div className="flex flex-wrap gap-3">
+                      <label className="flex items-center text-xs text-blue-800 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.conditions.searchIn?.includes('subject')}
+                          onChange={(e) => {
+                            const current = formData.conditions.searchIn || [];
+                            const newSearchIn = e.target.checked 
+                              ? [...current, 'subject']
+                              : current.filter(s => s !== 'subject');
+                            setFormData({
+                              ...formData,
+                              conditions: {
+                                ...formData.conditions,
+                                searchIn: newSearchIn,
+                              },
+                            });
+                          }}
+                          className="w-3 h-3 mr-1.5 text-blue-600 border-blue-300 rounded"
+                        />
+                        Asunto del email
+                      </label>
+                      <label className="flex items-center text-xs text-blue-800 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.conditions.searchIn?.includes('body')}
+                          onChange={(e) => {
+                            const current = formData.conditions.searchIn || [];
+                            const newSearchIn = e.target.checked 
+                              ? [...current, 'body']
+                              : current.filter(s => s !== 'body');
+                            setFormData({
+                              ...formData,
+                              conditions: {
+                                ...formData.conditions,
+                                searchIn: newSearchIn,
+                              },
+                            });
+                          }}
+                          className="w-3 h-3 mr-1.5 text-blue-600 border-blue-300 rounded"
+                        />
+                        Contenido del email
+                      </label>
+                      <label className="flex items-center text-xs text-blue-800 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.conditions.searchIn?.includes('attachments')}
+                          onChange={(e) => {
+                            const current = formData.conditions.searchIn || [];
+                            const newSearchIn = e.target.checked 
+                              ? [...current, 'attachments']
+                              : current.filter(s => s !== 'attachments');
+                            setFormData({
+                              ...formData,
+                              conditions: {
+                                ...formData.conditions,
+                                searchIn: newSearchIn,
+                              },
+                            });
+                          }}
+                          className="w-3 h-3 mr-1.5 text-blue-600 border-blue-300 rounded"
+                        />
+                        Archivos adjuntos (PDFs, imágenes)
+                      </label>
+                    </div>
+                  </div>
                   {formData.conditions.subjectPatterns.map((pattern, index) => (
                     <div key={index} className="flex gap-2 mb-2">
                       <input

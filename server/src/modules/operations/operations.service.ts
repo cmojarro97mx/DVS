@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 import { BackblazeService } from '../../common/backblaze.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { DocumentProcessorService } from '../email-sync/document-processor.service';
 
 @Injectable()
 export class OperationsService {
@@ -9,6 +10,7 @@ export class OperationsService {
     private prisma: PrismaService,
     private backblazeService: BackblazeService,
     private notificationsService: NotificationsService,
+    private documentProcessor: DocumentProcessorService,
   ) {}
 
   async findAll(organizationId: string) {
@@ -387,10 +389,47 @@ export class OperationsService {
               if (pattern.includes('{projectName}') && operation.projectName) {
                 processedPattern = processedPattern.replace('{projectName}', operation.projectName);
               }
+              if (pattern.includes('{bookingTracking}') && operation.bookingTracking) {
+                processedPattern = processedPattern.replace('{bookingTracking}', operation.bookingTracking);
+              }
+              if (pattern.includes('{mbl_awb}') && operation.mbl_awb) {
+                processedPattern = processedPattern.replace('{mbl_awb}', operation.mbl_awb);
+              }
+              if (pattern.includes('{hbl_awb}') && operation.hbl_awb) {
+                processedPattern = processedPattern.replace('{hbl_awb}', operation.hbl_awb);
+              }
               
-              searchConditions.push({
-                subject: { contains: processedPattern, mode: 'insensitive' as any },
-              });
+              const searchLocations = config.searchIn || ['subject', 'body'];
+              const locationConditions = [];
+              
+              if (searchLocations.includes('subject')) {
+                locationConditions.push({
+                  subject: { contains: processedPattern, mode: 'insensitive' as any }
+                });
+              }
+              
+              if (searchLocations.includes('body')) {
+                locationConditions.push({
+                  body: { contains: processedPattern, mode: 'insensitive' as any }
+                });
+              }
+              
+              if (searchLocations.includes('attachments')) {
+                locationConditions.push({
+                  attachments: {
+                    path: ['$'],
+                    array_contains: {
+                      filename: { contains: processedPattern }
+                    }
+                  }
+                });
+              }
+              
+              if (locationConditions.length > 0) {
+                searchConditions.push({
+                  OR: locationConditions
+                });
+              }
             }
           }
         }
@@ -472,8 +511,103 @@ export class OperationsService {
         isReplied: true,
         hasAttachments: true,
         folder: true,
+        attachmentsData: true,
       },
     });
+
+    // Verificar si necesitamos buscar en archivos adjuntos
+    const needsAttachmentSearch = automations.some(auto => {
+      const config = auto.conditions as any;
+      return config?.searchIn?.includes('attachments');
+    });
+
+    if (!needsAttachmentSearch) {
+      return emails;
+    }
+
+    // Recopilar todos los patrones que deben buscarse en adjuntos
+    const attachmentPatterns: string[] = [];
+    
+    for (const automation of automations) {
+      const config = automation.conditions as any;
+      if (config?.searchIn?.includes('attachments') && config?.subjectPatterns) {
+        for (const pattern of config.subjectPatterns) {
+          if (pattern && typeof pattern === 'string' && pattern.trim()) {
+            let processedPattern = pattern;
+            
+            if (pattern.includes('{operationId}') && operation.id) {
+              processedPattern = processedPattern.replace('{operationId}', operation.id);
+            }
+            if (pattern.includes('{projectName}') && operation.projectName) {
+              processedPattern = processedPattern.replace('{projectName}', operation.projectName);
+            }
+            if (pattern.includes('{bookingTracking}') && operation.bookingTracking) {
+              processedPattern = processedPattern.replace('{bookingTracking}', operation.bookingTracking);
+            }
+            if (pattern.includes('{mbl_awb}') && operation.mbl_awb) {
+              processedPattern = processedPattern.replace('{mbl_awb}', operation.mbl_awb);
+            }
+            if (pattern.includes('{hbl_awb}') && operation.hbl_awb) {
+              processedPattern = processedPattern.replace('{hbl_awb}', operation.hbl_awb);
+            }
+            
+            attachmentPatterns.push(processedPattern);
+          }
+        }
+      }
+    }
+
+    // Filtrar emails adicionales que coincidan en sus archivos adjuntos
+    const additionalEmailIds = new Set<string>(emails.map(e => e.id));
+    
+    // Buscar en emails con adjuntos
+    const emailsWithAttachments = await this.prisma.emailMessage.findMany({
+      where: {
+        accountId: { in: accountIds },
+        hasAttachments: true,
+        id: { notIn: Array.from(additionalEmailIds) }, // Excluir emails ya encontrados
+      },
+      orderBy: { date: 'desc' },
+      take: 200, // Limitar para no procesar demasiados
+      select: {
+        id: true,
+        from: true,
+        fromName: true,
+        to: true,
+        subject: true,
+        snippet: true,
+        date: true,
+        unread: true,
+        starred: true,
+        isReplied: true,
+        hasAttachments: true,
+        folder: true,
+        attachmentsData: true,
+      },
+    });
+
+    // Procesar archivos adjuntos y buscar patrones
+    for (const email of emailsWithAttachments) {
+      const attachments = email.attachmentsData as any;
+      if (!attachments || !Array.isArray(attachments)) continue;
+
+      try {
+        // Procesar adjuntos y extraer texto
+        const extractedTexts = await this.documentProcessor.processEmailAttachments(attachments);
+        
+        // Verificar si algún patrón coincide
+        for (const pattern of attachmentPatterns) {
+          if (this.documentProcessor.searchInExtractedTexts(extractedTexts, pattern)) {
+            additionalEmailIds.add(email.id);
+            emails.push(email);
+            break; // Ya encontramos una coincidencia, no seguir buscando
+          }
+        }
+      } catch (error) {
+        // Silenciosamente fallar el procesamiento de este email
+        console.error(`Error processing attachments for email ${email.id}:`, error);
+      }
+    }
 
     return emails;
   }

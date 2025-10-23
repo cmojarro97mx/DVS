@@ -6,11 +6,12 @@ import { GoogleAuthModule } from '../google-auth/google-auth.module';
 import { EmailStorageModule } from '../email-storage/email-storage.module';
 import { EmailStorageService } from '../email-storage/email-storage.service';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { DocumentProcessorService } from './document-processor.service';
 
 @Module({
   imports: [GoogleAuthModule, EmailStorageModule, NotificationsModule],
   controllers: [EmailSyncController],
-  providers: [EmailSyncService, EmailStorageService, PrismaService],
-  exports: [EmailSyncService],
+  providers: [EmailSyncService, EmailStorageService, PrismaService, DocumentProcessorService],
+  exports: [EmailSyncService, DocumentProcessorService],
 })
 export class EmailSyncModule {}

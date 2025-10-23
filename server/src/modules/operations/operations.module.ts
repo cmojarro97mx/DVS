@@ -4,9 +4,10 @@ import { OperationsController } from './operations.controller';
 import { PrismaService } from '../../common/prisma.service';
 import { BackblazeService } from '../../common/backblaze.service';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { EmailSyncModule } from '../email-sync/email-sync.module';
 
 @Module({
-  imports: [NotificationsModule],
+  imports: [NotificationsModule, EmailSyncModule],
   controllers: [OperationsController],
   providers: [OperationsService, PrismaService, BackblazeService],
   exports: [OperationsService],
