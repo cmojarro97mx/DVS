@@ -23,6 +23,7 @@ import { EmailStorageModule } from './modules/email-storage/email-storage.module
 import { EmailSyncModule } from './modules/email-sync/email-sync.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AppConfigModule } from './modules/config/config.module';
+import { AutomationsModule } from './modules/automations/automations.module';
 import { PrismaService } from './common/prisma.service';
 
 @Module({
@@ -53,6 +54,7 @@ import { PrismaService } from './common/prisma.service';
     EmailSyncModule,
     NotificationsModule,
     AppConfigModule,
+    AutomationsModule,
   ],
   providers: [PrismaService],
 })

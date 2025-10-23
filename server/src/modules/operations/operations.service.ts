@@ -335,35 +335,93 @@ export class OperationsService {
       return [];
     }
 
-    const searchTerms = [];
-    if (operation.client?.email) {
-      searchTerms.push(operation.client.email.toLowerCase());
-    }
-    if (operation.client?.name) {
-      searchTerms.push(operation.client.name.toLowerCase());
-    }
-    if (operation.projectName) {
-      searchTerms.push(operation.projectName.toLowerCase());
+    const automations = await this.prisma.automation.findMany({
+      where: {
+        organizationId,
+        type: 'email_to_operation',
+        enabled: true,
+      },
+    });
+
+    const searchConditions = [];
+    let useClientEmail = false;
+    let useBookingTracking = false;
+    let useMBL = false;
+    let useHBL = false;
+
+    for (const automation of automations) {
+      const config = automation.conditions as any;
+      
+      if (config?.useClientEmail !== false) {
+        useClientEmail = true;
+      }
+      if (config?.useBookingTracking !== false) {
+        useBookingTracking = true;
+      }
+      if (config?.useMBL !== false) {
+        useMBL = true;
+      }
+      if (config?.useHBL !== false) {
+        useHBL = true;
+      }
+
+      if (config?.subjectPatterns && Array.isArray(config.subjectPatterns)) {
+        for (const pattern of config.subjectPatterns) {
+          if (pattern && typeof pattern === 'string' && pattern.trim()) {
+            const patternWithOperationId = pattern
+              .replace('{operationId}', operation.id)
+              .replace('{projectName}', operation.projectName || '');
+            
+            searchConditions.push({
+              subject: { contains: patternWithOperationId, mode: 'insensitive' as any },
+            });
+          }
+        }
+      }
     }
 
-    if (searchTerms.length === 0) {
+    if (useClientEmail && operation.client?.email) {
+      searchConditions.push({
+        AND: [
+          {
+            OR: [
+              { from: { contains: operation.client.email, mode: 'insensitive' as any } },
+              { to: { contains: operation.client.email, mode: 'insensitive' as any } },
+            ],
+          },
+        ],
+      });
+    }
+
+    if (useBookingTracking && operation.bookingTracking) {
+      searchConditions.push({
+        subject: { contains: operation.bookingTracking, mode: 'insensitive' as any },
+      });
+    }
+
+    if (useMBL && operation.mbl_awb) {
+      searchConditions.push({
+        subject: { contains: operation.mbl_awb, mode: 'insensitive' as any },
+      });
+    }
+
+    if (useHBL && operation.hbl_awb) {
+      searchConditions.push({
+        subject: { contains: operation.hbl_awb, mode: 'insensitive' as any },
+      });
+    }
+
+    if (searchConditions.length === 0) {
       return [];
     }
 
     const emails = await this.prisma.emailMessage.findMany({
       where: {
         accountId: { in: accountIds },
-        OR: [
-          ...searchTerms.map(term => ({
-            from: { contains: term, mode: 'insensitive' as any },
-          })),
-          ...searchTerms.map(term => ({
-            subject: { contains: term, mode: 'insensitive' as any },
-          })),
-        ],
+        OR: searchConditions,
       },
       orderBy: { date: 'desc' },
-      take: 50,
+      take: 100,
       select: {
         id: true,
         from: true,
