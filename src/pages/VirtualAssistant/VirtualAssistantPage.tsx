@@ -306,14 +306,18 @@ export default function VirtualAssistantPage() {
   const speak = (text: string) => {
     if (isMuted || isSpeaking) return;
 
-    console.log('🔊 Hablando:', text.substring(0, 50) + '...');
+    console.log('🔊 Intentando hablar:', text.substring(0, 50) + '...');
+    console.log('🔇 isMuted:', isMuted, 'isSpeaking:', isSpeaking);
     
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
     
     const voices = window.speechSynthesis.getVoices();
-    console.log('📢 Voces disponibles:', voices.map(v => `${v.name} (${v.lang})`));
+    console.log('📢 Total de voces disponibles:', voices.length);
+    if (voices.length > 0) {
+      console.log('📢 Primeras 5 voces:', voices.slice(0, 5).map(v => `${v.name} (${v.lang})`));
+    }
     
     const spanishVoice = voices.find(voice => 
       (voice.lang.includes('es-ES') || voice.lang.includes('es-MX') || voice.lang.includes('es-US')) &&
@@ -356,8 +360,10 @@ export default function VirtualAssistantPage() {
     };
 
     if (voices.length === 0) {
+      console.warn('⚠️ No hay voces disponibles todavía, esperando...');
       window.speechSynthesis.addEventListener('voiceschanged', () => {
         const newVoices = window.speechSynthesis.getVoices();
+        console.log('🔄 Voces cargadas:', newVoices.length);
         const bestVoice = newVoices.find(voice => 
           voice.lang.includes('es') && 
           (voice.name.includes('Premium') || voice.name.includes('Enhanced') || voice.name.includes('Google'))
@@ -366,12 +372,17 @@ export default function VirtualAssistantPage() {
           utterance.voice = bestVoice;
           console.log('✅ Voz actualizada a:', bestVoice.name);
         }
-      });
+        setTimeout(() => {
+          console.log('🎤 Hablando con nueva voz...');
+          window.speechSynthesis.speak(utterance);
+        }, 100);
+      }, { once: true });
+    } else {
+      setTimeout(() => {
+        console.log('🎤 Iniciando síntesis de voz...');
+        window.speechSynthesis.speak(utterance);
+      }, 100);
     }
-
-    setTimeout(() => {
-      window.speechSynthesis.speak(utterance);
-    }, 100);
   };
 
   const toggleMute = () => {

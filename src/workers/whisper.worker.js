@@ -2,6 +2,8 @@ import { pipeline, env } from '@huggingface/transformers';
 
 env.allowLocalModels = true;
 env.allowRemoteModels = true;
+env.useBrowserCache = true;
+env.cacheDir = 'models';
 
 let transcriber = null;
 let isLoading = false;
