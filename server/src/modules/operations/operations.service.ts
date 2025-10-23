@@ -379,12 +379,17 @@ export class OperationsService {
         if (config?.subjectPatterns && Array.isArray(config.subjectPatterns)) {
           for (const pattern of config.subjectPatterns) {
             if (pattern && typeof pattern === 'string' && pattern.trim()) {
-              const patternWithOperationId = pattern
-                .replace('{operationId}', operation.id)
-                .replace('{projectName}', operation.projectName || '');
+              let processedPattern = pattern;
+              
+              if (pattern.includes('{operationId}') && operation.id) {
+                processedPattern = processedPattern.replace('{operationId}', operation.id);
+              }
+              if (pattern.includes('{projectName}') && operation.projectName) {
+                processedPattern = processedPattern.replace('{projectName}', operation.projectName);
+              }
               
               searchConditions.push({
-                subject: { contains: patternWithOperationId, mode: 'insensitive' as any },
+                subject: { contains: processedPattern, mode: 'insensitive' as any },
               });
             }
           }
@@ -471,5 +476,82 @@ export class OperationsService {
     });
 
     return emails;
+  }
+
+  async getEmailLinkingCriteria(operationId: string, organizationId: string) {
+    const operation = await this.prisma.operation.findFirst({
+      where: { id: operationId, organizationId },
+      include: {
+        client: {
+          select: {
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!operation) {
+      throw new NotFoundException(`Operation with ID ${operationId} not found`);
+    }
+
+    const automations = await this.prisma.automation.findMany({
+      where: {
+        organizationId,
+        type: 'email_to_operation',
+        enabled: true,
+      },
+    });
+
+    const criteria = {
+      customPatterns: [],
+      useClientEmail: false,
+      useOperationId: false,
+      useBookingTracking: false,
+      useMBL: false,
+      useHBL: false,
+      clientEmail: operation.client?.email || null,
+      operationId: operation.id,
+      bookingTracking: operation.bookingTracking || null,
+      mbl_awb: operation.mbl_awb || null,
+      hbl_awb: operation.hbl_awb || null,
+    };
+
+    if (automations.length > 0) {
+      for (const automation of automations) {
+        const config = automation.conditions as any;
+        
+        if (config?.useClientEmail !== false) {
+          criteria.useClientEmail = true;
+        }
+        if (config?.useBookingTracking !== false) {
+          criteria.useBookingTracking = true;
+        }
+        if (config?.useMBL !== false) {
+          criteria.useMBL = true;
+        }
+        if (config?.useHBL !== false) {
+          criteria.useHBL = true;
+        }
+        if (config?.useOperationId !== false) {
+          criteria.useOperationId = true;
+        }
+
+        if (config?.subjectPatterns && Array.isArray(config.subjectPatterns)) {
+          for (const pattern of config.subjectPatterns) {
+            if (pattern && typeof pattern === 'string' && pattern.trim()) {
+              criteria.customPatterns.push(pattern);
+            }
+          }
+        }
+      }
+    } else {
+      criteria.useClientEmail = true;
+      criteria.useOperationId = true;
+      criteria.useBookingTracking = true;
+      criteria.useMBL = true;
+      criteria.useHBL = true;
+    }
+
+    return criteria;
   }
 }

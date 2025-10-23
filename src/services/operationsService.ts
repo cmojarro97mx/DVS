@@ -112,4 +112,8 @@ export const operationsService = {
   async getRelatedEmails(operationId: string): Promise<any[]> {
     return apiService.get<any[]>(`/operations/${operationId}/emails`);
   },
+
+  async getEmailLinkingCriteria(operationId: string): Promise<any> {
+    return apiService.get<any>(`/operations/${operationId}/email-linking-criteria`);
+  },
 };

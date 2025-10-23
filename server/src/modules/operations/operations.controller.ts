@@ -86,4 +86,9 @@ export class OperationsController {
   getRelatedEmails(@Param('id') id: string, @Request() req) {
     return this.operationsService.getRelatedEmails(id, req.user.organizationId, req.user.userId);
   }
+
+  @Get(':id/email-linking-criteria')
+  getEmailLinkingCriteria(@Param('id') id: string, @Request() req) {
+    return this.operationsService.getEmailLinkingCriteria(id, req.user.organizationId);
+  }
 }

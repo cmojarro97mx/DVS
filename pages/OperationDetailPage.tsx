@@ -854,6 +854,7 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = (props) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [relatedEmails, setRelatedEmails] = useState<any[]>([]);
   const [loadingEmails, setLoadingEmails] = useState(false);
+  const [linkingCriteria, setLinkingCriteria] = useState<any>(null);
 
   useEffect(() => {
     if (initialState) {
@@ -874,8 +875,12 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = (props) => {
       if (activeTab === 'emails') {
         setLoadingEmails(true);
         try {
-          const emails = await operationsService.getRelatedEmails(project.id);
+          const [emails, criteria] = await Promise.all([
+            operationsService.getRelatedEmails(project.id),
+            operationsService.getEmailLinkingCriteria(project.id)
+          ]);
           setRelatedEmails(emails);
+          setLinkingCriteria(criteria);
         } catch (error) {
           console.error('Error loading related emails:', error);
         } finally {
@@ -1117,16 +1122,33 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = (props) => {
                         <p className="mt-2 text-sm text-slate-500 max-w-md mx-auto">
                             No hay emails que coincidan con los criterios de vinculación automática para esta operación.
                         </p>
-                        <div className="mt-4 text-xs text-slate-400 max-w-lg mx-auto">
-                            <p className="font-medium mb-2">Los emails se vinculan automáticamente cuando contienen:</p>
-                            <ul className="text-left space-y-1 list-disc pl-5">
-                                <li>Email del cliente: {client?.email || 'No configurado'}</li>
-                                <li>ID de operación: {project.id}</li>
-                                {project.bookingTracking && <li>Booking/Tracking: {project.bookingTracking}</li>}
-                                {project.mbl_awb && <li>MBL/AWB: {project.mbl_awb}</li>}
-                                {project.hbl_awb && <li>HBL/HAWB: {project.hbl_awb}</li>}
-                            </ul>
-                        </div>
+                        {linkingCriteria && (
+                            <div className="mt-4 text-xs text-slate-400 max-w-lg mx-auto">
+                                <p className="font-medium mb-2">Criterios de vinculación activos:</p>
+                                <ul className="text-left space-y-1 list-disc pl-5">
+                                    {linkingCriteria.customPatterns && linkingCriteria.customPatterns.length > 0 && (
+                                        <>
+                                            <li className="font-semibold text-blue-600">Reglas personalizadas:</li>
+                                            {linkingCriteria.customPatterns.map((pattern: string, idx: number) => (
+                                                <li key={idx} className="ml-4">Asunto contiene: <span className="font-mono bg-slate-200 px-1 rounded">{pattern}</span></li>
+                                            ))}
+                                        </>
+                                    )}
+                                    {linkingCriteria.useClientEmail && linkingCriteria.clientEmail && (
+                                        <li>Email del cliente: <span className="font-mono bg-slate-200 px-1 rounded">{linkingCriteria.clientEmail}</span></li>
+                                    )}
+                                    {linkingCriteria.useBookingTracking && linkingCriteria.bookingTracking && (
+                                        <li>Booking/Tracking: <span className="font-mono bg-slate-200 px-1 rounded">{linkingCriteria.bookingTracking}</span></li>
+                                    )}
+                                    {linkingCriteria.useMBL && linkingCriteria.mbl_awb && (
+                                        <li>MBL/AWB: <span className="font-mono bg-slate-200 px-1 rounded">{linkingCriteria.mbl_awb}</span></li>
+                                    )}
+                                    {linkingCriteria.useHBL && linkingCriteria.hbl_awb && (
+                                        <li>HBL/HAWB: <span className="font-mono bg-slate-200 px-1 rounded">{linkingCriteria.hbl_awb}</span></li>
+                                    )}
+                                </ul>
+                            </div>
+                        )}
                         <button 
                             onClick={() => setActiveView('integrations')} 
                             className="mt-6 inline-flex items-center bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
