@@ -36,6 +36,7 @@ import { MailIcon } from '../components/icons/MailIcon';
 import { EmailAvatar } from '../components/EmailAvatar';
 import { SearchIcon } from '../components/icons/SearchIcon';
 import PaymentsManager from './PaymentsManager';
+import { EmailViewer } from '../components/EmailViewer';
 import { MapPinIcon } from '../components/icons/MapPinIcon';
 import { CpuChipIcon } from '../components/icons/CpuChipIcon';
 import { BriefcaseIcon } from '../components/icons/BriefcaseIcon';
@@ -1268,99 +1269,11 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
       />
 
       {/* Modal de visualización de correo */}
-      {isEmailModalOpen && selectedEmailForView && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
-            <div className="flex justify-between items-center p-4 border-b border-slate-200">
-              <h3 className="text-lg font-bold text-slate-900 truncate pr-4">
-                {selectedEmailForView.subject || '(Sin asunto)'}
-              </h3>
-              <button
-                onClick={() => setIsEmailModalOpen(false)}
-                className="p-2 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0"
-              >
-                <XIcon className="w-5 h-5 text-slate-600" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="mb-4 pb-4 border-b border-slate-200">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="flex-shrink-0">
-                    <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                      <span className="text-red-600 font-semibold text-sm">
-                        {(selectedEmailForView.fromName || selectedEmailForView.from).charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-900">
-                      {selectedEmailForView.fromName || selectedEmailForView.from}
-                    </p>
-                    <p className="text-sm text-slate-600">{selectedEmailForView.from}</p>
-                    <div className="mt-2 text-xs text-slate-500">
-                      <p>Para: {Array.isArray(selectedEmailForView.to) 
-                        ? selectedEmailForView.to.map((t: any) => t.email || t).join(', ') 
-                        : selectedEmailForView.to}
-                      </p>
-                      {selectedEmailForView.cc && Array.isArray(selectedEmailForView.cc) && selectedEmailForView.cc.length > 0 && (
-                        <p className="mt-1">
-                          CC: {selectedEmailForView.cc.map((c: any) => c.email || c).join(', ')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-right text-xs text-slate-500 flex-shrink-0">
-                    {new Date(selectedEmailForView.date).toLocaleString('es-ES', {
-                      day: '2-digit',
-                      month: 'long',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {selectedEmailForView.htmlBodyUrl ? (
-                <div 
-                  className="prose max-w-none"
-                  dangerouslySetInnerHTML={{ __html: selectedEmailForView.htmlBodyUrl }}
-                />
-              ) : (
-                <div className="whitespace-pre-wrap text-slate-800 text-sm">
-                  {selectedEmailForView.body || selectedEmailForView.snippet}
-                </div>
-              )}
-
-              {selectedEmailForView.hasAttachments && selectedEmailForView.attachmentsData && (
-                <div className="mt-6 pt-6 border-t border-slate-200">
-                  <h4 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                    <PaperClipIcon className="w-4 h-4" />
-                    Archivos adjuntos
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedEmailForView.attachmentsData.map((att: any, index: number) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-100 transition-colors"
-                      >
-                        <DocumentTextIcon className="w-4 h-4 text-slate-500" />
-                        <div>
-                          <p className="text-sm font-medium text-slate-800">{att.filename}</p>
-                          <p className="text-xs text-slate-500">
-                            {att.size ? `${(att.size / 1024).toFixed(2)} KB` : 'Tamaño desconocido'}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <EmailViewer
+        email={selectedEmailForView}
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+      />
     </div>
   );
 };
