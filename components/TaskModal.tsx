@@ -30,7 +30,7 @@ const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = (props) 
 const Textarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement>> = (props) => (
     <textarea
         {...props}
-        rows={4}
+        rows={props.rows || 4}
         className="block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
     />
 );
@@ -49,7 +49,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, t
             if (task) {
                 setFormData({
                     title: task.title,
-                    description: task.description,
+                    description: task.description || '',
                     priority: task.priority,
                     assignees: task.assignees || [],
                     dueDate: task.dueDate || '',
@@ -79,8 +79,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, t
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.title) {
-            alert('Title is required.');
+        if (!formData.title.trim()) {
+            alert('El título es requerido.');
             return;
         }
         const taskToSave: Omit<Task, 'operationId'> = {
@@ -100,52 +100,53 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, t
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4" onClick={onClose}>
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-lg relative animate-fade-in" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md relative animate-fade-in" onClick={(e) => e.stopPropagation()}>
                 <form onSubmit={handleSubmit}>
-                    <div className="p-6 border-b">
-                        <h3 className="text-xl font-semibold text-gray-800">{task ? 'Edit Task' : 'Create New Task'}</h3>
-                        <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                           <XIcon className="w-6 h-6" />
+                    <div className="p-4 border-b">
+                        <h3 className="text-lg font-semibold text-gray-800">{task ? 'Editar Tarea' : 'Crear Nueva Tarea'}</h3>
+                        <button type="button" onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
+                           <XIcon className="w-5 h-5" />
                         </button>
                     </div>
-                    <div className="p-6 space-y-4">
+                    <div className="p-4 space-y-3">
                         <div>
-                            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                            <Input id="title" name="title" value={formData.title} onChange={handleChange} required />
+                            <label htmlFor="title" className="block text-xs font-medium text-gray-700 mb-1">Título *</label>
+                            <Input id="title" name="title" value={formData.title} onChange={handleChange} required placeholder="Nombre de la tarea" />
                         </div>
                         <div>
-                            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                            <Textarea id="description" name="description" value={formData.description} onChange={handleChange} />
+                            <label htmlFor="description" className="block text-xs font-medium text-gray-700 mb-1">Descripción</label>
+                            <Textarea id="description" name="description" value={formData.description} onChange={handleChange} placeholder="Detalles de la tarea" rows={2} />
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-3">
                              <div>
-                                <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                                <label htmlFor="priority" className="block text-xs font-medium text-gray-700 mb-1">Prioridad</label>
                                 <Select id="priority" name="priority" value={formData.priority} onChange={handleChange}>
-                                    <option value="Low">Low</option>
-                                    <option value="Medium">Medium</option>
-                                    <option value="High">High</option>
+                                    <option value="Low">Baja</option>
+                                    <option value="Medium">Media</option>
+                                    <option value="High">Alta</option>
                                 </Select>
                             </div>
                             <div>
-                                <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                                <label htmlFor="dueDate" className="block text-xs font-medium text-gray-700 mb-1">Fecha límite</label>
                                 <Input type="date" id="dueDate" name="dueDate" value={formData.dueDate} onChange={handleChange} />
                             </div>
-                            <div className="md:col-span-2">
-                                <label htmlFor="assignees" className="block text-sm font-medium text-gray-700 mb-1">Assignee</label>
-                                <Select id="assignees" name="assignees" value={formData.assignees} onChange={handleChange} multiple>
-                                    {teamMembers.map(member => (
-                                        <option key={member.id} value={member.name}>{member.name}</option>
-                                    ))}
-                                </Select>
-                            </div>
+                        </div>
+                        <div>
+                            <label htmlFor="assignees" className="block text-xs font-medium text-gray-700 mb-1">Asignar a</label>
+                            <Select id="assignees" name="assignees" value={formData.assignees} onChange={handleChange} multiple size={Math.min(teamMembers.length, 4)}>
+                                {teamMembers.map(member => (
+                                    <option key={member.id} value={member.id}>{member.name}</option>
+                                ))}
+                            </Select>
+                            <p className="text-xs text-gray-500 mt-1">Mantén presionado Ctrl/Cmd para seleccionar múltiples</p>
                         </div>
                     </div>
-                    <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 rounded-b-lg">
-                        <button type="button" onClick={onClose} className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100">
-                            Cancel
+                    <div className="bg-gray-50 px-4 py-3 flex justify-end gap-2 rounded-b-lg">
+                        <button type="button" onClick={onClose} className="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
+                            Cancelar
                         </button>
-                        <button type="submit" className="px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
-                            {task ? 'Save Changes' : 'Create Task'}
+                        <button type="submit" className="px-3 py-1.5 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                            {task ? 'Guardar' : 'Crear Tarea'}
                         </button>
                     </div>
                 </form>

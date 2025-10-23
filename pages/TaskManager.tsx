@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PlusIcon } from '../components/icons/PlusIcon';
 import { TaskModal } from '../components/TaskModal';
 import { PencilIcon } from '../components/icons/PencilIcon';
@@ -6,6 +6,7 @@ import { TrashIcon } from '../components/icons/TrashIcon';
 import { UserCircleIcon } from '../components/icons/UserCircleIcon';
 import { CalendarIcon } from '../components/icons/CalendarIcon';
 import { TeamMember, Task, Column } from './DashboardPage';
+import { tasksService } from '../src/services/tasksService';
 
 
 const getPriorityColor = (priority: 'Low' | 'Medium' | 'High') => {
@@ -107,13 +108,44 @@ const TaskManager: React.FC<TaskManagerProps> = ({
         }
     };
 
-    const handleSave = (task: Omit<Task, 'operationId'>) => {
-        const completeTask: Task = {
-            ...task,
-            operationId: operationId
-        };
-        onSaveTask(completeTask);
-        handleCloseModal();
+    const handleSave = async (task: Omit<Task, 'operationId'>) => {
+        try {
+            let savedTask;
+            if (editingTask) {
+                // Actualizar tarea existente
+                savedTask = await tasksService.update(editingTask.id, {
+                    title: task.title,
+                    description: task.description,
+                    priority: task.priority,
+                    dueDate: task.dueDate,
+                    columnId: task.columnId || editingTask.columnId,
+                    assignees: task.assignees,
+                });
+            } else {
+                // Crear nueva tarea
+                const firstColumn = columnOrder[0];
+                savedTask = await tasksService.create({
+                    title: task.title,
+                    description: task.description,
+                    priority: task.priority || 'Medium',
+                    dueDate: task.dueDate,
+                    columnId: firstColumn,
+                    operationId: operationId,
+                    assignees: task.assignees,
+                });
+            }
+            
+            // Actualizar el estado local
+            const completeTask: Task = {
+                ...savedTask,
+                operationId: operationId
+            };
+            onSaveTask(completeTask);
+            handleCloseModal();
+        } catch (error) {
+            console.error('Error saving task:', error);
+            alert('Error al guardar la tarea. Por favor, intenta nuevamente.');
+        }
     };
 
     // Drag and Drop Handlers

@@ -9,6 +9,7 @@ export interface Task {
   columnId: string;
   operationId?: string;
   order: number;
+  assignees?: string[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -21,6 +22,7 @@ export interface CreateTaskData {
   columnId: string;
   operationId?: string;
   order?: number;
+  assignees?: string[];
 }
 
 export interface UpdateTaskData extends Partial<CreateTaskData> {}
