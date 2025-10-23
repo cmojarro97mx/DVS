@@ -61,6 +61,12 @@ The frontend uses React with TypeScript, styled using Tailwind CSS, and bundled 
     -   **Access Control**: Token-based system for secure, authentication-free access via unique UUID links.
     -   **AI Integration**: Powered by Google Gemini Flash API (gemini-2.0-flash-exp) with function calling capabilities to query and create operations, clients, events, and tasks.
     -   **Real-Time Conversation**: Full duplex communication through Socket.IO WebSockets for instant voice interactions.
+    -   **Customizable Settings**: Full assistant customization through settings interface:
+        - **Name**: Personalize the assistant's display name
+        - **Welcome Message**: Custom greeting shown on first connection
+        - **System Instructions**: Define assistant behavior and personality through custom prompts
+        - **Personality**: Select tone (Professional, Friendly & Professional, Casual, Formal, Enthusiastic)
+        - Settings stored in JSON field and applied dynamically via WebSocket gateway
     -   **Voice Interface (100% Open Source)**: 
         - **Speech-to-Text (STT)**: Web Speech API's SpeechRecognition for voice input (voz → texto)
         - **Text-to-Speech (TTS)**: Web Speech API's SpeechSynthesis for voice output (texto → voz)
@@ -70,6 +76,7 @@ The frontend uses React with TypeScript, styled using Tailwind CSS, and bundled 
         - Works on both mobile and desktop devices using system voices
     -   **Connection**: Auto-detects production URL using `window.location.origin` to connect to backend WebSocket (port 3001).
     -   **Interface**: Modern dark theme with ElevenLabs-inspired audio visualizations, supports both text and voice input.
+    -   **Management**: Edit button in config page opens modal with all customization fields, instant updates via PUT endpoint
     -   **Browser Compatibility**: 
         - Text input/output: Works universally on all browsers
         - Voice recognition (STT): Chrome, Edge, Safari (via Web Speech API)
