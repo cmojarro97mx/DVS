@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Send } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import api from '../../services/api';
 
@@ -20,17 +20,22 @@ export default function VirtualAssistantPage() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [textInput, setTextInput] = useState('');
   const [isStarted, setIsStarted] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(false);
   
   const socketRef = useRef<Socket | null>(null);
   const recognitionRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationRef = useRef<number | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     initializeAssistant();
+    checkVoiceSupport();
     return () => {
       if (socketRef.current) {
         socketRef.current.disconnect();
@@ -43,6 +48,14 @@ export default function VirtualAssistantPage() {
       }
     };
   }, [token]);
+
+  const checkVoiceSupport = () => {
+    const supported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+    setVoiceSupported(supported);
+    if (!supported) {
+      console.log('Reconocimiento de voz no soportado en este navegador');
+    }
+  };
 
   const initializeAssistant = async () => {
     try {
@@ -57,7 +70,7 @@ export default function VirtualAssistantPage() {
       socketRef.current = socket;
 
       socket.on('connect', () => {
-        console.log('Connected to virtual assistant');
+        console.log('✅ Conectado al asistente virtual');
       });
 
       socket.on('initialized', (data) => {
@@ -67,6 +80,7 @@ export default function VirtualAssistantPage() {
           timestamp: new Date(),
         };
         setMessages([welcomeMessage]);
+        setIsProcessing(false);
         
         if (isStarted && !isMuted) {
           speak(data.message);
@@ -74,6 +88,7 @@ export default function VirtualAssistantPage() {
       });
 
       socket.on('response', (data) => {
+        console.log('📨 Respuesta recibida:', data.message);
         setMessages((prev) => [
           ...prev,
           {
@@ -82,19 +97,26 @@ export default function VirtualAssistantPage() {
             timestamp: new Date(data.timestamp),
           },
         ]);
+        setIsProcessing(false);
+        
         if (!isMuted) {
           speak(data.message);
         }
       });
 
       socket.on('error', (data) => {
+        console.error('❌ Error:', data.message);
         setError(data.message);
+        setIsProcessing(false);
       });
 
-      initializeSpeechRecognition();
+      if (voiceSupported) {
+        initializeSpeechRecognition();
+      }
       
       setLoading(false);
     } catch (err: any) {
+      console.error('Error al cargar asistente:', err);
       setError(err.response?.data?.message || 'Error al cargar el asistente');
       setLoading(false);
     }
@@ -104,21 +126,14 @@ export default function VirtualAssistantPage() {
     setIsStarted(true);
     
     if (socketRef.current) {
+      console.log('🎤 Iniciando conversación...');
+      setIsProcessing(true);
       socketRef.current.emit('initialize', { token });
-    }
-    
-    if (recognitionRef.current && !isListening) {
-      setTimeout(() => {
-        recognitionRef.current.start();
-      }, 500);
     }
   };
 
   const initializeSpeechRecognition = () => {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      setError('Tu navegador no soporta reconocimiento de voz');
-      return;
-    }
+    if (!voiceSupported) return;
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
@@ -128,6 +143,7 @@ export default function VirtualAssistantPage() {
     recognition.lang = 'es-ES';
 
     recognition.onstart = () => {
+      console.log('🎤 Micrófono activado');
       setIsListening(true);
       startAudioVisualization();
     };
@@ -141,25 +157,27 @@ export default function VirtualAssistantPage() {
       setTranscript(transcript);
 
       if (event.results[event.results.length - 1].isFinal) {
+        console.log('💬 Mensaje final:', transcript);
         sendMessage(transcript);
         setTranscript('');
       }
     };
 
     recognition.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error);
-      if (event.error !== 'no-speech') {
+      console.error('Error de reconocimiento:', event.error);
+      if (event.error !== 'no-speech' && event.error !== 'aborted') {
         setIsListening(false);
       }
     };
 
     recognition.onend = () => {
-      if (isStarted && !isMuted) {
+      console.log('🎤 Reconocimiento detenido');
+      if (isStarted && !isMuted && voiceSupported) {
         setTimeout(() => {
           try {
             recognition.start();
           } catch (e) {
-            console.log('Recognition already started');
+            console.log('Reconocimiento ya está activo');
           }
         }, 100);
       } else {
@@ -193,39 +211,55 @@ export default function VirtualAssistantPage() {
 
       updateAudioLevel();
     } catch (err) {
-      console.error('Error accessing microphone:', err);
+      console.error('Error al acceder al micrófono:', err);
     }
   };
 
   const toggleListening = () => {
-    if (!recognitionRef.current) return;
+    if (!recognitionRef.current || !voiceSupported) return;
 
     if (isListening) {
       recognitionRef.current.stop();
       setIsListening(false);
     } else {
-      recognitionRef.current.start();
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+        console.log('El reconocimiento ya está activo');
+      }
     }
   };
 
   const sendMessage = (message: string) => {
     if (!socketRef.current || !message.trim()) return;
 
+    console.log('📤 Enviando mensaje:', message.trim());
+
     setMessages((prev) => [
       ...prev,
       {
         role: 'user',
-        content: message,
+        content: message.trim(),
         timestamp: new Date(),
       },
     ]);
 
+    setIsProcessing(true);
     socketRef.current.emit('message', { message: message.trim() });
+  };
+
+  const handleTextSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (textInput.trim()) {
+      sendMessage(textInput);
+      setTextInput('');
+    }
   };
 
   const speak = (text: string) => {
     if (isMuted || isSpeaking) return;
 
+    console.log('🔊 Hablando:', text.substring(0, 50) + '...');
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
@@ -234,9 +268,20 @@ export default function VirtualAssistantPage() {
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
 
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
+    utterance.onstart = () => {
+      console.log('🔊 Voz iniciada');
+      setIsSpeaking(true);
+    };
+    
+    utterance.onend = () => {
+      console.log('🔇 Voz finalizada');
+      setIsSpeaking(false);
+    };
+    
+    utterance.onerror = (e) => {
+      console.error('Error en síntesis de voz:', e);
+      setIsSpeaking(false);
+    };
 
     setTimeout(() => {
       window.speechSynthesis.speak(utterance);
@@ -290,8 +335,8 @@ export default function VirtualAssistantPage() {
 
   if (!isStarted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
-        <div className="text-center max-w-2xl px-6">
+      <div className="min-h-screen flex items-center justify-center bg-black px-6">
+        <div className="text-center max-w-2xl w-full">
           <div className="mb-8">
             <div className="relative">
               <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center mb-6 shadow-2xl">
@@ -322,11 +367,11 @@ export default function VirtualAssistantPage() {
             <div className="bg-gray-900 p-6 rounded-xl border border-gray-800">
               <div className="w-12 h-12 bg-red-600/20 rounded-lg flex items-center justify-center mb-4">
                 <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
               </div>
-              <h3 className="text-white font-semibold mb-2">Reconocimiento de Voz</h3>
-              <p className="text-gray-400 text-sm">Habla naturalmente y el asistente te escuchará</p>
+              <h3 className="text-white font-semibold mb-2">Chat por Texto</h3>
+              <p className="text-gray-400 text-sm">Escribe tus mensajes desde cualquier dispositivo</p>
             </div>
             
             <div className="bg-gray-900 p-6 rounded-xl border border-gray-800">
@@ -349,6 +394,14 @@ export default function VirtualAssistantPage() {
               <p className="text-gray-400 text-sm">Respuestas instantáneas y conversaciones fluidas</p>
             </div>
           </div>
+
+          {!voiceSupported && (
+            <div className="mt-6 bg-yellow-900/20 border border-yellow-600/50 rounded-lg p-4">
+              <p className="text-yellow-500 text-sm">
+                ℹ️ Reconocimiento de voz no disponible en este navegador. Usa el chat por texto.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -358,48 +411,68 @@ export default function VirtualAssistantPage() {
     <div className="min-h-screen bg-black flex flex-col">
       {/* Header */}
       <div className="bg-gray-900 border-b border-gray-800">
-        <div className="max-w-5xl mx-auto px-6 py-4">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 md:gap-4">
               <div className="relative">
-                <div className={`w-12 h-12 rounded-full bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center ${
-                  isListening || isSpeaking ? 'animate-pulse' : ''
+                <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center ${
+                  isListening || isSpeaking || isProcessing ? 'animate-pulse' : ''
                 }`}>
-                  <Mic className="w-6 h-6 text-white" />
+                  <Mic className="w-5 h-5 md:w-6 md:h-6 text-white" />
                 </div>
-                {(isListening || isSpeaking) && (
+                {(isListening || isSpeaking || isProcessing) && (
                   <div className="absolute inset-0 rounded-full bg-gradient-to-br from-red-600 to-orange-500 opacity-50 animate-ping"></div>
                 )}
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">
+                <h1 className="text-lg md:text-xl font-bold text-white">
                   {assistant?.name || 'Asistente Virtual'}
                 </h1>
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${
+                    isProcessing ? 'bg-yellow-500 animate-pulse' :
                     isListening ? 'bg-green-500 animate-pulse' : 
                     isSpeaking ? 'bg-blue-500 animate-pulse' : 'bg-gray-500'
                   }`}></div>
-                  <p className="text-sm text-gray-400">
-                    {isListening ? 'Escuchando...' : isSpeaking ? 'Hablando...' : 'En espera'}
+                  <p className="text-xs md:text-sm text-gray-400">
+                    {isProcessing ? 'Procesando...' :
+                     isListening ? 'Escuchando...' : 
+                     isSpeaking ? 'Hablando...' : 'En espera'}
                   </p>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {voiceSupported && (
+                <button
+                  onClick={toggleListening}
+                  className={`p-2 md:p-3 rounded-xl transition-all ${
+                    isListening
+                      ? 'bg-green-600/20 text-green-500'
+                      : 'bg-gray-800 text-gray-400'
+                  }`}
+                  title={isListening ? 'Desactivar voz' : 'Activar voz'}
+                >
+                  {isListening ? (
+                    <Mic className="w-4 h-4 md:w-5 md:h-5" />
+                  ) : (
+                    <MicOff className="w-4 h-4 md:w-5 md:h-5" />
+                  )}
+                </button>
+              )}
               <button
                 onClick={toggleMute}
-                className={`p-3 rounded-xl transition-all ${
+                className={`p-2 md:p-3 rounded-xl transition-all ${
                   isMuted
                     ? 'bg-gray-800 text-gray-400'
                     : 'bg-red-600/20 text-red-500'
                 }`}
-                title={isMuted ? 'Activar voz' : 'Silenciar voz'}
+                title={isMuted ? 'Activar sonido' : 'Silenciar'}
               >
                 {isMuted ? (
-                  <VolumeX className="w-5 h-5" />
+                  <VolumeX className="w-4 h-4 md:w-5 md:h-5" />
                 ) : (
-                  <Volume2 className="w-5 h-5" />
+                  <Volume2 className="w-4 h-4 md:w-5 md:h-5" />
                 )}
               </button>
             </div>
@@ -408,91 +481,94 @@ export default function VirtualAssistantPage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-3xl">
-          {/* Audio Visualization */}
-          <div className="mb-8 flex justify-center">
-            <div className="relative">
-              <div 
-                className="w-64 h-64 rounded-full bg-gradient-to-br from-red-600/20 to-orange-500/20 flex items-center justify-center transition-all duration-300"
-                style={{
-                  transform: `scale(${1 + audioLevel * 0.3})`,
-                  boxShadow: `0 0 ${50 + audioLevel * 100}px rgba(239, 68, 68, ${0.3 + audioLevel * 0.3})`
-                }}
-              >
-                <div className="w-48 h-48 rounded-full bg-gradient-to-br from-red-600/40 to-orange-500/40 flex items-center justify-center">
-                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center shadow-2xl">
-                    {isListening ? (
-                      <Mic className="w-16 h-16 text-white animate-pulse" />
-                    ) : isSpeaking ? (
-                      <Volume2 className="w-16 h-16 text-white animate-pulse" />
-                    ) : (
-                      <Mic className="w-16 h-16 text-white" />
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Current Transcript */}
-          {transcript && (
-            <div className="mb-6 bg-gray-900 rounded-xl p-4 border border-gray-800">
-              <p className="text-gray-400 text-sm mb-1">Escuchando...</p>
-              <p className="text-white">{transcript}</p>
-            </div>
-          )}
-
-          {/* Last Message */}
-          {messages.length > 0 && (
-            <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-semibold text-sm">
-                    {messages[messages.length - 1].role === 'assistant' ? 'AI' : 'Tú'}
-                  </span>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-white font-semibold">
-                      {messages[messages.length - 1].role === 'assistant' ? assistant?.name : 'Tú'}
-                    </span>
-                    <span className="text-gray-500 text-xs">
-                      {new Date(messages[messages.length - 1].timestamp).toLocaleTimeString()}
-                    </span>
-                  </div>
-                  <p className="text-gray-300 leading-relaxed">
-                    {messages[messages.length - 1].content}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Controls */}
-          <div className="mt-6 flex justify-center">
-            <button
-              onClick={toggleListening}
-              className={`px-6 py-3 rounded-full font-semibold transition-all transform hover:scale-105 ${
-                isListening
-                  ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                  : 'bg-gradient-to-r from-red-600 to-orange-500 text-white hover:shadow-xl hover:shadow-red-500/50'
+      <div className="flex-1 flex flex-col p-4 md:p-6 max-w-5xl mx-auto w-full">
+        {/* Messages */}
+        <div className="flex-1 space-y-4 mb-4 overflow-y-auto">
+          {messages.map((message, index) => (
+            <div
+              key={index}
+              className={`flex items-start gap-3 ${
+                message.role === 'user' ? 'flex-row-reverse' : ''
               }`}
             >
-              {isListening ? (
-                <span className="flex items-center gap-2">
-                  <MicOff className="w-5 h-5" />
-                  Pausar
+              <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                message.role === 'assistant'
+                  ? 'bg-gradient-to-br from-red-600 to-orange-500'
+                  : 'bg-gray-700'
+              }`}>
+                <span className="text-white font-semibold text-xs md:text-sm">
+                  {message.role === 'assistant' ? 'AI' : 'Tú'}
                 </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Mic className="w-5 h-5" />
-                  Activar Micrófono
-                </span>
-              )}
+              </div>
+              <div className={`flex-1 max-w-[80%] ${
+                message.role === 'user' ? 'text-right' : ''
+              }`}>
+                <div className={`inline-block p-3 md:p-4 rounded-2xl ${
+                  message.role === 'assistant'
+                    ? 'bg-gray-900 border border-gray-800'
+                    : 'bg-gradient-to-r from-red-600 to-orange-500'
+                }`}>
+                  <p className="text-white text-sm md:text-base leading-relaxed">
+                    {message.content}
+                  </p>
+                </div>
+                <p className="text-gray-500 text-xs mt-1">
+                  {new Date(message.timestamp).toLocaleTimeString()}
+                </p>
+              </div>
+            </div>
+          ))}
+
+          {isProcessing && (
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-semibold text-xs md:text-sm">AI</span>
+              </div>
+              <div className="bg-gray-900 border border-gray-800 p-3 md:p-4 rounded-2xl">
+                <div className="flex gap-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Current Transcript (Voice) */}
+        {transcript && (
+          <div className="mb-4 bg-gray-900 rounded-xl p-3 border border-gray-800">
+            <p className="text-gray-400 text-xs mb-1">Escuchando...</p>
+            <p className="text-white text-sm">{transcript}</p>
+          </div>
+        )}
+
+        {/* Text Input */}
+        <form onSubmit={handleTextSubmit} className="bg-gray-900 rounded-2xl p-3 md:p-4 border border-gray-800">
+          <div className="flex items-center gap-2 md:gap-3">
+            <input
+              ref={inputRef}
+              type="text"
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              placeholder="Escribe tu mensaje aquí..."
+              className="flex-1 bg-gray-800 text-white px-3 md:px-4 py-2 md:py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 text-sm md:text-base"
+              disabled={isProcessing}
+            />
+            <button
+              type="submit"
+              disabled={!textInput.trim() || isProcessing}
+              className="bg-gradient-to-r from-red-600 to-orange-500 text-white p-2 md:p-3 rounded-xl hover:shadow-lg hover:shadow-red-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Send className="w-5 h-5 md:w-6 md:h-6" />
             </button>
           </div>
-        </div>
+          <p className="text-gray-500 text-xs mt-2">
+            {voiceSupported 
+              ? '💡 Tip: Usa el micrófono arriba o escribe tu mensaje' 
+              : '💡 Tip: Escribe tu mensaje y presiona enviar'}
+          </p>
+        </form>
       </div>
     </div>
   );
