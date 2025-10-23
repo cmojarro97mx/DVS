@@ -73,6 +73,7 @@ model Organization {
   payments        Payment[]
   expenses        Expense[]
   events          Event[]
+  automations     Automation[]  @relation("OrganizationAutomations")
   
   @@map("organizations")
 }
@@ -607,17 +608,18 @@ model ReconciliationSession {
 }
 
 model Automation {
-  id             String    @id @default(uuid())
+  id             String       @id @default(uuid())
   name           String
   description    String?
   type           String
-  enabled        Boolean   @default(false)
+  enabled        Boolean      @default(false)
   trigger        Json?
   actions        Json?
   conditions     Json?
-  organizationId String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  organizationId String
+  organization   Organization @relation("OrganizationAutomations", fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
   
   @@map("automations")
 }
