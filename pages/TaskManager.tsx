@@ -83,9 +83,14 @@ const TaskManager: React.FC<TaskManagerProps> = ({
     const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
     const [dragOverColumnId, setDragOverColumnId] = useState<string | null>(null);
 
+    // Filtrar empleados que están asignados a esta operación
+    // operationAssignees contiene nombres, así que filtramos por nombre
     const availableAssignees = teamMembers.filter(member => 
         operationAssignees.includes(member.name)
     );
+    
+    // Si no hay asignados específicos, mostrar todos los empleados
+    const assigneesToShow = availableAssignees.length > 0 ? availableAssignees : teamMembers;
 
     const handleAddTask = () => {
         setEditingTask(null);
@@ -252,7 +257,7 @@ const TaskManager: React.FC<TaskManagerProps> = ({
                 onClose={handleCloseModal}
                 onSave={handleSave}
                 task={editingTask}
-                teamMembers={availableAssignees}
+                teamMembers={assigneesToShow}
             />
         </div>
     );
