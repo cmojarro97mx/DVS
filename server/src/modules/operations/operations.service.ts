@@ -344,70 +344,102 @@ export class OperationsService {
     });
 
     const searchConditions = [];
-    let useClientEmail = false;
-    let useBookingTracking = false;
-    let useMBL = false;
-    let useHBL = false;
+    let useClientEmail = true;
+    let useBookingTracking = true;
+    let useMBL = true;
+    let useHBL = true;
+    let useOperationId = true;
 
-    for (const automation of automations) {
-      const config = automation.conditions as any;
-      
-      if (config?.useClientEmail !== false) {
-        useClientEmail = true;
-      }
-      if (config?.useBookingTracking !== false) {
-        useBookingTracking = true;
-      }
-      if (config?.useMBL !== false) {
-        useMBL = true;
-      }
-      if (config?.useHBL !== false) {
-        useHBL = true;
-      }
+    if (automations.length > 0) {
+      useClientEmail = false;
+      useBookingTracking = false;
+      useMBL = false;
+      useHBL = false;
+      useOperationId = false;
 
-      if (config?.subjectPatterns && Array.isArray(config.subjectPatterns)) {
-        for (const pattern of config.subjectPatterns) {
-          if (pattern && typeof pattern === 'string' && pattern.trim()) {
-            const patternWithOperationId = pattern
-              .replace('{operationId}', operation.id)
-              .replace('{projectName}', operation.projectName || '');
-            
-            searchConditions.push({
-              subject: { contains: patternWithOperationId, mode: 'insensitive' as any },
-            });
+      for (const automation of automations) {
+        const config = automation.conditions as any;
+        
+        if (config?.useClientEmail !== false) {
+          useClientEmail = true;
+        }
+        if (config?.useBookingTracking !== false) {
+          useBookingTracking = true;
+        }
+        if (config?.useMBL !== false) {
+          useMBL = true;
+        }
+        if (config?.useHBL !== false) {
+          useHBL = true;
+        }
+        if (config?.useOperationId !== false) {
+          useOperationId = true;
+        }
+
+        if (config?.subjectPatterns && Array.isArray(config.subjectPatterns)) {
+          for (const pattern of config.subjectPatterns) {
+            if (pattern && typeof pattern === 'string' && pattern.trim()) {
+              const patternWithOperationId = pattern
+                .replace('{operationId}', operation.id)
+                .replace('{projectName}', operation.projectName || '');
+              
+              searchConditions.push({
+                subject: { contains: patternWithOperationId, mode: 'insensitive' as any },
+              });
+            }
           }
         }
       }
     }
 
     if (useClientEmail && operation.client?.email) {
+      const clientEmail = operation.client.email.toLowerCase();
       searchConditions.push({
-        AND: [
-          {
-            OR: [
-              { from: { contains: operation.client.email, mode: 'insensitive' as any } },
-              { to: { contains: operation.client.email, mode: 'insensitive' as any } },
-            ],
+        OR: [
+          { from: { contains: clientEmail, mode: 'insensitive' as any } },
+          { 
+            to: { 
+              path: '$',
+              array_contains: { email: clientEmail }
+            } 
           },
+        ],
+      });
+    }
+
+    if (useOperationId && operation.id) {
+      searchConditions.push({
+        OR: [
+          { subject: { contains: operation.id, mode: 'insensitive' as any } },
+          { body: { contains: operation.id, mode: 'insensitive' as any } },
         ],
       });
     }
 
     if (useBookingTracking && operation.bookingTracking) {
       searchConditions.push({
-        subject: { contains: operation.bookingTracking, mode: 'insensitive' as any },
+        OR: [
+          { subject: { contains: operation.bookingTracking, mode: 'insensitive' as any } },
+          { body: { contains: operation.bookingTracking, mode: 'insensitive' as any } },
+        ],
       });
     }
 
     if (useMBL && operation.mbl_awb) {
       searchConditions.push({
-        subject: { contains: operation.mbl_awb, mode: 'insensitive' as any },
+        OR: [
+          { subject: { contains: operation.mbl_awb, mode: 'insensitive' as any } },
+          { body: { contains: operation.mbl_awb, mode: 'insensitive' as any } },
+        ],
       });
     }
 
     if (useHBL && operation.hbl_awb) {
       searchConditions.push({
-        subject: { contains: operation.hbl_awb, mode: 'insensitive' as any },
+        OR: [
+          { subject: { contains: operation.hbl_awb, mode: 'insensitive' as any } },
+          { body: { contains: operation.hbl_awb, mode: 'insensitive' as any } },
+        ],
       });
     }
 

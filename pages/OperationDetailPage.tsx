@@ -1089,79 +1089,119 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = (props) => {
         {activeTab === 'emails' && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                 <div className="p-6 border-b border-gray-200">
-                    <h3 className="text-lg font-bold text-gray-800">Emails Relacionados</h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                        Emails que mencionan al cliente {client?.name || 'o esta operación'}
-                    </p>
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-800">Correos Vinculados</h3>
+                            <p className="text-sm text-gray-500 mt-1">
+                                Emails detectados automáticamente relacionados con esta operación
+                            </p>
+                        </div>
+                        {relatedEmails.length > 0 && (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {relatedEmails.length} {relatedEmails.length === 1 ? 'email' : 'emails'}
+                            </span>
+                        )}
+                    </div>
                 </div>
                 {loadingEmails ? (
                     <div className="p-12 text-center">
                         <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-200 border-t-blue-600"></div>
-                        <p className="mt-4 text-sm text-gray-500">Cargando emails...</p>
+                        <p className="mt-4 text-sm text-gray-500">Buscando correos relacionados...</p>
                     </div>
                 ) : relatedEmails.length === 0 ? (
                     <div className="p-12 text-center">
                         <div className="bg-slate-100 rounded-full p-5 mb-5 inline-block">
                             <MailIcon className="w-12 h-12 text-slate-400" />
                         </div>
-                        <h4 className="text-md font-semibold text-slate-700">No se encontraron emails relacionados</h4>
+                        <h4 className="text-md font-semibold text-slate-700">No se encontraron correos vinculados</h4>
                         <p className="mt-2 text-sm text-slate-500 max-w-md mx-auto">
-                            No hay emails que mencionen a este cliente o operación. Asegúrate de tener cuentas de email conectadas.
+                            No hay emails que coincidan con los criterios de vinculación automática para esta operación.
                         </p>
+                        <div className="mt-4 text-xs text-slate-400 max-w-lg mx-auto">
+                            <p className="font-medium mb-2">Los emails se vinculan automáticamente cuando contienen:</p>
+                            <ul className="text-left space-y-1 list-disc pl-5">
+                                <li>Email del cliente: {client?.email || 'No configurado'}</li>
+                                <li>ID de operación: {project.id}</li>
+                                {project.bookingTracking && <li>Booking/Tracking: {project.bookingTracking}</li>}
+                                {project.mbl_awb && <li>MBL/AWB: {project.mbl_awb}</li>}
+                                {project.hbl_awb && <li>HBL/HAWB: {project.hbl_awb}</li>}
+                            </ul>
+                        </div>
                         <button 
                             onClick={() => setActiveView('integrations')} 
                             className="mt-6 inline-flex items-center bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
                         >
                             <LinkIcon className="w-5 h-5 mr-2" />
-                            Conectar Email
+                            Conectar Cuenta de Email
                         </button>
                     </div>
                 ) : (
                     <div className="divide-y divide-gray-200">
-                        {relatedEmails.map((email) => (
-                            <div key={email.id} className="p-4 hover:bg-gray-50 transition-colors cursor-pointer">
-                                <div className="flex items-start gap-4">
-                                    <EmailAvatar email={email.from} name={email.fromName} />
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-semibold text-gray-900 truncate">
-                                                    {email.fromName || email.from}
-                                                </p>
-                                                <p className="text-xs text-gray-500 truncate">{email.from}</p>
+                        {relatedEmails.map((email) => {
+                            const emailDate = new Date(email.date);
+                            const isRecent = (Date.now() - emailDate.getTime()) < (7 * 24 * 60 * 60 * 1000);
+                            
+                            return (
+                                <div key={email.id} className="p-4 hover:bg-gray-50 transition-colors cursor-pointer">
+                                    <div className="flex items-start gap-4">
+                                        <EmailAvatar email={email.from} name={email.fromName} />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-semibold text-gray-900 truncate">
+                                                        {email.fromName || email.from.split('@')[0]}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500 truncate">{email.from}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-xs text-gray-500 whitespace-nowrap">
+                                                        {emailDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                                                    </span>
+                                                    {isRecent && (
+                                                        <span className="block text-xs text-blue-600 font-medium">Reciente</span>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <span className="text-xs text-gray-500 whitespace-nowrap">
-                                                {new Date(email.date).toLocaleDateString()}
-                                            </span>
-                                        </div>
-                                        <h4 className="text-sm font-medium text-gray-800 mt-2 truncate">
-                                            {email.subject}
-                                        </h4>
-                                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                                            {email.snippet}
-                                        </p>
-                                        <div className="flex items-center gap-2 mt-2">
-                                            {email.unread && (
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                                    No leído
+                                            <h4 className="text-sm font-medium text-gray-800 mt-2 truncate">
+                                                {email.subject || '(Sin asunto)'}
+                                            </h4>
+                                            <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                                                {email.snippet}
+                                            </p>
+                                            <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                                {email.unread && (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                                        No leído
+                                                    </span>
+                                                )}
+                                                {email.hasAttachments && (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                                                        <PaperClipIcon className="w-3 h-3 mr-1" />
+                                                        Adjuntos
+                                                    </span>
+                                                )}
+                                                {email.isReplied && (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                                        Respondido
+                                                    </span>
+                                                )}
+                                                {email.starred && (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                        ⭐ Destacado
+                                                    </span>
+                                                )}
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600">
+                                                    {email.folder === 'inbox' ? 'Recibido' : 
+                                                     email.folder === 'sent' ? 'Enviado' : 
+                                                     email.folder === 'draft' ? 'Borrador' : 
+                                                     email.folder}
                                                 </span>
-                                            )}
-                                            {email.hasAttachments && (
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                                                    <PaperClipIcon className="w-3 h-3 mr-1" />
-                                                    Adjuntos
-                                                </span>
-                                            )}
-                                            {email.isReplied && (
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                                    Respondido
-                                                </span>
-                                            )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>
