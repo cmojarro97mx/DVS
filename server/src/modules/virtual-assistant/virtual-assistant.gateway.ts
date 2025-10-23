@@ -37,17 +37,19 @@ export class VirtualAssistantGateway
     private assistantService: VirtualAssistantService,
     private toolsService: AssistantToolsService,
   ) {
+    console.log('🤖 Inicializando VirtualAssistantGateway...');
     this.genAI = new GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY || '',
     });
+    console.log('✅ Gemini AI inicializado con API key:', process.env.GEMINI_API_KEY ? 'Configurada' : 'NO CONFIGURADA');
   }
 
   handleConnection(client: Socket) {
-    console.log(`Cliente conectado: ${client.id}`);
+    console.log(`🔌 Cliente conectado: ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
-    console.log(`Cliente desconectado: ${client.id}`);
+    console.log(`🔌 Cliente desconectado: ${client.id}`);
     this.conversationHistories.delete(client.id);
     this.assistantContexts.delete(client.id);
   }
@@ -58,12 +60,17 @@ export class VirtualAssistantGateway
     @ConnectedSocket() client: Socket,
   ) {
     try {
+      console.log(`🚀 Inicializando asistente para token: ${data.token}`);
+      
       const assistant = await this.assistantService.getAssistantByToken(
         data.token,
       );
+      console.log(`✅ Asistente encontrado: ${assistant.name}`);
+      
       const context = await this.assistantService.getOrganizationContext(
         assistant.organizationId,
       );
+      console.log(`✅ Contexto cargado: ${context.operations.length} operaciones, ${context.clients.length} clientes`);
 
       this.assistantContexts.set(client.id, {
         assistant,
@@ -74,11 +81,16 @@ export class VirtualAssistantGateway
 
       this.conversationHistories.set(client.id, []);
 
+      const welcomeMessage = `Hola! Soy ${assistant.name}, tu asistente virtual. ¿En qué puedo ayudarte hoy?`;
+      
+      console.log(`💬 Enviando mensaje de bienvenida: ${welcomeMessage}`);
+      
       client.emit('initialized', {
         assistantName: assistant.name,
-        message: `Hola! Soy ${assistant.name}, tu asistente virtual. ¿En qué puedo ayudarte hoy?`,
+        message: welcomeMessage,
       });
     } catch (error) {
+      console.error('❌ Error al inicializar:', error);
       client.emit('error', {
         message: error.message || 'Error al inicializar el asistente',
       });
@@ -91,9 +103,12 @@ export class VirtualAssistantGateway
     @ConnectedSocket() client: Socket,
   ) {
     try {
+      console.log(`📨 Mensaje recibido de ${client.id}: "${data.message}"`);
+      
       const context = this.assistantContexts.get(client.id);
       if (!context) {
-        client.emit('error', { message: 'Asistente no inicializado' });
+        console.error('❌ Asistente no inicializado para:', client.id);
+        client.emit('error', { message: 'Asistente no inicializado. Por favor recarga la página.' });
         return;
       }
 
@@ -105,52 +120,71 @@ export class VirtualAssistantGateway
       });
 
       const systemPrompt = this.buildSystemPrompt(context);
+      console.log(`🧠 Llamando a Gemini Flash...`);
 
-      const response = await this.genAI.models.generateContent({
-        model: 'gemini-2.0-flash-exp',
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: systemPrompt }],
+      try {
+        const response = await this.genAI.models.generateContent({
+          model: 'gemini-2.0-flash-exp',
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: systemPrompt }],
+            },
+            ...history,
+          ],
+          config: {
+            temperature: 0.7,
+            topP: 0.95,
+            topK: 40,
+            maxOutputTokens: 1024,
           },
-          ...history,
-        ],
-        config: {
-          temperature: 0.7,
-          topP: 0.95,
-          topK: 40,
-        },
-      });
+        });
 
-      const assistantResponse = response.text || 'Lo siento, no pude generar una respuesta.';
+        console.log('✅ Respuesta de Gemini recibida');
+        console.log('📄 Respuesta completa:', JSON.stringify(response, null, 2));
 
-      history.push({
-        role: 'model',
-        parts: [{ text: assistantResponse }],
-      });
+        const assistantResponse = response.text || 'Lo siento, no pude generar una respuesta.';
+        console.log(`💬 Respuesta del asistente: "${assistantResponse.substring(0, 100)}..."`);
 
-      this.conversationHistories.set(client.id, history);
+        history.push({
+          role: 'model',
+          parts: [{ text: assistantResponse }],
+        });
 
-      client.emit('response', {
-        message: assistantResponse,
-        timestamp: new Date(),
-      });
+        this.conversationHistories.set(client.id, history);
 
-      const toolCall = await this.detectToolCall(data.message, assistantResponse, context);
-      if (toolCall) {
-        const toolResult = await this.executeToolCall(toolCall, context);
-        client.emit('toolResult', toolResult);
+        console.log(`📤 Enviando respuesta al cliente ${client.id}`);
+        client.emit('response', {
+          message: assistantResponse,
+          timestamp: new Date(),
+        });
+
+        const toolCall = await this.detectToolCall(data.message, assistantResponse, context);
+        if (toolCall) {
+          console.log(`🔧 Tool call detectado:`, toolCall);
+          const toolResult = await this.executeToolCall(toolCall, context);
+          client.emit('toolResult', toolResult);
+        }
+      } catch (geminiError) {
+        console.error('❌ Error de Gemini API:', geminiError);
+        console.error('❌ Stack trace:', geminiError.stack);
+        throw geminiError;
       }
     } catch (error) {
-      console.error('Error procesando mensaje:', error);
+      console.error('❌ Error procesando mensaje:', error);
+      console.error('❌ Detalles del error:', error.message);
+      console.error('❌ Stack trace:', error.stack);
+      
       client.emit('error', {
         message: 'Error al procesar tu mensaje. Por favor intenta nuevamente.',
+        details: error.message,
       });
     }
   }
 
   @SubscribeMessage('clearHistory')
   async handleClearHistory(@ConnectedSocket() client: Socket) {
+    console.log(`🗑️ Limpiando historial para ${client.id}`);
     this.conversationHistories.set(client.id, []);
     client.emit('historyCleared', { message: 'Historial limpiado' });
   }
