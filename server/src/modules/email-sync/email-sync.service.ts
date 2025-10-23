@@ -19,7 +19,7 @@ export class EmailSyncService {
 
   async syncEmailsForAccount(userId: string, accountId: string): Promise<{ synced: number; total: number }> {
     this.logger.log(`Starting email sync for account ${accountId}`);
-    
+
     const account = await this.prisma.emailAccount.findFirst({
       where: { id: accountId, userId },
     });
@@ -38,15 +38,15 @@ export class EmailSyncService {
 
     let syncedCount = 0;
     let pageToken: string | undefined;
-    
-    const query = account.syncFromDate 
+
+    const query = account.syncFromDate
       ? `after:${this.formatDateForGmailQuery(account.syncFromDate)}`
       : undefined;
-    
+
     if (query) {
       this.logger.log(`Filtering emails with query: ${query}`);
     }
-    
+
     do {
       const response = await gmail.users.messages.list({
         userId: 'me',
@@ -56,12 +56,12 @@ export class EmailSyncService {
       });
 
       const messages = response.data.messages || [];
-      
+
       for (const message of messages) {
         try {
           await this.syncSingleMessage(gmail, accountId, message.id);
           syncedCount++;
-          
+
           if (syncedCount % 10 === 0) {
             this.logger.log(`Synced ${syncedCount} of ${totalMessages} messages`);
           }
@@ -104,7 +104,7 @@ export class EmailSyncService {
     const message = response.data;
     const headers = message.payload?.headers || [];
 
-    const getHeader = (name: string) => 
+    const getHeader = (name: string) =>
       headers.find((h: any) => h.name?.toLowerCase() === name.toLowerCase())?.value || '';
 
     const from = getHeader('from');
@@ -118,7 +118,7 @@ export class EmailSyncService {
     const date = getHeader('date');
 
     const { textBody, htmlBody } = this.extractBodies(message.payload);
-    
+
     let htmlBodyKey: string | null = null;
     if (htmlBody && htmlBody.length > 1000) {
       try {
@@ -129,7 +129,7 @@ export class EmailSyncService {
     }
 
     const attachments = await this.extractAttachments(gmail, message, accountId, messageId);
-    
+
     const hasAttachments = attachments.length > 0;
     const attachmentsData = hasAttachments ? attachments : null;
 
@@ -181,8 +181,8 @@ export class EmailSyncService {
           title: `Nuevo email ${isStarred ? '⭐ ' : ''}de ${this.extractName(from)}`,
           body: subject || '(Sin asunto)',
           url: '/email-analysis',
-          data: { 
-            type: 'new_email', 
+          data: {
+            type: 'new_email',
             emailId: emailMessage.id,
             accountId,
           },
@@ -235,7 +235,7 @@ export class EmailSyncService {
           });
 
           const data = Buffer.from(attachment.data.data, 'base64');
-          
+
           const key = await this.emailStorageService.uploadAttachment(
             accountId,
             messageId,
@@ -284,7 +284,7 @@ export class EmailSyncService {
 
   private parseEmailList(emailString: string): any {
     if (!emailString) return [];
-    
+
     const emails = emailString.split(',').map(e => e.trim());
     return emails.map(email => {
       const match = email.match(/(.+?)\s*<(.+?)>/) || email.match(/(.+)/);
@@ -306,7 +306,7 @@ export class EmailSyncService {
   @Cron(CronExpression.EVERY_10_MINUTES)
   async autoSyncEmails() {
     this.logger.log('Starting automatic email sync for all accounts...');
-    
+
     try {
       const accounts = await this.prisma.emailAccount.findMany({
         where: {
@@ -351,7 +351,7 @@ export class EmailSyncService {
     estimatedTotalMessages: number;
   }> {
     this.logger.log(`Starting discovery for account ${accountId}`);
-    
+
     const account = await this.prisma.emailAccount.findFirst({
       where: { id: accountId, userId },
     });
@@ -387,11 +387,11 @@ export class EmailSyncService {
             format: 'metadata',
             metadataHeaders: ['Date'],
           });
-          
+
           const dateHeader = newestMessage.data.payload?.headers?.find(
             (h: any) => h.name?.toLowerCase() === 'date'
           );
-          
+
           if (dateHeader?.value) {
             newestEmailDate = new Date(dateHeader.value);
           }
@@ -415,18 +415,18 @@ export class EmailSyncService {
           if (oldestResponse.data.messages && oldestResponse.data.messages.length > 0) {
             const messages = oldestResponse.data.messages;
             const lastMessageId = messages[messages.length - 1].id;
-            
+
             const oldestMessage = await gmail.users.messages.get({
               userId: 'me',
               id: lastMessageId,
               format: 'metadata',
               metadataHeaders: ['Date'],
             });
-            
+
             const dateHeader = oldestMessage.data.payload?.headers?.find(
               (h: any) => h.name?.toLowerCase() === 'date'
             );
-            
+
             if (dateHeader?.value) {
               oldestEmailDate = new Date(dateHeader.value);
               this.logger.log(`Found oldest email from year ${currentYear}: ${oldestEmailDate.toISOString()}`);
@@ -469,7 +469,7 @@ export class EmailSyncService {
 
   async updateSyncSettings(userId: string, accountId: string, syncFromDate: Date): Promise<void> {
     this.logger.log(`Updating sync settings for account ${accountId}: syncFromDate=${syncFromDate.toISOString()}`);
-    
+
     const account = await this.prisma.emailAccount.findFirst({
       where: { id: accountId, userId },
     });
@@ -479,7 +479,7 @@ export class EmailSyncService {
     }
 
     const oldSyncFromDate = account.syncFromDate;
-    
+
     if (oldSyncFromDate && syncFromDate > oldSyncFromDate) {
       this.logger.log(`Detected date range reduction (${oldSyncFromDate.toISOString()} -> ${syncFromDate.toISOString()}), cleaning up old messages`);
       await this.cleanupOldMessages(accountId, syncFromDate);
@@ -498,7 +498,7 @@ export class EmailSyncService {
 
   private async cleanupOldMessages(accountId: string, newSyncFromDate: Date): Promise<void> {
     this.logger.log(`Starting cleanup of messages before ${newSyncFromDate.toISOString()} for account ${accountId}`);
-    
+
     const messagesToDelete = await this.prisma.emailMessage.findMany({
       where: {
         accountId,
@@ -521,12 +521,12 @@ export class EmailSyncService {
     this.logger.log(`Found ${messagesToDelete.length} messages to delete`);
 
     const keysToDelete: string[] = [];
-    
+
     for (const message of messagesToDelete) {
       if (message.htmlBodyKey) {
         keysToDelete.push(message.htmlBodyKey);
       }
-      
+
       if (message.attachmentsData && Array.isArray(message.attachmentsData)) {
         const attachments = message.attachmentsData as any[];
         for (const attachment of attachments) {
@@ -548,7 +548,7 @@ export class EmailSyncService {
     }
 
     const messageIds = messagesToDelete.map(m => m.id);
-    
+
     try {
       await this.prisma.$transaction(async (tx) => {
         await tx.emailMessage.deleteMany({
@@ -581,5 +581,13 @@ export class EmailSyncService {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}/${month}/${day}`;
+  }
+
+  async getAttachmentUrl(b2Key: string): Promise<string> {
+    return this.emailStorageService.getSignedUrl(b2Key, 7200);
+  }
+
+  async getMessage(accountId: string, messageId: string, organizationId: string) {
+    // This method is intentionally left empty as per the provided changes.
   }
 }

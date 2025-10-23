@@ -52,7 +52,7 @@ export class EmailSyncController {
   @Get('metrics/:accountId')
   async getMetrics(@Req() req: Request, @Param('accountId') accountId: string) {
     const user = req.user as any;
-    
+
     const account = await this.prisma.emailAccount.findFirst({
       where: { id: accountId, userId: user.userId },
     });
@@ -62,7 +62,7 @@ export class EmailSyncController {
     }
 
     const totalMessages = account.totalMessagesInGmail;
-    
+
     // Build filter to respect syncFromDate
     const dateFilter = account.syncFromDate 
       ? { date: { gte: account.syncFromDate } } 
@@ -107,7 +107,7 @@ export class EmailSyncController {
     @Query('unread') unread?: string,
   ) {
     const user = req.user as any;
-    
+
     const account = await this.prisma.emailAccount.findFirst({
       where: { id: accountId, userId: user.userId },
     });
@@ -121,12 +121,12 @@ export class EmailSyncController {
     const skip = (pageNum - 1) * limitNum;
 
     const where: any = { accountId };
-    
+
     // Filter by syncFromDate if configured
     if (account.syncFromDate) {
       where.date = { gte: account.syncFromDate };
     }
-    
+
     if (folder) {
       where.folder = folder;
     }
@@ -176,7 +176,7 @@ export class EmailSyncController {
   @Get('message/:messageId')
   async getMessage(@Req() req: Request, @Param('messageId') messageId: string) {
     const user = req.user as any;
-    
+
     const message = await this.prisma.emailMessage.findFirst({
       where: {
         id: messageId,
@@ -221,7 +221,7 @@ export class EmailSyncController {
   @Get('html/:messageId')
   async getHtmlBody(@Req() req: Request, @Param('messageId') messageId: string) {
     const user = req.user as any;
-    
+
     const message = await this.prisma.emailMessage.findFirst({
       where: {
         id: messageId,
@@ -255,7 +255,7 @@ export class EmailSyncController {
   async discoverDateRange(@Req() req: Request, @Param('accountId') accountId: string) {
     const user = req.user as any;
     console.log('[Discovery] Request received for accountId:', accountId, 'userId:', user.userId);
-    
+
     const account = await this.prisma.emailAccount.findFirst({
       where: { id: accountId, userId: user.userId },
     });
@@ -281,7 +281,7 @@ export class EmailSyncController {
     try {
       const discovery = await this.emailSyncService.discoverEmailDateRange(user.userId, accountId);
       console.log('[Discovery] Discovery completed successfully:', discovery);
-      
+
       return {
         ...discovery,
         cached: false,
@@ -299,7 +299,7 @@ export class EmailSyncController {
     @Body() body: { syncFromDate: string },
   ) {
     const user = req.user as any;
-    
+
     const account = await this.prisma.emailAccount.findFirst({
       where: { id: accountId, userId: user.userId },
     });
@@ -315,5 +315,25 @@ export class EmailSyncController {
       message: 'Sync settings updated successfully',
       syncFromDate,
     };
+  }
+
+  @Get('accounts/:accountId/messages/:messageId')
+  async getMessage(
+    @Param('accountId') accountId: string,
+    @Param('messageId') messageId: string,
+    @Req() req: any,
+  ) {
+    return this.emailSyncService.getMessage(accountId, messageId, req.user.organizationId);
+  }
+
+  @Get('attachment-url/:b2Key')
+  async getAttachmentUrl(
+    @Param('b2Key') b2Key: string,
+    @Req() req: any,
+  ) {
+    // Decode the b2Key from URL encoding
+    const decodedKey = decodeURIComponent(b2Key);
+    const url = await this.emailSyncService.getAttachmentUrl(decodedKey);
+    return { url };
   }
 }

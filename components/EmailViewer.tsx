@@ -57,9 +57,25 @@ export const EmailViewer: React.FC<EmailViewerProps> = ({ email, isOpen, onClose
 
   const handleDownloadAttachment = async (attachment: any) => {
     try {
-      if (attachment.url) {
+      let downloadUrl = attachment.url;
+      
+      // If URL is not available or might be expired, try to get a fresh one
+      if (!downloadUrl || downloadUrl.includes('X-Amz-Expires')) {
+        console.log('Regenerating signed URL for attachment...');
+        try {
+          const response = await fetch(`/api/email-sync/attachment-url/${encodeURIComponent(attachment.b2Key)}`);
+          const data = await response.json();
+          downloadUrl = data.url;
+        } catch (err) {
+          console.error('Failed to regenerate URL:', err);
+        }
+      }
+
+      if (downloadUrl) {
         // Fetch the file and force download
-        const response = await fetch(attachment.url);
+        const response = await fetch(downloadUrl);
+        if (!response.ok) throw new Error('Failed to fetch file');
+        
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -72,13 +88,32 @@ export const EmailViewer: React.FC<EmailViewerProps> = ({ email, isOpen, onClose
       }
     } catch (error) {
       console.error('Error downloading attachment:', error);
-      alert('Error al descargar el archivo');
+      alert('Error al descargar el archivo. Por favor, intenta nuevamente.');
     }
   };
 
-  const handlePreviewAttachment = (attachment: any) => {
-    if (attachment.url) {
-      window.open(attachment.url, '_blank');
+  const handlePreviewAttachment = async (attachment: any) => {
+    try {
+      let previewUrl = attachment.url;
+      
+      // If URL is not available or might be expired, try to get a fresh one
+      if (!previewUrl || previewUrl.includes('X-Amz-Expires')) {
+        console.log('Regenerating signed URL for preview...');
+        try {
+          const response = await fetch(`/api/email-sync/attachment-url/${encodeURIComponent(attachment.b2Key)}`);
+          const data = await response.json();
+          previewUrl = data.url;
+        } catch (err) {
+          console.error('Failed to regenerate URL:', err);
+        }
+      }
+
+      if (previewUrl) {
+        window.open(previewUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('Error previewing attachment:', error);
+      alert('Error al abrir el archivo. Por favor, intenta nuevamente.');
     }
   };
 

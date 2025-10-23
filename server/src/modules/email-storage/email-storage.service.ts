@@ -27,7 +27,7 @@ export class EmailStorageService {
 
   async uploadEmailHtml(accountId: string, messageId: string, htmlContent: string): Promise<string> {
     const key = `emails/${accountId}/${messageId}/body.html`;
-    
+
     try {
       await this.s3Client.send(
         new PutObjectCommand({
@@ -37,7 +37,7 @@ export class EmailStorageService {
           ContentType: 'text/html',
         })
       );
-      
+
       this.logger.log(`Uploaded HTML for message ${messageId} to ${key}`);
       return key;
     } catch (error) {
@@ -55,7 +55,7 @@ export class EmailStorageService {
     filename: string
   ): Promise<string> {
     const key = `emails/${accountId}/${messageId}/attachments/${attachmentId}/${filename}`;
-    
+
     try {
       await this.s3Client.send(
         new PutObjectCommand({
@@ -66,7 +66,7 @@ export class EmailStorageService {
           ContentDisposition: `attachment; filename="${filename}"`,
         })
       );
-      
+
       this.logger.log(`Uploaded attachment ${filename} to ${key}`);
       return key;
     } catch (error) {
@@ -81,7 +81,7 @@ export class EmailStorageService {
         Bucket: this.bucketName,
         Key: key,
       });
-      
+
       const url = await getSignedUrl(this.s3Client, command, { expiresIn });
       return url;
     } catch (error) {
@@ -102,7 +102,7 @@ export class EmailStorageService {
     }>
   ): Promise<Array<{ id: string; key: string; filename: string; size: number; mimeType: string }>> {
     const uploadedAttachments = [];
-    
+
     for (const attachment of attachments) {
       const key = await this.uploadAttachment(
         accountId,
@@ -112,7 +112,7 @@ export class EmailStorageService {
         attachment.mimeType,
         attachment.filename
       );
-      
+
       uploadedAttachments.push({
         id: attachment.id,
         key,
@@ -121,7 +121,7 @@ export class EmailStorageService {
         mimeType: attachment.mimeType,
       });
     }
-    
+
     return uploadedAttachments;
   }
 
@@ -133,7 +133,7 @@ export class EmailStorageService {
           Key: key,
         })
       );
-      
+
       this.logger.log(`Deleted file: ${key}`);
     } catch (error) {
       this.logger.error(`Failed to delete file ${key}:`, error);
@@ -146,13 +146,13 @@ export class EmailStorageService {
 
     try {
       const objects = keys.map(key => ({ Key: key }));
-      
+
       const batchSize = 1000;
       const allErrors: Array<{ key: string; code: string; message: string }> = [];
-      
+
       for (let i = 0; i < objects.length; i += batchSize) {
         const batch = objects.slice(i, i + batchSize);
-        
+
         const response = await this.s3Client.send(
           new DeleteObjectsCommand({
             Bucket: this.bucketName,
@@ -174,12 +174,12 @@ export class EmailStorageService {
           }
         }
       }
-      
+
       if (allErrors.length > 0) {
         this.logger.error(`Failed to delete ${allErrors.length} of ${keys.length} files from Backblaze`);
         throw new Error(`Partial deletion failure: ${allErrors.length} files failed to delete. First error: ${allErrors[0].code} - ${allErrors[0].message}`);
       }
-      
+
       this.logger.log(`Successfully deleted ${keys.length} files from Backblaze`);
     } catch (error) {
       this.logger.error(`Failed to batch delete files:`, error);
