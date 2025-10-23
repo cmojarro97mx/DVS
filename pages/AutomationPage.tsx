@@ -166,10 +166,12 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
                   enabled: true,
                   conditions: {
                     subjectPatterns: [''],
+                    searchIn: ['subject', 'body'],
                     useClientEmail: true,
                     useBookingTracking: true,
                     useMBL: true,
                     useHBL: true,
+                    useOperationId: true,
                   },
                 });
                 setShowCreateModal(true);
@@ -219,10 +221,12 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
                   enabled: true,
                   conditions: {
                     subjectPatterns: [''],
+                    searchIn: ['subject', 'body'],
                     useClientEmail: true,
                     useBookingTracking: true,
                     useMBL: true,
                     useHBL: true,
+                    useOperationId: true,
                   },
                 });
                 setShowCreateModal(true);
@@ -359,14 +363,51 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
 
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Palabras clave para detectar
+                    Palabras clave para detectar en correos
                   </label>
-                  <p className="text-xs text-gray-500 mb-2">
-                    Palabras clave para buscar en los correos. Ejemplo: "NAVI-", "MOPC-", "{projectName}"
+                  <p className="text-xs text-gray-500 mb-3">
+                    Puedes usar texto fijo como "NAVI-" o variables dinámicas de la operación
                   </p>
                   
+                  {/* Variables disponibles */}
+                  <div className="mb-3 p-4 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
+                    <p className="text-xs font-semibold text-indigo-900 mb-2 flex items-center">
+                      <span className="bg-indigo-600 text-white px-2 py-0.5 rounded text-[10px] mr-2">VARIABLES</span>
+                      Variables dinámicas disponibles:
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="bg-white p-2 rounded border border-indigo-100">
+                        <code className="text-indigo-700 font-mono font-semibold">{'{projectName}'}</code>
+                        <p className="text-gray-600 mt-0.5">Nombre de la operación</p>
+                      </div>
+                      <div className="bg-white p-2 rounded border border-indigo-100">
+                        <code className="text-indigo-700 font-mono font-semibold">{'{operationId}'}</code>
+                        <p className="text-gray-600 mt-0.5">ID de la operación</p>
+                      </div>
+                      <div className="bg-white p-2 rounded border border-indigo-100">
+                        <code className="text-indigo-700 font-mono font-semibold">{'{bookingTracking}'}</code>
+                        <p className="text-gray-600 mt-0.5">Número de Booking</p>
+                      </div>
+                      <div className="bg-white p-2 rounded border border-indigo-100">
+                        <code className="text-indigo-700 font-mono font-semibold">{'{mbl_awb}'}</code>
+                        <p className="text-gray-600 mt-0.5">MBL / AWB</p>
+                      </div>
+                      <div className="bg-white p-2 rounded border border-indigo-100">
+                        <code className="text-indigo-700 font-mono font-semibold">{'{hbl_awb}'}</code>
+                        <p className="text-gray-600 mt-0.5">HBL / HAWB</p>
+                      </div>
+                      <div className="bg-white p-2 rounded border border-indigo-100">
+                        <code className="text-green-700 font-mono font-semibold">NAVI-</code>
+                        <p className="text-gray-600 mt-0.5">Texto fijo/prefijo</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-indigo-800 mt-2 italic">
+                      Ejemplo: "NAVI-" detectará "Re: NAVI-1590054// GR25438..."
+                    </p>
+                  </div>
+                  
                   <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-xs font-medium text-blue-900 mb-2">Buscar en:</p>
+                    <p className="text-xs font-medium text-blue-900 mb-2">🔍 Buscar patrones en:</p>
                     <div className="flex flex-wrap gap-3">
                       <label className="flex items-center text-xs text-blue-800 cursor-pointer">
                         <input
@@ -387,7 +428,7 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
                           }}
                           className="w-3 h-3 mr-1.5 text-blue-600 border-blue-300 rounded"
                         />
-                        Asunto del email
+                        📧 Asunto del email
                       </label>
                       <label className="flex items-center text-xs text-blue-800 cursor-pointer">
                         <input
@@ -408,7 +449,7 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
                           }}
                           className="w-3 h-3 mr-1.5 text-blue-600 border-blue-300 rounded"
                         />
-                        Contenido del email
+                        📄 Contenido del email
                       </label>
                       <label className="flex items-center text-xs text-blue-800 cursor-pointer">
                         <input
@@ -429,7 +470,7 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
                           }}
                           className="w-3 h-3 mr-1.5 text-blue-600 border-blue-300 rounded"
                         />
-                        Archivos adjuntos (PDFs, imágenes)
+                        📎 Archivos adjuntos (PDFs, imágenes con OCR)
                       </label>
                     </div>
                   </div>
