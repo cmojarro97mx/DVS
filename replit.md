@@ -61,10 +61,19 @@ The frontend uses React with TypeScript, styled using Tailwind CSS, and bundled 
     -   **Access Control**: Token-based system for secure, authentication-free access via unique UUID links.
     -   **AI Integration**: Powered by Google Gemini Flash API (gemini-2.0-flash-exp) with function calling capabilities to query and create operations, clients, events, and tasks.
     -   **Real-Time Conversation**: Full duplex communication through Socket.IO WebSockets for instant voice interactions.
-    -   **Voice Interface**: Browser-native speech recognition and synthesis for hands-free operation management.
+    -   **Voice Interface (100% Open Source)**: 
+        - **Speech-to-Text (STT)**: Web Speech API's SpeechRecognition for voice input (voz → texto)
+        - **Text-to-Speech (TTS)**: Web Speech API's SpeechSynthesis for voice output (texto → voz)
+        - Optimized TTS settings: rate 0.95, pitch 1.0, prioritizing Neural/Enhanced/Premium voices
+        - Intelligent voice selection in Spanish (es-ES, es-MX, es-US)
+        - Zero dependencies, no downloads, fully browser-native
+        - Works on both mobile and desktop devices using system voices
     -   **Connection**: Auto-detects production URL using `window.location.origin` to connect to backend WebSocket (port 3001).
     -   **Interface**: Modern dark theme with ElevenLabs-inspired audio visualizations, supports both text and voice input.
-    -   **Browser Compatibility**: Text input works universally; voice recognition available on Chrome/Edge (Web Speech API).
+    -   **Browser Compatibility**: 
+        - Text input/output: Works universally on all browsers
+        - Voice recognition (STT): Chrome, Edge, Safari (via Web Speech API)
+        - Voice synthesis (TTS): All modern browsers with native voices
 
 **System Design Choices:**
 -   **Modular Design**: Structured into distinct modules for maintainability and scalability.

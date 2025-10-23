@@ -1,15 +1,43 @@
 # 🎙️ Guía de Voces del Asistente Virtual
 
+## 🚀 Inicio Rápido: Cómo Usar el Micrófono
+
+### 📝 Pasos para hablar con el asistente:
+
+1. **Abre el asistente virtual** con tu enlace único
+2. **Haz clic en "Iniciar Conversación"**
+3. **Haz clic en el botón del micrófono** 🎤 (icono morado en el campo de entrada)
+4. **Permite el acceso al micrófono** cuando el navegador lo solicite
+5. **Habla claramente** - El botón se pondrá rojo pulsante mientras graba
+6. **El sistema transcribirá automáticamente** tu voz a texto
+7. **Presiona Enter** o el botón de enviar para enviar el mensaje
+8. **El asistente responderá con voz** (si no está silenciado 🔊)
+
+### ⚠️ Solución de Problemas:
+
+**El micrófono no funciona:**
+- ✅ Verifica que diste permiso al navegador para usar el micrófono
+- ✅ Usa Chrome, Edge o Safari (navegadores compatibles)
+- ✅ Asegúrate de estar en una conexión HTTPS (no HTTP)
+
+**No escuchas la voz del asistente:**
+- ✅ Verifica que el botón de silencio 🔊 no esté activado
+- ✅ Sube el volumen de tu dispositivo
+- ✅ Revisa la consola del navegador (F12) para ver logs de depuración
+
+---
+
 ## 📱 Mejoras Implementadas
 
 El asistente virtual ahora incluye:
 
 ### ✅ Características Speech-to-Text (Grabación de Audio)
 - **🎤 Grabación de audio** - Graba tu voz con el micrófono
-- **🤖 Whisper AI** - Transcripción automática con IA de OpenAI (100% open source)
+- **🤖 Web Speech API** - Reconocimiento de voz nativo del navegador (100% open source)
 - **🌐 Funciona en el navegador** - Todo el procesamiento es local, sin enviar datos a servidores
-- **📱 Compatible con móviles** - Funciona en iOS, Android y desktop
-- **⚡ Modelo pequeño** - Whisper Tiny (~39MB) se descarga una sola vez
+- **📱 Compatible con móviles y desktop** - Funciona en Chrome, Edge, Safari (iOS/Android)
+- **⚡ Sin descargas** - Utiliza las capacidades nativas del navegador, listo al instante
+- **🗣️ Idioma español** - Configurado para reconocimiento en español (ES, MX, US)
 
 ### ✅ Características Text-to-Speech (Respuestas de Voz)
 - **100% Open Source** - Sin costos de API
