@@ -431,11 +431,12 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
                              <div className="flex-grow">
                                 <div key={currentStep}>
                                     <h3 className="text-xl font-semibold text-gray-800 mb-6">{STEPS[currentStep].name}</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {currentStep === 0 && (<>
                                             <FormField label="Project Name" id="projectName" required className="md:col-span-2" error={errors.projectName}>
-                                                <Input name="projectName" value={formData.projectName} onChange={handleChange} required hasError={!!errors.projectName} />
+                                                <Input name="projectName" value={formData.projectName} onChange={handleChange} required hasError={!!errors.projectName} placeholder="Enter project name" />
                                             </FormField>
+                                            
                                             <FormField label="Client" id="clientId" required className="md:col-span-2" error={errors.clientId}>
                                                 <div className="relative" ref={clientDropdownRef}>
                                                     <Input
@@ -470,83 +471,114 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
                                                     )}
                                                 </div>
                                             </FormField>
+                                            
                                             <FormField label="Project Category" id="projectCategory" required error={errors.projectCategory}>
                                                 <Select name="projectCategory" value={formData.projectCategory} onChange={handleChange} required hasError={!!errors.projectCategory}>
                                                     <option value="" disabled>Select a category</option>
                                                     {projectCategories.map(c => <option key={c} value={c}>{c}</option>)}
                                                 </Select>
                                             </FormField>
+                                            
                                             <FormField label="Status" id="status" required error={errors.status}>
                                                 <Select name="status" value={formData.status} onChange={handleChange} required hasError={!!errors.status}>
                                                     <option value="" disabled>Select a status</option>
                                                     {logisticsStatuses.map(s => <option key={s} value={s}>{s}</option>)}
                                                 </Select>
                                             </FormField>
+                                            
                                             <FormField label="Start Date" id="startDate" required error={errors.startDate}>
                                                 <Input type="date" name="startDate" value={formData.startDate} onChange={handleChange} required hasError={!!errors.startDate} />
                                             </FormField>
+                                            
                                             <FormField label="Deadline" id="deadline" error={errors.deadline}>
                                                 <Input type="date" name="deadline" value={formData.deadline} onChange={handleChange} hasError={!!errors.deadline} />
                                             </FormField>
-                                            <FormField label="Project Currency" id="currency" required className="md:col-span-2" error={errors.currency}>
-                                                <Select name="currency" value={formData.currency} onChange={handleChange} required hasError={!!errors.currency} disabled={!!formData.clientId}>
-                                                    <option value="USD">USD</option>
-                                                    <option value="MXN">MXN</option>
-                                                    <option value="EUR">EUR</option>
-                                                </Select>
-                                                {formData.clientId && <p className="mt-1 text-xs text-gray-500">Currency is set based on the selected client</p>}
-                                            </FormField>
-                                            <FormField label="Assigned To" id="assignees" required className="md:col-span-2" error={errors.assignees}>
-                                                <Select name="assignees" value={formData.assignees} onChange={handleChange} required hasError={!!errors.assignees} multiple>
-                                                    {teamMembers.map(member => <option key={member.id} value={member.id}>{member.name}</option>)}
-                                                </Select>
-                                            </FormField>
+                                            
                                             <FormField label="Operation Type" id="operationType" required error={errors.operationType}>
                                                 <Select name="operationType" value={formData.operationType} onChange={handleChange} required hasError={!!errors.operationType}>
                                                     <option value="">Select an option</option>
                                                     {operationTypes.map(t => <option key={t} value={t}>{t}</option>)}
                                                 </Select>
                                             </FormField>
+                                            
                                             <FormField label="Shipping Mode" id="shippingMode" required error={errors.shippingMode}>
                                                 <Select name="shippingMode" value={formData.shippingMode} onChange={handleChange} required hasError={!!errors.shippingMode}>
                                                     <option value="">Select a mode</option>
                                                     {shippingModes.map(m => <option key={m} value={m}>{m}</option>)}
                                                 </Select>
                                             </FormField>
-                                            <FormField label="Insurance" id="insurance" required className="md:col-span-2" error={errors.insurance}>
+                                            
+                                            <FormField label="Insurance" id="insurance" required error={errors.insurance}>
                                                 <Select name="insurance" value={formData.insurance} onChange={handleChange} required hasError={!!errors.insurance}>
                                                     <option value="">Select an option</option>
                                                     {insuranceOptions.map(o => <option key={o} value={o}>{o}</option>)}
                                                 </Select>
                                             </FormField>
+                                            
+                                            <FormField label="Project Currency" id="currency" required error={errors.currency}>
+                                                <Select name="currency" value={formData.currency} onChange={handleChange} required hasError={!!errors.currency} disabled={!!formData.clientId}>
+                                                    <option value="USD">USD - US Dollar</option>
+                                                    <option value="MXN">MXN - Mexican Peso</option>
+                                                    <option value="EUR">EUR - Euro</option>
+                                                </Select>
+                                                {formData.clientId && <p className="mt-1 text-xs text-gray-500">Currency is set based on the selected client</p>}
+                                            </FormField>
+                                            
+                                            <FormField label="Assigned To" id="assignees" required className="md:col-span-2" error={errors.assignees}>
+                                                <Select name="assignees" value={formData.assignees} onChange={handleChange} required hasError={!!errors.assignees} multiple>
+                                                    {teamMembers.map(member => <option key={member.id} value={member.id}>{member.name}</option>)}
+                                                </Select>
+                                            </FormField>
                                         </>)}
+                                        
                                         {currentStep === 1 && (<>
-                                            <FormField label="Courrier" id="courrier"><Input name="courrier" value={formData.courrier} onChange={handleChange} /></FormField>
+                                            <FormField label="Courrier" id="courrier" className="md:col-span-2">
+                                                <Input name="courrier" value={formData.courrier} onChange={handleChange} placeholder="Enter courier name" />
+                                            </FormField>
+                                            
                                             <FormField label="Pick Up Address" id="pickupAddress" className="md:col-span-2">
                                                 <GooglePlacesAutocomplete
                                                     name="pickupAddress"
                                                     value={formData.pickupAddress}
                                                     onChange={(value) => setFormData(prev => ({ ...prev, pickupAddress: value }))}
-                                                    placeholder="Start typing to search for an address..."
+                                                    placeholder="Start typing to search for a pickup address..."
                                                 />
                                             </FormField>
+                                            
                                             <FormField label="Delivery Address" id="deliveryAddress" className="md:col-span-2">
                                                 <GooglePlacesAutocomplete
                                                     name="deliveryAddress"
                                                     value={formData.deliveryAddress}
                                                     onChange={(value) => setFormData(prev => ({ ...prev, deliveryAddress: value }))}
-                                                    placeholder="Start typing to search for an address..."
+                                                    placeholder="Start typing to search for a delivery address..."
                                                 />
                                             </FormField>
                                         </>)}
+                                        
                                         {currentStep === 2 && (<>
-                                            <FormField label="Booking / Shipment Tracking" id="bookingTracking" className="md:col-span-2"><Input name="bookingTracking" value={formData.bookingTracking} onChange={handleChange} /></FormField>
-                                            <FormField label="Pick Up Date" id="pickupDate"><Input type="date" name="pickupDate" value={formData.pickupDate} onChange={handleChange} /></FormField>
-                                            <div/>
-                                            <FormField label="ETD" id="etd"><Input type="date" name="etd" value={formData.etd} onChange={handleChange} /></FormField>
-                                            <FormField label="ETA" id="eta"><Input type="date" name="eta" value={formData.eta} onChange={handleChange} /></FormField>
-                                            <FormField label="MBL / AWB" id="mbl_awb"><Input name="mbl_awb" value={formData.mbl_awb} onChange={handleChange} /></FormField>
-                                            <FormField label="HBL / AWB" id="hbl_awb"><Input name="hbl_awb" value={formData.hbl_awb} onChange={handleChange} /></FormField>
+                                            <FormField label="Booking / Shipment Tracking" id="bookingTracking" className="md:col-span-2">
+                                                <Input name="bookingTracking" value={formData.bookingTracking} onChange={handleChange} placeholder="Enter booking or tracking number" />
+                                            </FormField>
+                                            
+                                            <FormField label="Pick Up Date" id="pickupDate">
+                                                <Input type="date" name="pickupDate" value={formData.pickupDate} onChange={handleChange} />
+                                            </FormField>
+                                            
+                                            <FormField label="ETD (Estimated Time of Departure)" id="etd">
+                                                <Input type="date" name="etd" value={formData.etd} onChange={handleChange} />
+                                            </FormField>
+                                            
+                                            <FormField label="ETA (Estimated Time of Arrival)" id="eta">
+                                                <Input type="date" name="eta" value={formData.eta} onChange={handleChange} />
+                                            </FormField>
+                                            
+                                            <FormField label="MBL / AWB" id="mbl_awb">
+                                                <Input name="mbl_awb" value={formData.mbl_awb} onChange={handleChange} placeholder="Master Bill of Lading / Air Waybill" />
+                                            </FormField>
+                                            
+                                            <FormField label="HBL / AWB" id="hbl_awb">
+                                                <Input name="hbl_awb" value={formData.hbl_awb} onChange={handleChange} placeholder="House Bill of Lading / Air Waybill" />
+                                            </FormField>
                                         </>)}
                                     </div>
                                 </div>
