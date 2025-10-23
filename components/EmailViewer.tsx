@@ -16,12 +16,15 @@ interface EmailViewerProps {
 export const EmailViewer: React.FC<EmailViewerProps> = ({ email, isOpen, onClose }) => {
   const [emailHtml, setEmailHtml] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [loadingFresh, setLoadingFresh] = useState(false);
+  const [freshEmail, setFreshEmail] = useState<any>(null);
 
   useEffect(() => {
     const loadEmailHtml = async () => {
       if (!email || !isOpen) return;
       
       setLoading(true);
+      setFreshEmail(null);
       try {
         if (email.htmlBodyUrl && email.htmlBodyUrl.startsWith('http')) {
           const response = await fetch(email.htmlBodyUrl);
@@ -44,6 +47,42 @@ export const EmailViewer: React.FC<EmailViewerProps> = ({ email, isOpen, onClose
 
     loadEmailHtml();
   }, [email, isOpen]);
+
+  const loadFreshEmail = async () => {
+    if (!email.accountId || !email.gmailMessageId) {
+      alert('No se puede cargar el diseño original. Información de cuenta faltante.');
+      return;
+    }
+
+    setLoadingFresh(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(
+        `/api/email-sync/fresh-email/${email.accountId}/${email.gmailMessageId}`,
+        {
+          headers: { 'Authorization': `Bearer ${token}` },
+        }
+      );
+
+      const data = await response.json();
+      
+      if (data.success && data.email) {
+        setFreshEmail(data.email);
+        if (data.email.htmlBody) {
+          setEmailHtml(data.email.htmlBody);
+        } else if (data.email.textBody) {
+          setEmailHtml(`<pre style="white-space: pre-wrap; font-family: inherit;">${data.email.textBody}</pre>`);
+        }
+      } else {
+        throw new Error(data.message || 'Error al cargar el correo');
+      }
+    } catch (error) {
+      console.error('Error loading fresh email:', error);
+      alert('Error al cargar el diseño original del correo. Por favor, intenta nuevamente.');
+    } finally {
+      setLoadingFresh(false);
+    }
+  };
 
   const getFileIcon = (filename: string) => {
     const ext = filename.split('.').pop()?.toLowerCase();
@@ -142,13 +181,46 @@ export const EmailViewer: React.FC<EmailViewerProps> = ({ email, isOpen, onClose
               {email.subject || '(Sin asunto)'}
             </h3>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
-            type="button"
-          >
-            <XIcon className="w-5 h-5 text-gray-600" />
-          </button>
+          <div className="flex items-center gap-2">
+            {!freshEmail && email.accountId && email.gmailMessageId && (
+              <button
+                onClick={loadFreshEmail}
+                disabled={loadingFresh}
+                className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                type="button"
+                title="Cargar diseño original desde Gmail"
+              >
+                {loadingFresh ? (
+                  <>
+                    <div className="w-3 h-3 border-2 border-blue-700 border-t-transparent rounded-full animate-spin"></div>
+                    <span>Cargando...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span>Diseño Original</span>
+                  </>
+                )}
+              </button>
+            )}
+            {freshEmail && (
+              <span className="px-2.5 py-1 text-xs font-medium text-green-700 bg-green-50 rounded-md flex items-center gap-1">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Diseño Original
+              </span>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+              type="button"
+            >
+              <XIcon className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
         </div>
 
         {/* Email Info */}
@@ -221,11 +293,11 @@ export const EmailViewer: React.FC<EmailViewerProps> = ({ email, isOpen, onClose
                   className="w-full border-0"
                   style={{ 
                     height: 'auto',
-                    minHeight: '200px',
-                    maxHeight: '400px',
+                    minHeight: freshEmail ? '300px' : '200px',
+                    maxHeight: freshEmail ? '600px' : '400px',
                     border: 'none',
                   }}
-                  sandbox="allow-same-origin"
+                  sandbox="allow-same-origin allow-popups"
                   title="Email content"
                   onLoad={(e) => {
                     const iframe = e.currentTarget;
@@ -236,7 +308,9 @@ export const EmailViewer: React.FC<EmailViewerProps> = ({ email, isOpen, onClose
                           iframeDoc.body.scrollHeight,
                           iframeDoc.documentElement.scrollHeight
                         );
-                        iframe.style.height = Math.min(Math.max(height + 20, 200), 400) + 'px';
+                        const maxHeight = freshEmail ? 600 : 400;
+                        const minHeight = freshEmail ? 300 : 200;
+                        iframe.style.height = Math.min(Math.max(height + 20, minHeight), maxHeight) + 'px';
                       }
                     } catch (e) {
                       console.error('Error adjusting iframe height:', e);
@@ -249,18 +323,20 @@ export const EmailViewer: React.FC<EmailViewerProps> = ({ email, isOpen, onClose
         </div>
 
         {/* Attachments */}
-        {email.hasAttachments && email.attachmentsData && Array.isArray(email.attachmentsData) && email.attachmentsData.length > 0 && (
+        {((email.hasAttachments && email.attachmentsData && Array.isArray(email.attachmentsData) && email.attachmentsData.length > 0) || (freshEmail?.attachments && freshEmail.attachments.length > 0)) && (
           <div className="px-4 py-2.5 border-t border-gray-200 bg-gray-50/50 flex-shrink-0">
             <h4 className="text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1">
               <PaperClipIcon className="w-3 h-3 text-gray-500" />
-              Adjuntos ({email.attachmentsData.length})
+              Adjuntos ({(freshEmail?.attachments?.length || email.attachmentsData?.length || 0)})
             </h4>
             <div className="overflow-x-auto pb-1">
               <div className="flex gap-2 min-w-max">
-                {email.attachmentsData.map((att: any, index: number) => {
+                {(freshEmail?.attachments || email.attachmentsData || []).map((att: any, index: number) => {
                   const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(
                     att.filename?.split('.').pop()?.toLowerCase() || ''
                   );
+                  
+                  const isFreshEmailAttachment = !att.key;
 
                   return (
                     <div
@@ -270,7 +346,11 @@ export const EmailViewer: React.FC<EmailViewerProps> = ({ email, isOpen, onClose
                       {/* Preview Area */}
                       <div 
                         className="relative h-16 bg-gray-100 flex items-center justify-center cursor-pointer"
-                        onClick={() => handlePreviewAttachment(att)}
+                        onClick={() => {
+                          if (!isFreshEmailAttachment) {
+                            handlePreviewAttachment(att);
+                          }
+                        }}
                       >
                         {isImage && att.url ? (
                           <img 
@@ -292,32 +372,40 @@ export const EmailViewer: React.FC<EmailViewerProps> = ({ email, isOpen, onClose
                         )}
                         
                         {/* Hover Overlay */}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <div className="flex gap-1">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handlePreviewAttachment(att);
-                              }}
-                              className="p-1 bg-white/95 hover:bg-white rounded-full transition-colors"
-                              title="Ver"
-                              type="button"
-                            >
-                              <EyeIcon className="w-3 h-3 text-blue-600" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDownloadAttachment(att);
-                              }}
-                              className="p-1 bg-white/95 hover:bg-white rounded-full transition-colors"
-                              title="Descargar"
-                              type="button"
-                            >
-                              <DownloadIcon className="w-3 h-3 text-green-600" />
-                            </button>
+                        {!isFreshEmailAttachment ? (
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <div className="flex gap-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePreviewAttachment(att);
+                                }}
+                                className="p-1 bg-white/95 hover:bg-white rounded-full transition-colors"
+                                title="Ver"
+                                type="button"
+                              >
+                                <EyeIcon className="w-3 h-3 text-blue-600" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownloadAttachment(att);
+                                }}
+                                className="p-1 bg-white/95 hover:bg-white rounded-full transition-colors"
+                                title="Descargar"
+                                type="button"
+                              >
+                                <DownloadIcon className="w-3 h-3 text-green-600" />
+                              </button>
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <div className="p-2 bg-white/95 rounded-md">
+                              <p className="text-[8px] text-gray-600 text-center">Disponible en Gmail</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* File Info */}
