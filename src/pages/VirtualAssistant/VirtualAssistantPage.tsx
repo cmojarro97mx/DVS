@@ -62,19 +62,27 @@ export default function VirtualAssistantPage() {
       const data = await api.get<any>(`/virtual-assistant/token/${token}`);
       setAssistant(data);
       
-      const apiUrl = import.meta.env.VITE_API_URL || window.location.origin.replace(':5000', ':3001');
-      console.log('🌐 URL de conexión WebSocket:', `${apiUrl}/virtual-assistant`);
-      const socket = io(`${apiUrl}/virtual-assistant`, {
+      const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+      const hostname = window.location.hostname;
+      const wsUrl = `${protocol}//${hostname}:3001`;
+      
+      console.log('🌐 Conectando WebSocket a:', wsUrl);
+      
+      const socket = io(`${wsUrl}/virtual-assistant`, {
         transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
       });
 
       socketRef.current = socket;
 
       socket.on('connect', () => {
-        console.log('✅ Conectado al asistente virtual');
+        console.log('✅ WebSocket conectado correctamente');
       });
 
       socket.on('initialized', (data) => {
+        console.log('📨 Asistente inicializado:', data.message);
         const welcomeMessage = {
           role: 'assistant' as const,
           content: data.message,
@@ -106,8 +114,18 @@ export default function VirtualAssistantPage() {
       });
 
       socket.on('error', (data) => {
-        console.error('❌ Error:', data.message);
+        console.error('❌ Error del asistente:', data.message);
         setError(data.message);
+        setIsProcessing(false);
+      });
+
+      socket.on('disconnect', () => {
+        console.log('⚠️ WebSocket desconectado');
+      });
+
+      socket.on('connect_error', (err) => {
+        console.error('❌ Error de conexión WebSocket:', err.message);
+        setError('Error de conexión. Por favor recarga la página.');
         setIsProcessing(false);
       });
 
@@ -126,10 +144,21 @@ export default function VirtualAssistantPage() {
   const startConversation = () => {
     setIsStarted(true);
     
-    if (socketRef.current) {
-      console.log('🎤 Iniciando conversación...');
+    if (socketRef.current && socketRef.current.connected) {
+      console.log('🎤 Iniciando conversación con token:', token);
       setIsProcessing(true);
       socketRef.current.emit('initialize', { token });
+      
+      setTimeout(() => {
+        if (isProcessing) {
+          console.warn('⚠️ Tiempo de espera agotado, mostrando interfaz');
+          setIsProcessing(false);
+        }
+      }, 5000);
+    } else {
+      console.error('❌ Socket no conectado');
+      setError('No se pudo conectar con el servidor. Por favor recarga la página.');
+      setIsProcessing(false);
     }
   };
 
