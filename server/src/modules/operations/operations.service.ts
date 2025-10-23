@@ -296,4 +296,90 @@ export class OperationsService {
       data: { commissionHistory },
     });
   }
+
+  async getRelatedEmails(
+    operationId: string,
+    organizationId: string,
+    userId: string,
+  ) {
+    const operation = await this.prisma.operation.findFirst({
+      where: { id: operationId, organizationId },
+      include: {
+        client: true,
+        assignees: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    if (!operation) {
+      throw new NotFoundException(`Operation with ID ${operationId} not found`);
+    }
+
+    const emailAccounts = await this.prisma.emailAccount.findMany({
+      where: {
+        user: {
+          organizationId,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    const accountIds = emailAccounts.map(acc => acc.id);
+
+    if (accountIds.length === 0) {
+      return [];
+    }
+
+    const searchTerms = [];
+    if (operation.client?.email) {
+      searchTerms.push(operation.client.email.toLowerCase());
+    }
+    if (operation.client?.name) {
+      searchTerms.push(operation.client.name.toLowerCase());
+    }
+    if (operation.projectName) {
+      searchTerms.push(operation.projectName.toLowerCase());
+    }
+
+    if (searchTerms.length === 0) {
+      return [];
+    }
+
+    const emails = await this.prisma.emailMessage.findMany({
+      where: {
+        accountId: { in: accountIds },
+        OR: [
+          ...searchTerms.map(term => ({
+            from: { contains: term, mode: 'insensitive' as any },
+          })),
+          ...searchTerms.map(term => ({
+            subject: { contains: term, mode: 'insensitive' as any },
+          })),
+        ],
+      },
+      orderBy: { date: 'desc' },
+      take: 50,
+      select: {
+        id: true,
+        from: true,
+        fromName: true,
+        to: true,
+        subject: true,
+        snippet: true,
+        date: true,
+        unread: true,
+        starred: true,
+        isReplied: true,
+        hasAttachments: true,
+        folder: true,
+      },
+    });
+
+    return emails;
+  }
 }

@@ -108,4 +108,8 @@ export const operationsService = {
   async updateCommissionHistory(operationId: string, commissionHistory: any): Promise<Operation> {
     return apiService.put<Operation>(`/operations/${operationId}/commissions`, { commissionHistory });
   },
+
+  async getRelatedEmails(operationId: string): Promise<any[]> {
+    return apiService.get<any[]>(`/operations/${operationId}/emails`);
+  },
 };

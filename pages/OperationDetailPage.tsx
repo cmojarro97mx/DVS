@@ -852,6 +852,8 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = (props) => {
   const [initialViewInvoiceId, setInitialViewInvoiceId] = useState<string | undefined>(undefined);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [relatedEmails, setRelatedEmails] = useState<any[]>([]);
+  const [loadingEmails, setLoadingEmails] = useState(false);
 
   useEffect(() => {
     if (initialState) {
@@ -866,6 +868,23 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = (props) => {
         }
     }
   }, [initialState]);
+
+  useEffect(() => {
+    const loadRelatedEmails = async () => {
+      if (activeTab === 'emails') {
+        setLoadingEmails(true);
+        try {
+          const emails = await operationsService.getRelatedEmails(project.id);
+          setRelatedEmails(emails);
+        } catch (error) {
+          console.error('Error loading related emails:', error);
+        } finally {
+          setLoadingEmails(false);
+        }
+      }
+    };
+    loadRelatedEmails();
+  }, [activeTab, project.id]);
 
 
   useEffect(() => {
@@ -1068,21 +1087,83 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = (props) => {
                                       onUpdateColumns={onUpdateColumns}
                                   />}
         {activeTab === 'emails' && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center flex flex-col items-center justify-center min-h-[400px]">
-                <div className="bg-slate-100 rounded-full p-5 mb-5">
-                    <MailIcon className="w-12 h-12 text-slate-400" />
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div className="p-6 border-b border-gray-200">
+                    <h3 className="text-lg font-bold text-gray-800">Emails Relacionados</h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                        Emails que mencionan al cliente {client?.name || 'o esta operación'}
+                    </p>
                 </div>
-                <h3 className="text-lg font-bold text-slate-800">Connect your email to link conversations</h3>
-                <p className="mt-2 text-sm text-slate-500 max-w-md">
-                    To automatically find and link relevant emails to this operation, you first need to connect your email account from the integrations page.
-                </p>
-                <button 
-                    onClick={() => setActiveView('integrations')} 
-                    className="mt-6 flex items-center bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
-                >
-                    <LinkIcon className="w-5 h-5 mr-2" />
-                    Go to Integrations
-                </button>
+                {loadingEmails ? (
+                    <div className="p-12 text-center">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-200 border-t-blue-600"></div>
+                        <p className="mt-4 text-sm text-gray-500">Cargando emails...</p>
+                    </div>
+                ) : relatedEmails.length === 0 ? (
+                    <div className="p-12 text-center">
+                        <div className="bg-slate-100 rounded-full p-5 mb-5 inline-block">
+                            <MailIcon className="w-12 h-12 text-slate-400" />
+                        </div>
+                        <h4 className="text-md font-semibold text-slate-700">No se encontraron emails relacionados</h4>
+                        <p className="mt-2 text-sm text-slate-500 max-w-md mx-auto">
+                            No hay emails que mencionen a este cliente o operación. Asegúrate de tener cuentas de email conectadas.
+                        </p>
+                        <button 
+                            onClick={() => setActiveView('integrations')} 
+                            className="mt-6 inline-flex items-center bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+                        >
+                            <LinkIcon className="w-5 h-5 mr-2" />
+                            Conectar Email
+                        </button>
+                    </div>
+                ) : (
+                    <div className="divide-y divide-gray-200">
+                        {relatedEmails.map((email) => (
+                            <div key={email.id} className="p-4 hover:bg-gray-50 transition-colors cursor-pointer">
+                                <div className="flex items-start gap-4">
+                                    <EmailAvatar email={email.from} name={email.fromName} />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-semibold text-gray-900 truncate">
+                                                    {email.fromName || email.from}
+                                                </p>
+                                                <p className="text-xs text-gray-500 truncate">{email.from}</p>
+                                            </div>
+                                            <span className="text-xs text-gray-500 whitespace-nowrap">
+                                                {new Date(email.date).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                        <h4 className="text-sm font-medium text-gray-800 mt-2 truncate">
+                                            {email.subject}
+                                        </h4>
+                                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                                            {email.snippet}
+                                        </p>
+                                        <div className="flex items-center gap-2 mt-2">
+                                            {email.unread && (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                                    No leído
+                                                </span>
+                                            )}
+                                            {email.hasAttachments && (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                                                    <PaperClipIcon className="w-3 h-3 mr-1" />
+                                                    Adjuntos
+                                                </span>
+                                            )}
+                                            {email.isReplied && (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                                    Respondido
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         )}
         {activeTab === 'documents' && <ProjectDocuments documents={documents} onUpdateDocuments={onUpdateDocuments} />}

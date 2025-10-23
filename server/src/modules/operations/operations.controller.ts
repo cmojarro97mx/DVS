@@ -81,4 +81,9 @@ export class OperationsController {
       req.user.organizationId,
     );
   }
+
+  @Get(':id/emails')
+  getRelatedEmails(@Param('id') id: string, @Request() req) {
+    return this.operationsService.getRelatedEmails(id, req.user.organizationId, req.user.userId);
+  }
 }
