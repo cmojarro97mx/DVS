@@ -28,6 +28,16 @@ export default function VirtualAssistantPage() {
 
   useEffect(() => {
     initializeAssistant();
+    
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+      
+      window.speechSynthesis.addEventListener('voiceschanged', () => {
+        const voices = window.speechSynthesis.getVoices();
+        console.log('🎤 Voces cargadas:', voices.length);
+      });
+    }
+    
     return () => {
       if (socketRef.current) {
         socketRef.current.disconnect();
@@ -175,11 +185,36 @@ export default function VirtualAssistantPage() {
     if (isMuted || isSpeaking) return;
 
     console.log('🔊 Hablando:', text.substring(0, 50) + '...');
+    
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
+    
+    const voices = window.speechSynthesis.getVoices();
+    console.log('📢 Voces disponibles:', voices.map(v => `${v.name} (${v.lang})`));
+    
+    const spanishVoice = voices.find(voice => 
+      (voice.lang.includes('es-ES') || voice.lang.includes('es-MX') || voice.lang.includes('es-US')) &&
+      (voice.name.includes('Premium') || 
+       voice.name.includes('Enhanced') || 
+       voice.name.includes('Neural') ||
+       voice.name.includes('Google') ||
+       voice.name.includes('Microsoft') ||
+       voice.name.includes('Natural') ||
+       voice.name.includes('Monica') ||
+       voice.name.includes('Paulina') ||
+       voice.name.includes('Diego'))
+    ) || voices.find(voice => 
+      voice.lang.includes('es')
+    );
+
+    if (spanishVoice) {
+      utterance.voice = spanishVoice;
+      console.log('✅ Usando voz:', spanishVoice.name);
+    }
+
     utterance.lang = 'es-ES';
-    utterance.rate = 1.0;
+    utterance.rate = 0.95;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
 
@@ -197,6 +232,20 @@ export default function VirtualAssistantPage() {
       console.error('Error en síntesis de voz:', e);
       setIsSpeaking(false);
     };
+
+    if (voices.length === 0) {
+      window.speechSynthesis.addEventListener('voiceschanged', () => {
+        const newVoices = window.speechSynthesis.getVoices();
+        const bestVoice = newVoices.find(voice => 
+          voice.lang.includes('es') && 
+          (voice.name.includes('Premium') || voice.name.includes('Enhanced') || voice.name.includes('Google'))
+        );
+        if (bestVoice) {
+          utterance.voice = bestVoice;
+          console.log('✅ Voz actualizada a:', bestVoice.name);
+        }
+      });
+    }
 
     setTimeout(() => {
       window.speechSynthesis.speak(utterance);
