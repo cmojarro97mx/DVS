@@ -234,7 +234,7 @@ const ProjectDocuments: React.FC<{
         setIsDragOver(false);
         if (e.dataTransfer.files) handleUploadFiles(e.dataTransfer.files);
     };
-    
+
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex justify-between items-center mb-4">
@@ -314,7 +314,7 @@ const ProjectNotes: React.FC<{
             setAttachment(e.target.files[0]);
         }
     };
-    
+
     const handleSaveEdit = () => {
       if (editingNote && editingNote.content.trim()) {
         onUpdateNote(editingNote.id, editingNote.content);
@@ -328,7 +328,7 @@ const ProjectNotes: React.FC<{
       }
       setActiveMenu(null);
     };
-    
+
     const startEditing = (note: Note) => {
         setEditingNote({ id: note.id, content: note.content });
         setActiveMenu(null);
@@ -544,7 +544,7 @@ const FinancialSummary: React.FC<{
         const totalInvoiced = invoices.reduce((sum, i) => sum + i.total, 0);
         const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
         const totalExpenses = expenses.reduce((sum, e) => sum + e.price, 0);
-        
+
         const balanceDue = totalInvoiced - totalPaid;
         const profitability = totalInvoiced - totalExpenses;
 
@@ -591,7 +591,7 @@ const FinancialSummary: React.FC<{
                         </p>
                     </div>
                 </div>
-                
+
                 {/* Total Invoiced */}
                  <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 flex items-center gap-4">
                     <ArrowUpCircleIcon className="w-8 h-8 text-slate-400 flex-shrink-0"/>
@@ -638,7 +638,7 @@ const CommissionsManager: React.FC<{
     useEffect(() => {
         const initialRates: Record<string, number> = {};
         const sourceCommissions = latestSnapshot?.commissions || [];
-        
+
         project.assignees.forEach(assignee => {
             const existing = sourceCommissions.find(c => c.employeeName === assignee);
             initialRates[assignee] = existing?.rate || 0;
@@ -677,7 +677,7 @@ const CommissionsManager: React.FC<{
         const newHistory = [...(project.commissionHistory || []), newSnapshot];
         onUpdateCommissionHistory(newHistory);
     };
-    
+
     const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: project.currency }).format(amount);
 
     const HistoryDetailModal: React.FC<{ snapshot: CommissionSnapshot | null, onClose: () => void }> = ({ snapshot, onClose }) => {
@@ -833,18 +833,16 @@ const ShipmentJourney: React.FC<{ project: Project }> = ({ project }) => {
 };
 
 
-const OperationDetailPage: React.FC<OperationDetailPageProps> = (props) => {
-  const { 
-    setActiveView, project, documents, onUpdateDocuments, 
-    notes, onAddNote, onUpdateNote, onDeleteNote, 
-    expenses, onAddExpense, onUpdateExpense, onDeleteExpense,
-    invoices, onAddInvoice, onUpdateInvoice, onDeleteInvoice,
-    payments, onAddPayment, onUpdatePayment, onDeletePayment,
-    tasks, columns, columnOrder, onSaveTask, onDeleteTask, onUpdateColumns,
-    teamMembers, onUpdateAssignees, onUpdateCommissionHistory, bankAccounts, client,
-    initialState, onClearInitialState, emails
-  } = props;
-
+const OperationDetailPage: React.FC<OperationDetailPageProps> = ({ 
+  setActiveView, project, documents, onUpdateDocuments, 
+  notes, onAddNote, onUpdateNote, onDeleteNote, 
+  expenses, onAddExpense, onUpdateExpense, onDeleteExpense,
+  invoices, onAddInvoice, onUpdateInvoice, onDeleteInvoice,
+  payments, onAddPayment, onUpdatePayment, onDeletePayment,
+  tasks, columns, columnOrder, onSaveTask, onDeleteTask, onUpdateColumns,
+  teamMembers, onUpdateAssignees, onUpdateCommissionHistory, bankAccounts, client,
+  initialState, onClearInitialState, emails
+}) => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -855,6 +853,8 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = (props) => {
   const [relatedEmails, setRelatedEmails] = useState<any[]>([]);
   const [loadingEmails, setLoadingEmails] = useState(false);
   const [linkingCriteria, setLinkingCriteria] = useState<any>(null);
+  const [selectedEmailForView, setSelectedEmailForView] = useState<any>(null);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
   useEffect(() => {
     if (initialState) {
@@ -918,6 +918,25 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = (props) => {
     }
   };
 
+  const handleDeleteDocument = async (documentId: string) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este documento?')) {
+      return;
+    }
+
+    try {
+      await operationsService.deleteDocument(project.id, documentId);
+      onUpdateDocuments(documents.filter(doc => doc.id !== documentId));
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      alert('Error al eliminar el documento');
+    }
+  };
+
+  const handleViewEmail = (email: any) => {
+    setSelectedEmailForView(email);
+    setIsEmailModalOpen(true);
+  };
+
   const renderOverview = () => (
     <div className="space-y-6">
       <FinancialSummary invoices={invoices} payments={payments} expenses={expenses} currency={project.currency} />
@@ -946,7 +965,7 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = (props) => {
             <DetailItem label="Deadline" value={project.deadline} />
         </div>
       </DetailCard>
-      
+
       <DetailCard title="Shipment Information" icon={TruckIcon}>
         <div className="space-y-6">
             <ShipmentJourney project={project} />
@@ -1077,7 +1096,7 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = (props) => {
             </nav>
         </div>
       </div>
-      
+
       <div className="mt-6">
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'tasks' && <TaskManager 
@@ -1092,142 +1111,87 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = (props) => {
                                       onUpdateColumns={onUpdateColumns}
                                   />}
         {activeTab === 'emails' && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-                <div className="p-6 border-b border-gray-200">
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <h3 className="text-lg font-bold text-gray-800">Correos Vinculados</h3>
-                            <p className="text-sm text-gray-500 mt-1">
-                                Emails detectados automáticamente relacionados con esta operación
-                            </p>
-                        </div>
-                        {relatedEmails.length > 0 && (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {relatedEmails.length} {relatedEmails.length === 1 ? 'email' : 'emails'}
-                            </span>
-                        )}
-                    </div>
+            <div className="space-y-4">
+              {linkingCriteria && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-blue-900 mb-2">Criterios de vinculación activos:</h4>
+                  <div className="text-xs text-blue-800 space-y-1">
+                    {linkingCriteria.useClientEmail && linkingCriteria.clientEmail && (
+                      <div>• Email del cliente: {linkingCriteria.clientEmail}</div>
+                    )}
+                    {linkingCriteria.useOperationId && (
+                      <div>• ID de operación: {linkingCriteria.operationId}</div>
+                    )}
+                    {linkingCriteria.useBookingTracking && linkingCriteria.bookingTracking && (
+                      <div>• Booking/Tracking: {linkingCriteria.bookingTracking}</div>
+                    )}
+                    {linkingCriteria.useMBL && linkingCriteria.mbl_awb && (
+                      <div>• MBL/AWB: {linkingCriteria.mbl_awb}</div>
+                    )}
+                    {linkingCriteria.useHBL && linkingCriteria.hbl_awb && (
+                      <div>• HBL/HAWB: {linkingCriteria.hbl_awb}</div>
+                    )}
+                    {linkingCriteria.customPatterns && linkingCriteria.customPatterns.length > 0 && (
+                      <div>• Patrones personalizados: {linkingCriteria.customPatterns.join(', ')}</div>
+                    )}
+                  </div>
                 </div>
-                {loadingEmails ? (
-                    <div className="p-12 text-center">
-                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-200 border-t-blue-600"></div>
-                        <p className="mt-4 text-sm text-gray-500">Buscando correos relacionados...</p>
-                    </div>
-                ) : relatedEmails.length === 0 ? (
-                    <div className="p-12 text-center">
-                        <div className="bg-slate-100 rounded-full p-5 mb-5 inline-block">
-                            <MailIcon className="w-12 h-12 text-slate-400" />
-                        </div>
-                        <h4 className="text-md font-semibold text-slate-700">No se encontraron correos vinculados</h4>
-                        <p className="mt-2 text-sm text-slate-500 max-w-md mx-auto">
-                            No hay emails que coincidan con los criterios de vinculación automática para esta operación.
-                        </p>
-                        {linkingCriteria && (
-                            <div className="mt-4 text-xs text-slate-400 max-w-lg mx-auto">
-                                <p className="font-medium mb-2">Criterios de vinculación activos:</p>
-                                <ul className="text-left space-y-1 list-disc pl-5">
-                                    {linkingCriteria.customPatterns && linkingCriteria.customPatterns.length > 0 && (
-                                        <>
-                                            <li className="font-semibold text-blue-600">Reglas personalizadas:</li>
-                                            {linkingCriteria.customPatterns.map((pattern: string, idx: number) => (
-                                                <li key={idx} className="ml-4">Asunto contiene: <span className="font-mono bg-slate-200 px-1 rounded">{pattern}</span></li>
-                                            ))}
-                                        </>
-                                    )}
-                                    {linkingCriteria.useClientEmail && linkingCriteria.clientEmail && (
-                                        <li>Email del cliente: <span className="font-mono bg-slate-200 px-1 rounded">{linkingCriteria.clientEmail}</span></li>
-                                    )}
-                                    {linkingCriteria.useBookingTracking && linkingCriteria.bookingTracking && (
-                                        <li>Booking/Tracking: <span className="font-mono bg-slate-200 px-1 rounded">{linkingCriteria.bookingTracking}</span></li>
-                                    )}
-                                    {linkingCriteria.useMBL && linkingCriteria.mbl_awb && (
-                                        <li>MBL/AWB: <span className="font-mono bg-slate-200 px-1 rounded">{linkingCriteria.mbl_awb}</span></li>
-                                    )}
-                                    {linkingCriteria.useHBL && linkingCriteria.hbl_awb && (
-                                        <li>HBL/HAWB: <span className="font-mono bg-slate-200 px-1 rounded">{linkingCriteria.hbl_awb}</span></li>
-                                    )}
-                                </ul>
+              )}
+
+              {loadingEmails ? (
+                <div className="text-center py-8">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+                  <p className="mt-2 text-sm text-slate-600">Cargando correos relacionados...</p>
+                </div>
+              ) : relatedEmails.length > 0 ? (
+                <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                  <div className="max-h-96 overflow-y-auto">
+                    {relatedEmails.map(email => (
+                      <div 
+                        key={email.id} 
+                        onClick={() => handleViewEmail(email)}
+                        className="border-b border-slate-200 last:border-b-0 p-3 hover:bg-slate-50 transition-colors cursor-pointer"
+                      >
+                        <div className="flex justify-between items-start gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              {email.unread && (
+                                <div className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></div>
+                              )}
+                              <h4 className="font-semibold text-slate-900 text-sm truncate">{email.subject || '(Sin asunto)'}</h4>
                             </div>
-                        )}
-                        <button 
-                            onClick={() => setActiveView('integrations')} 
-                            className="mt-6 inline-flex items-center bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
-                        >
-                            <LinkIcon className="w-5 h-5 mr-2" />
-                            Conectar Cuenta de Email
-                        </button>
-                    </div>
-                ) : (
-                    <div className="divide-y divide-gray-200">
-                        {relatedEmails.map((email) => {
-                            const emailDate = new Date(email.date);
-                            const isRecent = (Date.now() - emailDate.getTime()) < (7 * 24 * 60 * 60 * 1000);
-                            
-                            return (
-                                <div key={email.id} className="p-4 hover:bg-gray-50 transition-colors cursor-pointer">
-                                    <div className="flex items-start gap-4">
-                                        <EmailAvatar email={email.from} name={email.fromName} />
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-semibold text-gray-900 truncate">
-                                                        {email.fromName || email.from.split('@')[0]}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500 truncate">{email.from}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <span className="text-xs text-gray-500 whitespace-nowrap">
-                                                        {emailDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
-                                                    </span>
-                                                    {isRecent && (
-                                                        <span className="block text-xs text-blue-600 font-medium">Reciente</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <h4 className="text-sm font-medium text-gray-800 mt-2 truncate">
-                                                {email.subject || '(Sin asunto)'}
-                                            </h4>
-                                            <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                                                {email.snippet}
-                                            </p>
-                                            <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                                {email.unread && (
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                                        No leído
-                                                    </span>
-                                                )}
-                                                {email.hasAttachments && (
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                                                        <PaperClipIcon className="w-3 h-3 mr-1" />
-                                                        Adjuntos
-                                                    </span>
-                                                )}
-                                                {email.isReplied && (
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                                        Respondido
-                                                    </span>
-                                                )}
-                                                {email.starred && (
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                                                        ⭐ Destacado
-                                                    </span>
-                                                )}
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600">
-                                                    {email.folder === 'inbox' ? 'Recibido' : 
-                                                     email.folder === 'sent' ? 'Enviado' : 
-                                                     email.folder === 'draft' ? 'Borrador' : 
-                                                     email.folder}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
+                            <p className="text-xs text-slate-600 mt-1 truncate">De: {email.fromName || email.from}</p>
+                            <p className="text-xs text-slate-500 mt-1 line-clamp-1">{email.snippet}</p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-xs text-slate-500">
+                              {new Date(email.date).toLocaleDateString('es-ES', {
+                                day: '2-digit',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                            {email.hasAttachments && (
+                              <div className="mt-1 flex items-center justify-end gap-1 text-xs text-slate-500">
+                                <PaperClipIcon className="w-3 h-3" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12 bg-slate-50 rounded-lg">
+                  <MailIcon className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-600 font-medium">No hay correos vinculados</p>
+                  <p className="text-sm text-slate-500 mt-1">Los correos relacionados aparecerán aquí automáticamente</p>
+                </div>
+              )}
             </div>
-        )}
+          )}
         {activeTab === 'documents' && <ProjectDocuments documents={documents} onUpdateDocuments={onUpdateDocuments} />}
         {activeTab === 'notes' && <ProjectNotes notes={notes} onAddNote={onAddNote} onUpdateNote={onUpdateNote} onDeleteNote={onDeleteNote} />}
         {activeTab === 'members' && <ProjectMembers projectAssignees={project.assignees} allTeamMembers={teamMembers} onUpdateAssignees={onUpdateAssignees} />}
@@ -1302,6 +1266,101 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = (props) => {
         cancelText="Cancelar"
         isLoading={isDeleting}
       />
+
+      {/* Modal de visualización de correo */}
+      {isEmailModalOpen && selectedEmailForView && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+            <div className="flex justify-between items-center p-4 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-900 truncate pr-4">
+                {selectedEmailForView.subject || '(Sin asunto)'}
+              </h3>
+              <button
+                onClick={() => setIsEmailModalOpen(false)}
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0"
+              >
+                <XIcon className="w-5 h-5 text-slate-600" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="mb-4 pb-4 border-b border-slate-200">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                      <span className="text-red-600 font-semibold text-sm">
+                        {(selectedEmailForView.fromName || selectedEmailForView.from).charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-slate-900">
+                      {selectedEmailForView.fromName || selectedEmailForView.from}
+                    </p>
+                    <p className="text-sm text-slate-600">{selectedEmailForView.from}</p>
+                    <div className="mt-2 text-xs text-slate-500">
+                      <p>Para: {Array.isArray(selectedEmailForView.to) 
+                        ? selectedEmailForView.to.map((t: any) => t.email || t).join(', ') 
+                        : selectedEmailForView.to}
+                      </p>
+                      {selectedEmailForView.cc && Array.isArray(selectedEmailForView.cc) && selectedEmailForView.cc.length > 0 && (
+                        <p className="mt-1">
+                          CC: {selectedEmailForView.cc.map((c: any) => c.email || c).join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right text-xs text-slate-500 flex-shrink-0">
+                    {new Date(selectedEmailForView.date).toLocaleString('es-ES', {
+                      day: '2-digit',
+                      month: 'long',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {selectedEmailForView.htmlBodyUrl ? (
+                <div 
+                  className="prose max-w-none"
+                  dangerouslySetInnerHTML={{ __html: selectedEmailForView.htmlBodyUrl }}
+                />
+              ) : (
+                <div className="whitespace-pre-wrap text-slate-800 text-sm">
+                  {selectedEmailForView.body || selectedEmailForView.snippet}
+                </div>
+              )}
+
+              {selectedEmailForView.hasAttachments && selectedEmailForView.attachmentsData && (
+                <div className="mt-6 pt-6 border-t border-slate-200">
+                  <h4 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                    <PaperClipIcon className="w-4 h-4" />
+                    Archivos adjuntos
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedEmailForView.attachmentsData.map((att: any, index: number) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-100 transition-colors"
+                      >
+                        <DocumentTextIcon className="w-4 h-4 text-slate-500" />
+                        <div>
+                          <p className="text-sm font-medium text-slate-800">{att.filename}</p>
+                          <p className="text-xs text-slate-500">
+                            {att.size ? `${(att.size / 1024).toFixed(2)} KB` : 'Tamaño desconocido'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
