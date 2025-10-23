@@ -58,17 +58,27 @@ export const EmailViewer: React.FC<EmailViewerProps> = ({ email, isOpen, onClose
   const handleDownloadAttachment = async (attachment: any) => {
     try {
       if (attachment.url) {
+        // Fetch the file and force download
+        const response = await fetch(attachment.url);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = attachment.url;
+        link.href = url;
         link.download = attachment.filename || 'archivo';
-        link.target = '_blank';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
       }
     } catch (error) {
       console.error('Error downloading attachment:', error);
       alert('Error al descargar el archivo');
+    }
+  };
+
+  const handlePreviewAttachment = (attachment: any) => {
+    if (attachment.url) {
+      window.open(attachment.url, '_blank');
     }
   };
 
@@ -205,52 +215,84 @@ export const EmailViewer: React.FC<EmailViewerProps> = ({ email, isOpen, onClose
 
         {/* Attachments */}
         {email.hasAttachments && email.attachmentsData && Array.isArray(email.attachmentsData) && email.attachmentsData.length > 0 && (
-          <div className="px-4 py-2.5 border-t border-gray-200 bg-gray-50/50 flex-shrink-0 max-h-[200px] overflow-y-auto">
-            <h4 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
+          <div className="px-4 py-3 border-t border-gray-200 bg-gray-50/50 flex-shrink-0 max-h-[280px] overflow-y-auto">
+            <h4 className="text-xs font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
               <PaperClipIcon className="w-3.5 h-3.5 text-gray-500" />
               Adjuntos ({email.attachmentsData.length})
             </h4>
-            <div className="space-y-1.5">
+            <div className="grid grid-cols-2 gap-2">
               {email.attachmentsData.map((att: any, index: number) => {
                 const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(
                   att.filename?.split('.').pop()?.toLowerCase() || ''
                 );
+                const isPdf = att.filename?.toLowerCase().endsWith('.pdf');
 
                 return (
                   <div
                     key={index}
-                    className="group relative flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 hover:border-blue-400 hover:bg-blue-50/30 transition-all"
+                    className="group relative flex flex-col bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-blue-400 hover:shadow-md transition-all"
                   >
-                    <div className="flex-shrink-0">
-                      {getFileIcon(att.filename)}
+                    {/* Preview Area */}
+                    <div 
+                      className="relative h-24 bg-gray-100 flex items-center justify-center cursor-pointer"
+                      onClick={() => handlePreviewAttachment(att)}
+                    >
+                      {isImage && att.url ? (
+                        <img 
+                          src={att.url} 
+                          alt={att.filename}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.parentElement!.innerHTML = '<div class="flex items-center justify-center w-full h-full"><svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>';
+                          }}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center p-3">
+                          {getFileIcon(att.filename)}
+                          <span className="text-[10px] text-gray-500 mt-1 uppercase font-medium">
+                            {att.filename?.split('.').pop() || 'file'}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {/* Hover Overlay */}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePreviewAttachment(att);
+                            }}
+                            className="p-2 bg-white/90 hover:bg-white rounded-full transition-colors"
+                            title="Ver"
+                            type="button"
+                          >
+                            <EyeIcon className="w-4 h-4 text-blue-600" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownloadAttachment(att);
+                            }}
+                            className="p-2 bg-white/90 hover:bg-white rounded-full transition-colors"
+                            title="Descargar"
+                            type="button"
+                          >
+                            <DownloadIcon className="w-4 h-4 text-green-600" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
+
+                    {/* File Info */}
+                    <div className="px-2 py-1.5 border-t border-gray-100">
                       <p className="text-xs font-medium text-gray-900 truncate" title={att.filename}>
                         {att.filename}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-[10px] text-gray-500">
                         {formatFileSize(att.size)}
                       </p>
-                    </div>
-                    <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {isImage && att.url && (
-                        <button
-                          onClick={() => window.open(att.url, '_blank')}
-                          className="p-1 hover:bg-blue-100 rounded transition-colors"
-                          title="Ver imagen"
-                          type="button"
-                        >
-                          <EyeIcon className="w-4 h-4 text-blue-600" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDownloadAttachment(att)}
-                        className="p-1 hover:bg-green-100 rounded transition-colors"
-                        title="Descargar"
-                        type="button"
-                      >
-                        <DownloadIcon className="w-4 h-4 text-green-600" />
-                      </button>
                     </div>
                   </div>
                 );
