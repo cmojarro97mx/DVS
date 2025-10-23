@@ -206,10 +206,10 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
               <CpuChipIcon className="w-12 h-12 text-slate-400" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              No hay automatizaciones configuradas
+              No hay reglas configuradas
             </h3>
             <p className="text-gray-600 mb-6">
-              Crea tu primera automatización para comenzar a optimizar tus procesos
+              Crea tu primera regla para comenzar a vincular correos con operaciones
             </p>
             <button
               onClick={() => {
@@ -234,7 +234,7 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
               className="inline-flex items-center bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
             >
               <PlusIcon className="w-5 h-5 mr-2" />
-              Crear Automatización
+              Crear Regla
             </button>
           </div>
         ) : (
@@ -317,13 +317,13 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
           <div className="bg-white rounded-xl shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl">
               <h2 className="text-xl font-bold text-gray-900">
-                {editingAutomation ? 'Editar Automatización' : 'Nueva Automatización'}
+                {editingAutomation ? 'Editar Regla' : 'Nueva Regla'}
               </h2>
             </div>
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nombre de la automatización
+                  Nombre de la regla
                 </label>
                 <input
                   type="text"
@@ -342,12 +342,12 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   rows={3}
-                  placeholder="Describe qué hace esta automatización"
+                  placeholder="Describe qué hace esta regla"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tipo de Automatización
+                  Tipo de Regla
                 </label>
                 <select
                   value={formData.type}
@@ -363,12 +363,12 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
 
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Palabras clave para detectar en correos
+                    Patrones a buscar en correos
                   </label>
                   <p className="text-xs text-gray-500 mb-3">
-                    Puedes usar texto fijo como "NAVI-" o variables dinámicas de la operación
+                    Ejemplos: "OP-019", "MOPC-", "{projectName}", "{operationId}"
                   </p>
-                  
+
                   {/* Variables disponibles */}
                   <div className="mb-3 p-4 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
                     <p className="text-xs font-semibold text-indigo-900 mb-2 flex items-center">
@@ -396,16 +396,12 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
                         <code className="text-indigo-700 font-mono font-semibold">{'{hbl_awb}'}</code>
                         <p className="text-gray-600 mt-0.5">HBL / HAWB</p>
                       </div>
-                      <div className="bg-white p-2 rounded border border-indigo-100">
-                        <code className="text-green-700 font-mono font-semibold">NAVI-</code>
-                        <p className="text-gray-600 mt-0.5">Texto fijo/prefijo</p>
-                      </div>
                     </div>
                     <p className="text-xs text-indigo-800 mt-2 italic">
-                      Ejemplo: "NAVI-" detectará "Re: NAVI-1590054// GR25438..."
+                      Los patrones pueden ser texto fijo o variables dinámicas.
                     </p>
                   </div>
-                  
+
                   <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-xs font-medium text-blue-900 mb-2">🔍 Buscar patrones en:</p>
                     <div className="flex flex-wrap gap-3">
@@ -415,7 +411,7 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
                           checked={formData.conditions.searchIn?.includes('subject')}
                           onChange={(e) => {
                             const current = formData.conditions.searchIn || [];
-                            const newSearchIn = e.target.checked 
+                            const newSearchIn = e.target.checked
                               ? [...current, 'subject']
                               : current.filter(s => s !== 'subject');
                             setFormData({
@@ -436,7 +432,7 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
                           checked={formData.conditions.searchIn?.includes('body')}
                           onChange={(e) => {
                             const current = formData.conditions.searchIn || [];
-                            const newSearchIn = e.target.checked 
+                            const newSearchIn = e.target.checked
                               ? [...current, 'body']
                               : current.filter(s => s !== 'body');
                             setFormData({
@@ -457,7 +453,7 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
                           checked={formData.conditions.searchIn?.includes('attachments')}
                           onChange={(e) => {
                             const current = formData.conditions.searchIn || [];
-                            const newSearchIn = e.target.checked 
+                            const newSearchIn = e.target.checked
                               ? [...current, 'attachments']
                               : current.filter(s => s !== 'attachments');
                             setFormData({
@@ -633,7 +629,7 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 disabled={!formData.name}
               >
-                {editingAutomation ? 'Guardar Cambios' : 'Crear Automatización'}
+                {editingAutomation ? 'Guardar Cambios' : 'Crear Regla'}
               </button>
             </div>
           </div>

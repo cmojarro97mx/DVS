@@ -55,8 +55,8 @@ const EmailHubPage: React.FC<EmailHubPageProps> = ({ setActiveView }) => {
 
                 <EmailSection title="Configuración">
                     <HubCard
-                        title="Conexiones de Correo y Calendario"
-                        description="Vincula tus cuentas de Google para sincronizar correos electrónicos y eventos de calendario automáticamente."
+                        title="Conexiones"
+                        description="Vincula tus cuentas de Google para sincronizar correos y eventos automáticamente."
                         icon={LinkIcon}
                         onClick={() => setActiveView('integrations')}
                     />
@@ -64,7 +64,7 @@ const EmailHubPage: React.FC<EmailHubPageProps> = ({ setActiveView }) => {
 
                 <EmailSection title="Análisis">
                     <HubCard
-                        title="Análisis de Correo"
+                        title="Análisis de Correos"
                         description="Visualiza métricas y actividad de tus correos electrónicos sincronizados."
                         icon={AtSymbolIcon}
                         onClick={() => setActiveView('email-analysis')}
@@ -73,13 +73,13 @@ const EmailHubPage: React.FC<EmailHubPageProps> = ({ setActiveView }) => {
 
                 <EmailSection title="Automatización">
                     <HubCard
-                        title="Vinculación Automática Email-Operación"
-                        description="Define patrones personalizados para vincular automáticamente correos electrónicos con sus operaciones correspondientes."
+                        title="Reglas de Vinculación"
+                        description="Configura reglas para vincular correos con operaciones automáticamente."
                         icon={CpuChipIcon}
                         onClick={() => setActiveView('automations')}
                     />
                     <HubCard
-                        title="AI Operation Creator"
+                        title="Creador Inteligente"
                         description="Crea y actualiza operaciones automáticamente desde correos electrónicos."
                         icon={CpuChipIcon}
                         onClick={() => setActiveView('ai-operation-creator')}
