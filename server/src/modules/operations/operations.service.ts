@@ -399,7 +399,7 @@ export class OperationsService {
           { from: { contains: clientEmail, mode: 'insensitive' as any } },
           { 
             to: { 
-              path: '$',
+              path: ['$'],
               array_contains: { email: clientEmail }
             } 
           },
