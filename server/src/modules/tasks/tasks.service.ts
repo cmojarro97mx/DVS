@@ -63,6 +63,11 @@ export class TasksService {
   async create(data: any, organizationId: string) {
     const { assignees, ...taskData } = data;
 
+    // Convertir cadenas vacías a null para campos de fecha
+    if (taskData.dueDate === '') {
+      taskData.dueDate = null;
+    }
+
     const task = await this.prisma.task.create({
       data: {
         ...taskData,
@@ -108,6 +113,11 @@ export class TasksService {
     }
 
     const { assignees, organizationId: _, ...taskData } = data;
+
+    // Convertir cadenas vacías a null para campos de fecha
+    if (taskData.dueDate === '') {
+      taskData.dueDate = null;
+    }
 
     const task = await this.prisma.task.update({
       where: { id },
