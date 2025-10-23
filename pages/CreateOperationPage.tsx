@@ -24,7 +24,7 @@ interface CreateOperationPageProps {
 }
 
 const STEPS = [
-    { name: 'Project Details', description: 'Basic project information.', icon: ClipboardListIcon, fields: ['projectName', 'clientId', 'projectCategory', 'startDate', 'status', 'assignees', 'currency'] },
+    { name: 'Project Details', description: 'Basic project information.', icon: ClipboardListIcon, fields: ['projectName', 'clientId', 'projectCategory', 'startDate', 'status', 'assignees', 'currency', 'operationType', 'shippingMode', 'insurance'] },
     { name: 'Shipment Information', description: 'Details about the transport.', icon: ShipmentInfoIcon, fields: [] },
     { name: 'Tracking & Dates', description: 'Key dates and tracking numbers.', icon: CalendarIcon, fields: [] },
     { name: 'Documents & Notes', description: 'Files and additional notes.', icon: PaperClipIcon, fields: [] },
@@ -515,12 +515,27 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
                                                     {teamMembers.map(member => <option key={member.id} value={member.id}>{member.name}</option>)}
                                                 </Select>
                                             </FormField>
+                                            <FormField label="Operation Type" id="operationType" required error={errors.operationType}>
+                                                <Select name="operationType" value={formData.operationType} onChange={handleChange} required hasError={!!errors.operationType}>
+                                                    <option value="">Select an option</option>
+                                                    {operationTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                                                </Select>
+                                            </FormField>
+                                            <FormField label="Shipping Mode" id="shippingMode" required error={errors.shippingMode}>
+                                                <Select name="shippingMode" value={formData.shippingMode} onChange={handleChange} required hasError={!!errors.shippingMode}>
+                                                    <option value="">Select a mode</option>
+                                                    {shippingModes.map(m => <option key={m} value={m}>{m}</option>)}
+                                                </Select>
+                                            </FormField>
+                                            <FormField label="Insurance" id="insurance" required className="md:col-span-2" error={errors.insurance}>
+                                                <Select name="insurance" value={formData.insurance} onChange={handleChange} required hasError={!!errors.insurance}>
+                                                    <option value="">Select an option</option>
+                                                    {insuranceOptions.map(o => <option key={o} value={o}>{o}</option>)}
+                                                </Select>
+                                            </FormField>
                                         </>)}
                                         {currentStep === 1 && (<>
-                                            <FormField label="Operation Type" id="operationType"><Select name="operationType" value={formData.operationType} onChange={handleChange}><option value="">Select an option</option>{operationTypes.map(t => <option key={t} value={t}>{t}</option>)}</Select></FormField>
-                                            <FormField label="Shipping Mode" id="shippingMode"><Select name="shippingMode" value={formData.shippingMode} onChange={handleChange}><option value="">Select a mode</option>{shippingModes.map(m => <option key={m} value={m}>{m}</option>)}</Select></FormField>
                                             <FormField label="Courrier" id="courrier"><Input name="courrier" value={formData.courrier} onChange={handleChange} /></FormField>
-                                            <FormField label="Insurance" id="insurance"><Select name="insurance" value={formData.insurance} onChange={handleChange}><option value="">Select an option</option>{insuranceOptions.map(o => <option key={o} value={o}>{o}</option>)}</Select></FormField>
                                             <FormField label="Pick Up Address" id="pickupAddress" className="md:col-span-2">
                                                 <GooglePlacesAutocomplete
                                                     name="pickupAddress"
