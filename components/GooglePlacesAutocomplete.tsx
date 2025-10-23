@@ -12,8 +12,58 @@ interface GooglePlacesAutocompleteProps {
 declare global {
     interface Window {
         google: any;
-        initGoogleMaps: () => void;
+        googleMapsLoader?: Promise<void>;
     }
+}
+
+// Shared loader function that ensures Google Maps is only loaded once
+async function loadGoogleMapsScript(): Promise<void> {
+    // If already loaded, return immediately
+    if (window.google && window.google.maps && window.google.maps.places) {
+        return Promise.resolve();
+    }
+
+    // If already loading, return existing promise
+    if (window.googleMapsLoader) {
+        return window.googleMapsLoader;
+    }
+
+    // Create new promise for loading
+    window.googleMapsLoader = new Promise<void>(async (resolve, reject) => {
+        try {
+            // Fetch API key from backend
+            const response = await fetch('/api/config/google-maps-key');
+            const data = await response.json();
+            const apiKey = data.apiKey || '';
+            
+            if (!apiKey) {
+                console.error('Google Maps API key not available');
+                reject(new Error('Google Maps API key not available'));
+                return;
+            }
+
+            // Create script element
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+            script.async = true;
+            script.defer = true;
+            
+            script.onload = () => {
+                resolve();
+            };
+            
+            script.onerror = (error) => {
+                reject(error);
+            };
+
+            document.head.appendChild(script);
+        } catch (error) {
+            console.error('Failed to load Google Maps API:', error);
+            reject(error);
+        }
+    });
+
+    return window.googleMapsLoader;
 }
 
 export const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> = ({
@@ -28,47 +78,14 @@ export const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> =
     const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
-        // Check if Google Maps API is already loaded
-        if (window.google && window.google.maps && window.google.maps.places) {
-            setIsLoaded(true);
-            return;
-        }
-
-        // Fetch API key from backend and load Google Maps API
-        const loadGoogleMaps = async () => {
-            try {
-                const response = await fetch('/api/config/google-maps-key');
-                const data = await response.json();
-                const apiKey = data.apiKey || '';
-                
-                if (!apiKey) {
-                    console.error('Google Maps API key not available');
-                    return;
-                }
-
-                const script = document.createElement('script');
-                script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initGoogleMaps`;
-                script.async = true;
-                script.defer = true;
-                
-                window.initGoogleMaps = () => {
-                    setIsLoaded(true);
-                };
-
-                document.head.appendChild(script);
-            } catch (error) {
-                console.error('Failed to load Google Maps API key:', error);
-            }
-        };
-
-        loadGoogleMaps();
-
-        return () => {
-            const script = document.querySelector('script[src*="maps.googleapis.com"]');
-            if (script && script.parentNode) {
-                script.parentNode.removeChild(script);
-            }
-        };
+        // Load Google Maps script
+        loadGoogleMapsScript()
+            .then(() => {
+                setIsLoaded(true);
+            })
+            .catch((error) => {
+                console.error('Failed to load Google Maps:', error);
+            });
     }, []);
 
     useEffect(() => {
