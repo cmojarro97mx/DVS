@@ -33,6 +33,8 @@ The frontend uses React with TypeScript, styled using Tailwind CSS, and bundled 
     -   **Read-Only**: View and download only; no editing or deletion capabilities (managed through respective modules).
     -   **Statistics Dashboard**: Real-time metrics showing total file count, storage usage, and breakdown by source (general files, operation documents, email files).
 -   **Operation Management**: Includes notes, tasks (with assignees and Kanban board integration), documents (stored in Backblaze B2), and commission tracking.
+    -   **Notes System**: Full CRUD operations with database persistence. Notes are linked to operations and stored in PostgreSQL with automatic loading and syncing.
+    -   **Tasks System**: Kanban-based task management with automatic column assignment. When creating tasks, the backend automatically assigns them to the "To Do" column if no column is specified.
 -   **Financial Management**: Invoices, Payments, and Expenses modules enforce organization-level data scoping and validation.
 -   **Google Workspace Integration (Multi-Account)**:
     -   **Architecture**: Uses an `EmailAccount` model allowing users to connect multiple Google accounts.
