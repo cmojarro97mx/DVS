@@ -74,6 +74,7 @@ model Organization {
   expenses        Expense[]
   events          Event[]
   automations     Automation[]  @relation("OrganizationAutomations")
+  virtualAssistants VirtualAssistant[] @relation("OrganizationVirtualAssistants")
   
   @@map("organizations")
 }
@@ -640,4 +641,21 @@ model NotificationSettings {
   updatedAt       DateTime  @updatedAt
   
   @@map("notification_settings")
+}
+
+model VirtualAssistant {
+  id              String       @id @default(uuid())
+  token           String       @unique @default(uuid())
+  name            String       @default("Asistente Virtual")
+  enabled         Boolean      @default(true)
+  userId          String
+  organizationId  String
+  organization    Organization @relation("OrganizationVirtualAssistants", fields: [organizationId], references: [id], onDelete: Cascade)
+  settings        Json?
+  lastUsedAt      DateTime?
+  usageCount      Int          @default(0)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  
+  @@map("virtual_assistants")
 }
