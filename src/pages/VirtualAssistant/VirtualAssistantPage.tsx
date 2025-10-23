@@ -71,30 +71,74 @@ export default function VirtualAssistantPage() {
 
       const recognition = new SpeechRecognition();
       recognition.lang = 'es-ES';
-      recognition.continuous = false;
-      recognition.interimResults = false;
+      recognition.continuous = true;
+      recognition.interimResults = true;
       recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
-        console.log('🎤 Reconocimiento de voz iniciado');
+        console.log('🎤 Reconocimiento de voz iniciado - ESPERANDO VOZ...');
         setIsRecording(true);
       };
 
       recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        console.log('📝 Transcripción:', transcript);
-        setTextInput(transcript);
-        setIsRecording(false);
+        console.log('🎙️ Evento de resultado detectado, resultados:', event.results.length);
+        
+        let finalTranscript = '';
+        let interimTranscript = '';
+        
+        for (let i = 0; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+            console.log('✅ Transcripción FINAL:', transcript);
+          } else {
+            interimTranscript += transcript;
+            console.log('⏳ Transcripción TEMPORAL:', transcript);
+          }
+        }
+        
+        if (finalTranscript) {
+          setTextInput(finalTranscript);
+          console.log('📝 Texto establecido:', finalTranscript);
+        } else if (interimTranscript) {
+          setTextInput(interimTranscript);
+          console.log('📝 Texto temporal:', interimTranscript);
+        }
+      };
+
+      recognition.onaudiostart = () => {
+        console.log('🔊 Audio detectado - MICRÓFONO CAPTURANDO');
+      };
+
+      recognition.onsoundstart = () => {
+        console.log('🎵 Sonido detectado');
+      };
+
+      recognition.onspeechstart = () => {
+        console.log('🗣️ VOZ DETECTADA - PROCESANDO...');
+      };
+
+      recognition.onspeechend = () => {
+        console.log('🔇 Voz finalizada');
+      };
+
+      recognition.onaudioend = () => {
+        console.log('🔇 Audio finalizado');
       };
 
       recognition.onerror = (event: any) => {
         console.error('❌ Error en reconocimiento:', event.error);
+        console.error('❌ Detalles del error:', event);
         setIsRecording(false);
         
         if (event.error === 'no-speech') {
-          console.log('⚠️ No se detectó voz');
+          alert('No se detectó voz. Intenta hablar más cerca del micrófono.');
         } else if (event.error === 'not-allowed') {
-          alert('Por favor permite el acceso al micrófono para usar esta función');
+          alert('Por favor permite el acceso al micrófono en tu navegador');
+        } else if (event.error === 'network') {
+          alert('Error de red. Verifica tu conexión.');
+        } else {
+          alert(`Error: ${event.error}`);
         }
       };
 
@@ -104,7 +148,7 @@ export default function VirtualAssistantPage() {
       };
 
       recognitionRef.current = recognition;
-      console.log('✅ SpeechRecognition inicializado');
+      console.log('✅ SpeechRecognition inicializado con continuous=true');
     } catch (error) {
       console.error('❌ Error al inicializar SpeechRecognition:', error);
     }
@@ -488,22 +532,25 @@ export default function VirtualAssistantPage() {
               type="button"
               onClick={toggleVoiceRecognition}
               disabled={!recognitionRef.current}
-              className={`p-2 rounded-lg transition-colors ${
+              className={`p-2 rounded-lg transition-colors relative ${
                 isRecording
-                  ? 'bg-red-600 text-white'
+                  ? 'bg-red-600 text-white animate-pulse'
                   : recognitionRef.current
                   ? 'bg-gray-800 text-gray-400 hover:text-gray-300 hover:bg-gray-750'
                   : 'bg-gray-800 text-gray-600 cursor-not-allowed'
               }`}
               title={
                 !recognitionRef.current ? 'Reconocimiento de voz no disponible' :
-                isRecording ? 'Detener grabación' : 'Grabar audio'
+                isRecording ? 'Detener grabación (Click)' : 'Grabar audio (Click)'
               }
             >
               {isRecording ? (
                 <Square className="w-5 h-5" />
               ) : (
                 <Mic className="w-5 h-5" />
+              )}
+              {isRecording && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
               )}
             </button>
 
@@ -513,7 +560,7 @@ export default function VirtualAssistantPage() {
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
               placeholder={
-                isRecording ? 'Escuchando...' : 'Escribe tu mensaje...'
+                isRecording ? '🎤 Escuchando... (habla ahora)' : 'Escribe o presiona el micrófono...'
               }
               className="flex-1 bg-gray-800 text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm placeholder-gray-500 disabled:opacity-50"
               disabled={isProcessing}
@@ -527,11 +574,20 @@ export default function VirtualAssistantPage() {
               <Send className="w-5 h-5" />
             </button>
           </div>
-          <p className="text-gray-600 text-xs mt-2 flex items-center gap-1">
-            <Mic className="w-3 h-3" />
-            Habla o escribe
-            {!isMuted && <span className="text-blue-500 ml-1">• Voz activada</span>}
-          </p>
+          {isRecording ? (
+            <div className="mt-2 bg-red-900/20 border border-red-600/50 rounded-lg px-3 py-2">
+              <p className="text-red-400 text-xs flex items-center gap-2">
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                Micrófono activo - Habla ahora
+              </p>
+            </div>
+          ) : (
+            <p className="text-gray-600 text-xs mt-2 flex items-center gap-1">
+              <Mic className="w-3 h-3" />
+              Presiona el micrófono para hablar
+              {!isMuted && <span className="text-blue-500 ml-1">• Voz activada</span>}
+            </p>
+          )}
         </form>
       </div>
     </div>
