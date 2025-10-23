@@ -2,9 +2,16 @@
 
 ## 📱 Mejoras Implementadas
 
-El asistente virtual ahora utiliza **Web Speech API** optimizada para:
+El asistente virtual ahora incluye:
 
-### ✅ Características
+### ✅ Características Speech-to-Text (Grabación de Audio)
+- **🎤 Grabación de audio** - Graba tu voz con el micrófono
+- **🤖 Whisper AI** - Transcripción automática con IA de OpenAI (100% open source)
+- **🌐 Funciona en el navegador** - Todo el procesamiento es local, sin enviar datos a servidores
+- **📱 Compatible con móviles** - Funciona en iOS, Android y desktop
+- **⚡ Modelo pequeño** - Whisper Tiny (~39MB) se descarga una sola vez
+
+### ✅ Características Text-to-Speech (Respuestas de Voz)
 - **100% Open Source** - Sin costos de API
 - **Selección inteligente de voces** - Prioriza voces premium y neurales
 - **Compatible con todos los dispositivos** - Desktop, móvil, tablets
@@ -130,9 +137,57 @@ utterance.volume = 1.0;  // Volumen máximo
 
 ---
 
+## 🎤 Cómo Usar la Grabación de Audio
+
+1. **Haz clic en el botón del micrófono** (ícono morado al lado del campo de texto)
+2. **Permite el acceso al micrófono** cuando el navegador lo solicite
+3. **Habla tu mensaje** - verás el botón parpadeando mientras grabas
+4. **Haz clic en el botón cuadrado** (⏹️) para detener la grabación
+5. **Espera la transcripción** - Whisper procesará tu audio automáticamente
+6. **El texto aparecerá en el campo** - Revísalo y envíalo o edítalo antes de enviar
+
+**Nota importante:** La primera vez que uses la grabación, el modelo Whisper se descargará (~39MB). Esto solo sucede una vez y luego queda en caché del navegador.
+
+---
+
 ## 🐛 Solución de Problemas
 
-### ❌ "No escucho nada en móvil"
+### ❌ "El modelo Whisper tarda mucho en cargar"
+
+**Solución:**
+- Es normal la primera vez (descarga ~39MB)
+- Verás el progreso en la parte inferior del chat
+- Las siguientes veces será instantáneo (usa caché del navegador)
+- Si falla la descarga, recarga la página
+
+### ❌ "No puedo grabar audio"
+
+**Solución:**
+1. Verifica que hayas permitido acceso al micrófono
+2. En Chrome: Configuración > Privacidad y seguridad > Configuración de sitios > Micrófono
+3. En Firefox: Ícono de candado en la barra > Permisos > Micrófono
+4. En Safari iOS: Ajustes > Safari > Micrófono
+5. Asegúrate de que ninguna otra app esté usando el micrófono
+
+### ❌ "La transcripción está en inglés y hablo español"
+
+**Solución:**
+- El modelo está configurado para español por defecto
+- Si detecta inglés, es porque la grabación no fue clara
+- Intenta hablar más fuerte y claro
+- Reduce el ruido de fondo
+- El modelo Whisper Tiny es básico - considera usar Whisper Base para mejor precisión
+
+### ❌ "La transcripción no es precisa"
+
+**Solución:**
+- Whisper Tiny (~39MB) prioriza velocidad sobre precisión
+- Para mejor precisión, se puede cambiar a Whisper Base (~74MB) o Small (~244MB)
+- Habla claramente y sin ruido de fondo
+- Evita hablar muy rápido
+- El modelo mejora con frases completas vs palabras sueltas
+
+### ❌ "No escucho nada en móvil" (Text-to-Speech)
 
 **Solución:**
 1. Verifica que el volumen del dispositivo esté alto
@@ -221,6 +276,17 @@ tts.tts_to_file(
 ## ✅ Estado Actual
 
 **Implementado:**
+
+**Speech-to-Text (Entrada de Audio):**
+- ✅ Grabación de audio con MediaRecorder API
+- ✅ Whisper Tiny (~39MB) corriendo en Web Worker
+- ✅ Transcripción automática a texto
+- ✅ Soporte para español e inglés
+- ✅ Indicador visual de estado de grabación y transcripción
+- ✅ Botón de micrófono integrado en la interfaz
+- ✅ 100% Local - no envía datos a servidores externos
+
+**Text-to-Speech (Respuestas de Voz):**
 - ✅ Selección automática de voces premium
 - ✅ Rate optimizado (0.95) para mejor naturalidad
 - ✅ Soporte completo móvil (iOS/Android)
@@ -232,6 +298,7 @@ tts.tts_to_file(
 - Implementar Piper TTS en backend para voces aún mejores
 - Agregar opción de descargar audio (para escuchar offline)
 - Implementar Kokoro-82M para máxima calidad
+- Agregar soporte para Whisper Base/Small (mayor precisión)
 
 ---
 

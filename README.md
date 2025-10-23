@@ -166,7 +166,9 @@ Verifica que la variable `DATABASE_URL` en tu archivo `.env` esté correctamente
 
 ## 🌟 Características Principales
 
-- 🤖 **Asistente Virtual con IA** - Asistente inteligente potenciado por Gemini con respuestas de voz
+- 🤖 **Asistente Virtual con IA** - Asistente inteligente potenciado por Gemini 2.0 Flash
+- 🎤 **Speech-to-Text con Whisper** - Graba audio y transcribe automáticamente (100% open source)
+- 🔊 **Text-to-Speech Inteligente** - Respuestas de voz con selección automática de voces premium
 - 📧 **Sincronización de Gmail** - Integración completa con Gmail
 - 📅 **Calendario** - Gestión de eventos y sincronización con Google Calendar
 - 💼 **Gestión de Clientes** - CRM completo
@@ -174,7 +176,6 @@ Verifica que la variable `DATABASE_URL` en tu archivo `.env` esté correctamente
 - 💰 **Facturas y Pagos** - Gestión financiera
 - 📝 **Cotizaciones** - Generación de presupuestos
 - 📁 **Gestor de Archivos** - Almacenamiento en la nube con Backblaze B2
-- 🎙️ **Text-to-Speech Open Source** - Voces naturales sin APIs de pago
 
 ---
 

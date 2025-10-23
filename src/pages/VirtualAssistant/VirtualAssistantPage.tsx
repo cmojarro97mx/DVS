@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Volume2, VolumeX, Send, MessageCircle } from 'lucide-react';
+import { Volume2, VolumeX, Send, MessageCircle, Mic, Square } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import api from '../../services/api';
 
@@ -22,12 +22,21 @@ export default function VirtualAssistantPage() {
   const [isStarted, setIsStarted] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   
+  const [isRecording, setIsRecording] = useState(false);
+  const [whisperStatus, setWhisperStatus] = useState<string>('not-loaded');
+  const [whisperMessage, setWhisperMessage] = useState<string>('');
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  
   const socketRef = useRef<Socket | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const workerRef = useRef<Worker | null>(null);
 
   useEffect(() => {
     initializeAssistant();
+    initializeWhisperWorker();
     
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.getVoices();
@@ -42,6 +51,9 @@ export default function VirtualAssistantPage() {
       if (socketRef.current) {
         socketRef.current.disconnect();
       }
+      if (workerRef.current) {
+        workerRef.current.terminate();
+      }
       window.speechSynthesis.cancel();
     };
   }, [token]);
@@ -52,6 +64,73 @@ export default function VirtualAssistantPage() {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const initializeWhisperWorker = () => {
+    try {
+      const worker = new Worker(
+        new URL('../../workers/whisper.worker.js', import.meta.url),
+        { type: 'module' }
+      );
+
+      worker.onmessage = (event) => {
+        const { type, text, message, progress } = event.data;
+        console.log('🔊 Worker message:', type, message);
+
+        if (type === 'loading') {
+          setWhisperStatus('loading');
+          setWhisperMessage(message);
+          console.log('🔄', message);
+        }
+
+        if (type === 'progress') {
+          setWhisperMessage(message);
+          console.log('📥', message);
+        }
+
+        if (type === 'ready') {
+          console.log('🎉 Recibido mensaje READY del worker');
+          setWhisperStatus('ready');
+          setWhisperMessage('');
+          console.log('✅ Whisper listo para usar');
+        }
+
+        if (type === 'transcribing') {
+          setIsTranscribing(true);
+          setWhisperMessage(message);
+        }
+
+        if (type === 'result') {
+          setIsTranscribing(false);
+          setWhisperMessage('');
+          if (text && text.trim()) {
+            setTextInput(text);
+            console.log('📝 Transcripción:', text);
+          }
+        }
+
+        if (type === 'error') {
+          setWhisperStatus('error');
+          setWhisperMessage(message);
+          setIsTranscribing(false);
+          console.error('❌ Error Whisper:', message);
+        }
+      };
+
+      worker.onerror = (error) => {
+        console.error('❌ Error en Worker:', error);
+        setWhisperStatus('error');
+        setWhisperMessage('Error al cargar el modelo de transcripción');
+      };
+
+      workerRef.current = worker;
+      console.log('📤 Enviando mensaje LOAD al worker...');
+      worker.postMessage({ type: 'load' });
+    } catch (err) {
+      console.error('Error al inicializar Whisper Worker:', err);
+      setWhisperStatus('error');
+      setWhisperMessage('No se pudo inicializar el worker');
+    }
   };
 
   const initializeAssistant = async () => {
@@ -152,6 +231,49 @@ export default function VirtualAssistantPage() {
       console.error('❌ Socket no conectado');
       setError('No se pudo conectar con el servidor. Por favor recarga la página.');
       setIsProcessing(false);
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        const arrayBuffer = await audioBlob.arrayBuffer();
+        
+        stream.getTracks().forEach(track => track.stop());
+        
+        if (workerRef.current && whisperStatus === 'ready') {
+          workerRef.current.postMessage({ type: 'transcribe', audio: arrayBuffer });
+        } else {
+          console.error('Whisper no está listo');
+          setWhisperMessage('El modelo de transcripción aún no está listo. Espera un momento.');
+        }
+      };
+
+      mediaRecorder.start();
+      mediaRecorderRef.current = mediaRecorder;
+      setIsRecording(true);
+      console.log('🎤 Grabando...');
+    } catch (err) {
+      console.error('Error al acceder al micrófono:', err);
+      alert('No se pudo acceder al micrófono. Por favor permite el acceso.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      console.log('⏹️ Grabación detenida');
     }
   };
 
@@ -314,7 +436,7 @@ export default function VirtualAssistantPage() {
             {assistant?.name || 'Asistente Virtual'}
           </h1>
           <p className="text-xl text-gray-400 mb-8">
-            Tu asistente virtual inteligente con IA y respuestas de voz
+            Tu asistente virtual inteligente con IA, voz y transcripción
           </p>
           
           <button
@@ -330,12 +452,10 @@ export default function VirtualAssistantPage() {
           <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
             <div className="bg-gray-900 p-6 rounded-xl border border-gray-800">
               <div className="w-12 h-12 bg-red-600/20 rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
+                <Mic className="w-6 h-6 text-red-500" />
               </div>
-              <h3 className="text-white font-semibold mb-2">Chat por Texto</h3>
-              <p className="text-gray-400 text-sm">Escribe tus mensajes desde cualquier dispositivo</p>
+              <h3 className="text-white font-semibold mb-2">Grabación de Audio</h3>
+              <p className="text-gray-400 text-sm">Habla y transcribe automáticamente con Whisper AI</p>
             </div>
             
             <div className="bg-gray-900 p-6 rounded-xl border border-gray-800">
@@ -343,7 +463,7 @@ export default function VirtualAssistantPage() {
                 <Volume2 className="w-6 h-6 text-orange-500" />
               </div>
               <h3 className="text-white font-semibold mb-2">Respuestas de Voz</h3>
-              <p className="text-gray-400 text-sm">El asistente te habla en voz alta automáticamente</p>
+              <p className="text-gray-400 text-sm">El asistente te habla con voces naturales</p>
             </div>
             
             <div className="bg-gray-900 p-6 rounded-xl border border-gray-800">
@@ -352,10 +472,19 @@ export default function VirtualAssistantPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
-              <h3 className="text-white font-semibold mb-2">IA Inteligente</h3>
-              <p className="text-gray-400 text-sm">Powered by Google Gemini Flash</p>
+              <h3 className="text-white font-semibold mb-2">100% Open Source</h3>
+              <p className="text-gray-400 text-sm">Sin costos de APIs, completamente gratis</p>
             </div>
           </div>
+
+          {whisperStatus === 'loading' && (
+            <div className="mt-6 bg-blue-900/20 border border-blue-600/50 rounded-lg p-4">
+              <p className="text-blue-400 text-sm flex items-center gap-2 justify-center">
+                <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                {whisperMessage}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -370,11 +499,11 @@ export default function VirtualAssistantPage() {
             <div className="flex items-center gap-3 md:gap-4">
               <div className="relative">
                 <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center ${
-                  isSpeaking || isProcessing ? 'animate-pulse' : ''
+                  isSpeaking || isProcessing || isTranscribing ? 'animate-pulse' : ''
                 }`}>
                   <MessageCircle className="w-5 h-5 md:w-6 md:h-6 text-white" />
                 </div>
-                {(isSpeaking || isProcessing) && (
+                {(isSpeaking || isProcessing || isTranscribing) && (
                   <div className="absolute inset-0 rounded-full bg-gradient-to-br from-red-600 to-orange-500 opacity-50 animate-ping"></div>
                 )}
               </div>
@@ -385,10 +514,12 @@ export default function VirtualAssistantPage() {
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${
                     isProcessing ? 'bg-yellow-500 animate-pulse' :
+                    isTranscribing ? 'bg-purple-500 animate-pulse' :
                     isSpeaking ? 'bg-blue-500 animate-pulse' : 'bg-green-500'
                   }`}></div>
                   <p className="text-xs md:text-sm text-gray-400">
                     {isProcessing ? 'Procesando...' :
+                     isTranscribing ? 'Transcribiendo audio...' :
                      isSpeaking ? 'Hablando...' : 'En línea'}
                   </p>
                 </div>
@@ -416,7 +547,15 @@ export default function VirtualAssistantPage() {
             <div className="mt-2 bg-green-900/20 border border-green-600/50 rounded-lg px-3 py-2">
               <p className="text-green-500 text-xs flex items-center gap-2">
                 <Volume2 className="w-4 h-4" />
-                Las respuestas se reproducirán automáticamente con voz
+                Respuestas de voz activadas
+              </p>
+            </div>
+          )}
+          {whisperMessage && (
+            <div className="mt-2 bg-purple-900/20 border border-purple-600/50 rounded-lg px-3 py-2">
+              <p className="text-purple-400 text-xs flex items-center gap-2">
+                <div className="w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+                {whisperMessage}
               </p>
             </div>
           )}
@@ -479,17 +618,45 @@ export default function VirtualAssistantPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Text Input */}
+        {/* Input Area */}
         <form onSubmit={handleTextSubmit} className="bg-gray-900 rounded-2xl p-3 md:p-4 border border-gray-800">
           <div className="flex items-center gap-2 md:gap-3">
+            {/* Microphone Button */}
+            <button
+              type="button"
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={whisperStatus !== 'ready' || isTranscribing}
+              className={`p-2 md:p-3 rounded-xl transition-all ${
+                isRecording
+                  ? 'bg-red-600 text-white animate-pulse'
+                  : whisperStatus === 'ready'
+                  ? 'bg-purple-600/20 text-purple-500 hover:bg-purple-600/30'
+                  : 'bg-gray-800 text-gray-600 cursor-not-allowed'
+              }`}
+              title={
+                whisperStatus !== 'ready' ? 'Cargando modelo de transcripción...' :
+                isRecording ? 'Detener grabación' : 'Grabar audio'
+              }
+            >
+              {isRecording ? (
+                <Square className="w-5 h-5 md:w-6 md:h-6" />
+              ) : (
+                <Mic className="w-5 h-5 md:w-6 md:h-6" />
+              )}
+            </button>
+
             <input
               ref={inputRef}
               type="text"
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
-              placeholder="Escribe tu mensaje aquí..."
-              className="flex-1 bg-gray-800 text-white px-3 md:px-4 py-2 md:py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 text-sm md:text-base"
-              disabled={isProcessing}
+              placeholder={
+                isTranscribing ? 'Transcribiendo...' :
+                whisperStatus === 'loading' ? 'Cargando modelo...' :
+                'Escribe o graba tu mensaje...'
+              }
+              className="flex-1 bg-gray-800 text-white px-3 md:px-4 py-2 md:py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 text-sm md:text-base disabled:opacity-50"
+              disabled={isProcessing || isTranscribing}
               autoFocus
             />
             <button
@@ -500,9 +667,21 @@ export default function VirtualAssistantPage() {
               <Send className="w-5 h-5 md:w-6 md:h-6" />
             </button>
           </div>
-          <p className="text-gray-500 text-xs mt-2 flex items-center gap-1">
-            💬 Escribe tu mensaje y el asistente responderá con voz
-            {!isMuted && <span className="text-green-500">(🔊 Sonido activado)</span>}
+          <p className="text-gray-500 text-xs mt-2 flex items-center gap-1 flex-wrap">
+            {whisperStatus === 'ready' ? (
+              <>
+                <Mic className="w-3 h-3" />
+                Graba audio o escribe texto
+              </>
+            ) : whisperStatus === 'loading' ? (
+              <>
+                <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                Descargando modelo Whisper...
+              </>
+            ) : (
+              'Escribe tu mensaje'
+            )}
+            {!isMuted && whisperStatus === 'ready' && <span className="text-green-500">(🔊 Voz activada)</span>}
           </p>
         </form>
       </div>
