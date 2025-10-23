@@ -364,7 +364,7 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
                     Patrones en el Asunto del Email
                   </label>
                   <p className="text-xs text-gray-500 mb-2">
-                    Agrega patrones que identifican esta operación. Usa <code className="bg-gray-100 px-1 rounded">{'{'operationId{'}'}</code> para el ID de la operación o <code className="bg-gray-100 px-1 rounded">{'{'projectName{'}'}</code> para el nombre del proyecto.
+                    Agrega patrones que identifican esta operación. Usa <code className="bg-gray-100 px-1 rounded">{'{operationId}'}</code> para el ID de la operación o <code className="bg-gray-100 px-1 rounded">{'{projectName}'}</code> para el nombre del proyecto.
                   </p>
                   {formData.conditions.subjectPatterns.map((pattern, index) => (
                     <div key={index} className="flex gap-2 mb-2">

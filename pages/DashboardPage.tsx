@@ -30,6 +30,7 @@ import CompanyHubPage from './CompanyHubPage'; // Import new Company Hub Page
 import EmailHubPage from './EmailHubPage'; // Import new Email Hub Page
 import NotificationsSettingsPage from './NotificationsSettingsPage'; // Notifications Settings Page
 import FileManagerPage from './FileManagerPage'; // File Manager Page
+import AutomationPage from './AutomationPage'; // Automation Page
 import { employeesService } from '../src/services/employeesService';
 import { clientsService } from '../src/services/clientsService';
 import { 
@@ -419,7 +420,8 @@ export type View =
   | 'ai-operation-creator'
   | 'company-hub'
   | 'email-hub'
-  | 'notifications-settings';
+  | 'notifications-settings'
+  | 'automations';
 
 const viewTitles: Record<View, string> = {
   dashboard: 'Dashboard',
@@ -442,6 +444,7 @@ const viewTitles: Record<View, string> = {
   bank_accounts: 'Bank Accounts',
   'bank-reconciliation': 'Bank Reconciliation',
   admin: 'Company',
+  automations: 'Automatizaciones',
   'company-profile': 'Company Profile',
   integrations: 'Conexiones',
   'linked-accounts': 'Linked Accounts',
@@ -908,6 +911,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
         return <EmailHubPage setActiveView={setActiveView} />;
       case 'notifications-settings':
         return <NotificationsSettingsPage />;
+      case 'automations':
+        return <AutomationPage setActiveView={setActiveView} />;
       default:
         return <div className="p-6">{viewTitles[activeView] || 'Not Implemented'}</div>;
     }

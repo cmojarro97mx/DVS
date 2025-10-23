@@ -73,6 +73,12 @@ const EmailHubPage: React.FC<EmailHubPageProps> = ({ setActiveView }) => {
 
                 <EmailSection title="Automatización">
                     <HubCard
+                        title="Automatizaciones"
+                        description="Configura reglas automáticas para vincular emails a operaciones basado en patrones personalizados."
+                        icon={CpuChipIcon}
+                        onClick={() => setActiveView('automations')}
+                    />
+                    <HubCard
                         title="AI Operation Creator"
                         description="Crea y actualiza operaciones automáticamente desde correos electrónicos."
                         icon={CpuChipIcon}
