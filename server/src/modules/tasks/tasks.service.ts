@@ -98,23 +98,30 @@ export class TasksService {
     });
 
     if (assignees && assignees.length > 0) {
-      await Promise.all(
-        assignees.map((userId: string) =>
-          this.prisma.taskAssignee.create({
+      const validAssignees = [];
+      for (const userId of assignees) {
+        const userExists = await this.prisma.user.findUnique({
+          where: { id: userId },
+        });
+        if (userExists) {
+          await this.prisma.taskAssignee.create({
             data: {
               taskId: task.id,
               userId,
             },
-          }),
-        ),
-      );
+          });
+          validAssignees.push(userId);
+        }
+      }
 
-      await this.notificationsService.sendNotificationToUsers(assignees, {
-        title: 'Nueva tarea asignada',
-        body: `Se te ha asignado la tarea: ${task.title}`,
-        url: `/tasks/${task.id}`,
-        data: { type: 'task_assigned', taskId: task.id },
-      });
+      if (validAssignees.length > 0) {
+        await this.notificationsService.sendNotificationToUsers(validAssignees, {
+          title: 'Nueva tarea asignada',
+          body: `Se te ha asignado la tarea: ${task.title}`,
+          url: `/tasks/${task.id}`,
+          data: { type: 'task_assigned', taskId: task.id },
+        });
+      }
     }
 
     return this.findOne(task.id, organizationId);

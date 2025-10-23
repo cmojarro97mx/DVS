@@ -30,9 +30,15 @@ export class NotesService {
   }
 
   async create(data: any, userId: string, organizationId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+
     return this.prisma.note.create({
       data: {
         ...data,
+        author: user?.name || 'Usuario',
         userId,
         organizationId,
       },
