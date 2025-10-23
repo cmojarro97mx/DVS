@@ -96,13 +96,15 @@ const UpcomingEvents: React.FC<{
 }> = ({ events, currentDate, onPreview }) => {
     
     const upcomingEvents = useMemo(() => {
-        const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const now = new Date();
+        now.setHours(0, 0, 0, 0); // Establecer a medianoche para incluir eventos de hoy
+        
         const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59);
 
         return events
             .filter(event => {
                 const eventStart = new Date(event.start);
-                return eventStart >= startOfMonth && eventStart <= endOfMonth && event.status !== 'deleted' && event.status !== 'cancelled';
+                return eventStart >= now && eventStart <= endOfMonth && event.status !== 'deleted' && event.status !== 'cancelled';
             })
             .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
     }, [events, currentDate]);
