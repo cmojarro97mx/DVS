@@ -62,7 +62,8 @@ export default function VirtualAssistantPage() {
       const data = await api.get<any>(`/virtual-assistant/token/${token}`);
       setAssistant(data);
       
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const apiUrl = import.meta.env.VITE_API_URL || window.location.origin.replace(':5000', ':3001');
+      console.log('🌐 URL de conexión WebSocket:', `${apiUrl}/virtual-assistant`);
       const socket = io(`${apiUrl}/virtual-assistant`, {
         transports: ['websocket', 'polling'],
       });

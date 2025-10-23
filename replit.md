@@ -59,9 +59,12 @@ The frontend uses React with TypeScript, styled using Tailwind CSS, and bundled 
     -   **Backend**: NestJS WebSocket Gateway for real-time bidirectional communication with Gemini AI.
     -   **Frontend**: React components with Web Speech API for native browser voice recognition and synthesis.
     -   **Access Control**: Token-based system for secure, authentication-free access via unique UUID links.
-    -   **AI Integration**: Powered by Google Gemini Flash API with function calling capabilities to query and create operations, clients, events, and tasks.
+    -   **AI Integration**: Powered by Google Gemini Flash API (gemini-2.0-flash-exp) with function calling capabilities to query and create operations, clients, events, and tasks.
     -   **Real-Time Conversation**: Full duplex communication through Socket.IO WebSockets for instant voice interactions.
     -   **Voice Interface**: Browser-native speech recognition and synthesis for hands-free operation management.
+    -   **Connection**: Auto-detects production URL using `window.location.origin` to connect to backend WebSocket (port 3001).
+    -   **Interface**: Modern dark theme with ElevenLabs-inspired audio visualizations, supports both text and voice input.
+    -   **Browser Compatibility**: Text input works universally; voice recognition available on Chrome/Edge (Web Speech API).
 
 **System Design Choices:**
 -   **Modular Design**: Structured into distinct modules for maintainability and scalability.
