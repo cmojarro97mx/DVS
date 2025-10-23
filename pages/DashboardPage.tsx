@@ -34,6 +34,7 @@ import AutomationPage from './AutomationPage'; // Automation Page
 import VirtualAssistantConfigPage from '../src/pages/VirtualAssistant/VirtualAssistantConfigPage'; // Virtual Assistant Config Page
 import { employeesService } from '../src/services/employeesService';
 import { clientsService } from '../src/services/clientsService';
+import { notesService } from '../src/services/notesService';
 import { 
     initialProjects, 
     initialClients, 
@@ -518,8 +519,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
       }
     };
 
+    const loadNotes = async () => {
+      try {
+        const notesData = await notesService.getAll();
+        setNotes(notesData);
+      } catch (error) {
+        console.error('Error loading notes:', error);
+      }
+    };
+
     loadEmployees();
     loadClients();
+    loadNotes();
   }, []);
 
   const projectsWithRealProgress = useMemo(() => {
@@ -746,12 +757,38 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
                 setProjects(projects.map(p => p.id === selectedProject.id ? {...p, documents: updatedFiles} : p))
             }}
             notes={projectNotes}
-            onAddNote={(content, file) => {
-                const newNote: Note = { id: `${selectedProject.id}-note-${Date.now()}`, author: 'Current User', timestamp: new Date().toLocaleString(), content, attachment: file ? { file, preview: URL.createObjectURL(file)} : undefined };
-                setNotes(prev => [...prev, newNote]);
+            onAddNote={async (content, file) => {
+                try {
+                    const newNoteData = {
+                        content,
+                        operationId: selectedProject.id,
+                        title: content.substring(0, 50)
+                    };
+                    const savedNote = await notesService.create(newNoteData);
+                    setNotes(prev => [...prev, savedNote]);
+                } catch (error) {
+                    console.error('Error creating note:', error);
+                    alert('Error al guardar la nota. Por favor, intenta nuevamente.');
+                }
             }}
-            onUpdateNote={(noteId, content) => setNotes(notes.map(n => n.id === noteId ? {...n, content} : n))}
-            onDeleteNote={(noteId) => setNotes(notes.filter(n => n.id !== noteId))}
+            onUpdateNote={async (noteId, content) => {
+                try {
+                    const updatedNote = await notesService.update(noteId, { content });
+                    setNotes(notes.map(n => n.id === noteId ? updatedNote : n));
+                } catch (error) {
+                    console.error('Error updating note:', error);
+                    alert('Error al actualizar la nota.');
+                }
+            }}
+            onDeleteNote={async (noteId) => {
+                try {
+                    await notesService.delete(noteId);
+                    setNotes(notes.filter(n => n.id !== noteId));
+                } catch (error) {
+                    console.error('Error deleting note:', error);
+                    alert('Error al eliminar la nota.');
+                }
+            }}
             expenses={projectExpenses}
             onAddExpense={(expense) => setExpenses(prev => [...prev, {...expense, id: `exp-${Date.now()}`}])}
             onUpdateExpense={(expense) => setExpenses(expenses.map(e => e.id === expense.id ? expense : e))}
