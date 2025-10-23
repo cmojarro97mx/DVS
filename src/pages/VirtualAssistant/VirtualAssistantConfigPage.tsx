@@ -25,8 +25,8 @@ export default function VirtualAssistantConfigPage() {
 
   const fetchAssistants = async () => {
     try {
-      const response = await api.get('/virtual-assistant');
-      setAssistants(response.data);
+      const data = await api.get<VirtualAssistant[]>('/virtual-assistant');
+      setAssistants(data);
     } catch (error) {
       console.error('Error loading assistants:', error);
     } finally {

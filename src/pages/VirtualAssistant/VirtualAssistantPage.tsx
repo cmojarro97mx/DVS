@@ -47,8 +47,8 @@ export default function VirtualAssistantPage() {
 
   const initializeAssistant = async () => {
     try {
-      const response = await api.get(`/virtual-assistant/token/${token}`);
-      setAssistant(response.data);
+      const data = await api.get<any>(`/virtual-assistant/token/${token}`);
+      setAssistant(data);
       
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
       const socket = io(`${apiUrl}/virtual-assistant`, {
