@@ -40,6 +40,18 @@ The frontend uses React with TypeScript, styled using Tailwind CSS, and bundled 
     -   **Google Calendar API**: Complete calendar management (list, create, update, delete events) with automatic background sync and visual indicators. Enforces multi-tenant security and includes cascaded event deletion and cleanup.
     -   **Email Analysis Module**: Hybrid storage (metadata in PostgreSQL, heavy content in Backblaze B2). Features include comprehensive email sync, real-time metrics, a configuration wizard for sync date ranges, and automatic storage cleanup.
     -   **OAuth Flow**: Secure OAuth 2.0 with automatic token refresh, state validation, and robust error logging.
+    -   **Advanced Email-to-Operation Linking**: Intelligent automation system that links emails to operations using:
+        - Standard fields: Client email, Booking/Tracking numbers, MBL/AWB, HBL/AWB, Operation ID
+        - **OCR & PDF Text Extraction**: Analyzes attachments (PDFs, images, invoices, shipping documents) using Tesseract.js OCR and pdf-parse to find operation references even when missing from subject/body
+        - **Smart Pattern Matching**: Searches in email subject, body, and extracted attachment text
+        - Processes up to 100 emails with attachments per automation cycle
+        - Logs detailed matching information for transparency
+    -   **Fresh Email Viewer**: On-demand email retrieval from Gmail OAuth with original HTML design:
+        - "Diseño Original" button fetches email directly from Gmail API
+        - Preserves complete email styling and layout as seen in Gmail
+        - Displays fresh attachments metadata from Gmail
+        - Improved iframe rendering with adjustable heights (300-600px for fresh emails)
+        - Secure temporary access without permanent storage
 -   **Push Notifications**: Integrated SendPulse web push notifications for real-time alerts.
     -   **User Controls**: `NotificationSettings` model allows users to manage preferences for various event types (operations, tasks, invoices, payments, expenses, calendar, emails).
     -   **Event-Driven**: Notifications triggered for new operations, tasks, invoices, payments, expenses, calendar events, and important emails.
