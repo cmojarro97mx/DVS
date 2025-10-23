@@ -3,6 +3,7 @@ import { PrismaService } from '../../common/prisma.service';
 import { BackblazeService } from '../../common/backblaze.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { DocumentProcessorService } from '../email-sync/document-processor.service';
+import { EmailStorageService } from '../email-storage/email-storage.service';
 
 @Injectable()
 export class OperationsService {
@@ -11,6 +12,7 @@ export class OperationsService {
     private backblazeService: BackblazeService,
     private notificationsService: NotificationsService,
     private documentProcessor: DocumentProcessorService,
+    private emailStorageService: EmailStorageService,
   ) {}
 
   async findAll(organizationId: string) {
@@ -619,7 +621,38 @@ export class OperationsService {
       }
     }
 
-    return emails;
+    // Generar URLs firmadas para los adjuntos de todos los correos
+    const emailsWithSignedUrls = await Promise.all(
+      emails.map(async (email) => {
+        if (email.attachmentsData && Array.isArray(email.attachmentsData) && email.attachmentsData.length > 0) {
+          const attachmentsWithUrls = await Promise.all(
+            email.attachmentsData.map(async (att: any) => {
+              if (att.key) {
+                try {
+                  const url = await this.emailStorageService.getSignedUrl(att.key);
+                  return {
+                    ...att,
+                    url,
+                    b2Key: att.key,
+                  };
+                } catch (error) {
+                  console.error(`Error generating signed URL for attachment ${att.key}:`, error);
+                  return att;
+                }
+              }
+              return att;
+            })
+          );
+          return {
+            ...email,
+            attachmentsData: attachmentsWithUrls,
+          };
+        }
+        return email;
+      })
+    );
+
+    return emailsWithSignedUrls;
   }
 
   async getEmailLinkingCriteria(operationId: string, organizationId: string) {
