@@ -414,16 +414,8 @@ export class OperationsService {
                 });
               }
               
-              if (searchLocations.includes('attachments')) {
-                locationConditions.push({
-                  attachments: {
-                    path: ['$'],
-                    array_contains: {
-                      filename: { contains: processedPattern }
-                    }
-                  }
-                });
-              }
+              // Nota: La búsqueda en attachments se realiza después en una segunda pasada
+              // porque Prisma no puede buscar directamente dentro de JSON
               
               if (locationConditions.length > 0) {
                 searchConditions.push({

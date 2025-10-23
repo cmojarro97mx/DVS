@@ -186,6 +186,7 @@ model Operation {
   payments          Payment[]
   expenses          Expense[]
   documents         Document[]
+  emails            EmailMessage[]
   
   @@map("operations")
 }
@@ -497,12 +498,12 @@ model EmailAccount {
 }
 
 model EmailMessage {
-  id                  String    @id @default(uuid())
+  id                  String     @id @default(uuid())
   gmailMessageId      String
   threadId            String?
   accountId           String
   account             EmailAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  folder              String    @default("inbox")
+  folder              String     @default("inbox")
   labels              Json?
   from                String
   fromName            String?
@@ -515,23 +516,26 @@ model EmailMessage {
   htmlBodyKey         String?
   htmlBodyUrl         String?
   date                DateTime
-  unread              Boolean   @default(true)
-  starred             Boolean   @default(false)
-  isReplied           Boolean   @default(false)
+  unread              Boolean    @default(true)
+  starred             Boolean    @default(false)
+  isReplied           Boolean    @default(false)
   inReplyTo           String?
   references          String?
-  hasAttachments      Boolean   @default(false)
+  hasAttachments      Boolean    @default(false)
   attachmentsKey      String?
   attachmentsData     Json?
   messageId           String?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  operationId         String?
+  operation           Operation? @relation(fields: [operationId], references: [id], onDelete: SetNull)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
   
   @@unique([accountId, gmailMessageId])
   @@index([accountId, date(sort: Desc)])
   @@index([accountId, unread])
   @@index([accountId, isReplied])
   @@index([threadId])
+  @@index([operationId])
   @@map("email_messages")
 }
 
