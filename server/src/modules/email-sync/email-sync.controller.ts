@@ -174,7 +174,7 @@ export class EmailSyncController {
   }
 
   @Get('message/:messageId')
-  async getMessage(@Req() req: Request, @Param('messageId') messageId: string) {
+  async getMessageDetails(@Req() req: Request, @Param('messageId') messageId: string) {
     const user = req.user as any;
 
     const message = await this.prisma.emailMessage.findFirst({
@@ -188,6 +188,7 @@ export class EmailSyncController {
         account: {
           select: {
             email: true,
+            id: true,
           },
         },
       },
@@ -207,14 +208,17 @@ export class EmailSyncController {
           (message.attachmentsData as any[]).map(async (att) => ({
             ...att,
             url: await this.emailStorageService.getSignedUrl(att.key),
+            b2Key: att.key,
           }))
         )
       : [];
 
     return {
       ...message,
+      accountId: message.account.id,
       htmlBodyContent,
-      attachments: attachmentsWithUrls,
+      htmlBodyUrl: htmlBodyContent,
+      attachmentsData: attachmentsWithUrls,
     };
   }
 
@@ -317,14 +321,6 @@ export class EmailSyncController {
     };
   }
 
-  @Get('accounts/:accountId/messages/:messageId')
-  async getMessage(
-    @Param('accountId') accountId: string,
-    @Param('messageId') messageId: string,
-    @Req() req: any,
-  ) {
-    return this.emailSyncService.getMessage(accountId, messageId, req.user.organizationId);
-  }
 
   @Get('attachment-url/:b2Key')
   async getAttachmentUrl(
