@@ -120,6 +120,6 @@ export class BackblazeService {
       Key: key,
     });
 
-    return getSignedUrl(this.s3Client, command, { expiresIn });
+    return getSignedUrl(this.s3Client as any, command, { expiresIn });
   }
 }

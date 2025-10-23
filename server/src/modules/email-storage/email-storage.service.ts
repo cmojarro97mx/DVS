@@ -82,7 +82,7 @@ export class EmailStorageService {
         Key: key,
       });
 
-      const url = await getSignedUrl(this.s3Client, command, { expiresIn });
+      const url = await getSignedUrl(this.s3Client as any, command, { expiresIn });
       return url;
     } catch (error) {
       this.logger.error(`Failed to generate signed URL for ${key}:`, error);
