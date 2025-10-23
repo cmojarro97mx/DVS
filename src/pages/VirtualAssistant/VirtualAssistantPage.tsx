@@ -23,20 +23,15 @@ export default function VirtualAssistantPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   
   const [isRecording, setIsRecording] = useState(false);
-  const [whisperStatus, setWhisperStatus] = useState<string>('not-loaded');
-  const [whisperMessage, setWhisperMessage] = useState<string>('');
-  const [isTranscribing, setIsTranscribing] = useState(false);
   
   const socketRef = useRef<Socket | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const workerRef = useRef<Worker | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     initializeAssistant();
-    initializeWhisperWorker();
+    initializeSpeechRecognition();
     
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.getVoices();
@@ -51,8 +46,8 @@ export default function VirtualAssistantPage() {
       if (socketRef.current) {
         socketRef.current.disconnect();
       }
-      if (workerRef.current) {
-        workerRef.current.terminate();
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
       }
       window.speechSynthesis.cancel();
     };
@@ -66,70 +61,53 @@ export default function VirtualAssistantPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const initializeWhisperWorker = () => {
+  const initializeSpeechRecognition = () => {
     try {
-      const worker = new Worker(
-        new URL('../../workers/whisper.worker.js', import.meta.url),
-        { type: 'module' }
-      );
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      
+      if (!SpeechRecognition) {
+        console.warn('⚠️ SpeechRecognition no soportado en este navegador');
+        return;
+      }
 
-      worker.onmessage = (event) => {
-        const { type, text, message, progress } = event.data;
-        console.log('🔊 Worker message:', type, message);
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'es-ES';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
 
-        if (type === 'loading') {
-          setWhisperStatus('loading');
-          setWhisperMessage(message);
-          console.log('🔄', message);
-        }
+      recognition.onstart = () => {
+        console.log('🎤 Reconocimiento de voz iniciado');
+        setIsRecording(true);
+      };
 
-        if (type === 'progress') {
-          setWhisperMessage(message);
-          console.log('📥', message);
-        }
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        console.log('📝 Transcripción:', transcript);
+        setTextInput(transcript);
+        setIsRecording(false);
+      };
 
-        if (type === 'ready') {
-          console.log('🎉 Recibido mensaje READY del worker');
-          setWhisperStatus('ready');
-          setWhisperMessage('');
-          console.log('✅ Whisper listo para usar');
-        }
-
-        if (type === 'transcribing') {
-          setIsTranscribing(true);
-          setWhisperMessage(message);
-        }
-
-        if (type === 'result') {
-          setIsTranscribing(false);
-          setWhisperMessage('');
-          if (text && text.trim()) {
-            setTextInput(text);
-            console.log('📝 Transcripción:', text);
-          }
-        }
-
-        if (type === 'error') {
-          setWhisperStatus('error');
-          setWhisperMessage(message);
-          setIsTranscribing(false);
-          console.error('❌ Error Whisper:', message);
+      recognition.onerror = (event: any) => {
+        console.error('❌ Error en reconocimiento:', event.error);
+        setIsRecording(false);
+        
+        if (event.error === 'no-speech') {
+          console.log('⚠️ No se detectó voz');
+        } else if (event.error === 'not-allowed') {
+          alert('Por favor permite el acceso al micrófono para usar esta función');
         }
       };
 
-      worker.onerror = (error) => {
-        console.error('❌ Error en Worker:', error);
-        setWhisperStatus('error');
-        setWhisperMessage('Error al cargar el modelo de transcripción');
+      recognition.onend = () => {
+        console.log('⏹️ Reconocimiento de voz finalizado');
+        setIsRecording(false);
       };
 
-      workerRef.current = worker;
-      console.log('📤 Enviando mensaje LOAD al worker...');
-      worker.postMessage({ type: 'load' });
-    } catch (err) {
-      console.error('Error al inicializar Whisper Worker:', err);
-      setWhisperStatus('error');
-      setWhisperMessage('No se pudo inicializar el worker');
+      recognitionRef.current = recognition;
+      console.log('✅ SpeechRecognition inicializado');
+    } catch (error) {
+      console.error('❌ Error al inicializar SpeechRecognition:', error);
     }
   };
 
@@ -234,46 +212,24 @@ export default function VirtualAssistantPage() {
     }
   };
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        const arrayBuffer = await audioBlob.arrayBuffer();
-        
-        stream.getTracks().forEach(track => track.stop());
-        
-        if (workerRef.current && whisperStatus === 'ready') {
-          workerRef.current.postMessage({ type: 'transcribe', audio: arrayBuffer });
-        } else {
-          console.error('Whisper no está listo');
-          setWhisperMessage('El modelo de transcripción aún no está listo. Espera un momento.');
-        }
-      };
-
-      mediaRecorder.start();
-      mediaRecorderRef.current = mediaRecorder;
-      setIsRecording(true);
-      console.log('🎤 Grabando...');
-    } catch (err) {
-      console.error('Error al acceder al micrófono:', err);
-      alert('No se pudo acceder al micrófono. Por favor permite el acceso.');
+  const toggleVoiceRecognition = () => {
+    if (!recognitionRef.current) {
+      console.error('❌ SpeechRecognition no está disponible');
+      alert('El reconocimiento de voz no está disponible en este navegador');
+      return;
     }
-  };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      console.log('⏹️ Grabación detenida');
+    if (isRecording) {
+      console.log('⏹️ Deteniendo reconocimiento de voz');
+      recognitionRef.current.stop();
+    } else {
+      console.log('🎤 Iniciando reconocimiento de voz');
+      try {
+        recognitionRef.current.start();
+      } catch (error) {
+        console.error('❌ Error al iniciar reconocimiento:', error);
+        setIsRecording(false);
+      }
     }
   };
 
@@ -635,17 +591,17 @@ export default function VirtualAssistantPage() {
             {/* Microphone Button */}
             <button
               type="button"
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={whisperStatus !== 'ready' || isTranscribing}
+              onClick={toggleVoiceRecognition}
+              disabled={!recognitionRef.current}
               className={`p-2 md:p-3 rounded-xl transition-all ${
                 isRecording
                   ? 'bg-red-600 text-white animate-pulse'
-                  : whisperStatus === 'ready'
+                  : recognitionRef.current
                   ? 'bg-purple-600/20 text-purple-500 hover:bg-purple-600/30'
                   : 'bg-gray-800 text-gray-600 cursor-not-allowed'
               }`}
               title={
-                whisperStatus !== 'ready' ? 'Cargando modelo de transcripción...' :
+                !recognitionRef.current ? 'Reconocimiento de voz no disponible' :
                 isRecording ? 'Detener grabación' : 'Grabar audio'
               }
             >
@@ -662,12 +618,10 @@ export default function VirtualAssistantPage() {
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
               placeholder={
-                isTranscribing ? 'Transcribiendo...' :
-                whisperStatus === 'loading' ? 'Cargando modelo...' :
-                'Escribe o graba tu mensaje...'
+                isRecording ? 'Escuchando...' : 'Escribe o graba tu mensaje...'
               }
               className="flex-1 bg-gray-800 text-white px-3 md:px-4 py-2 md:py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 text-sm md:text-base disabled:opacity-50"
-              disabled={isProcessing || isTranscribing}
+              disabled={isProcessing}
               autoFocus
             />
             <button
@@ -679,20 +633,9 @@ export default function VirtualAssistantPage() {
             </button>
           </div>
           <p className="text-gray-500 text-xs mt-2 flex items-center gap-1 flex-wrap">
-            {whisperStatus === 'ready' ? (
-              <>
-                <Mic className="w-3 h-3" />
-                Graba audio o escribe texto
-              </>
-            ) : whisperStatus === 'loading' ? (
-              <>
-                <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                Descargando modelo Whisper...
-              </>
-            ) : (
-              'Escribe tu mensaje'
-            )}
-            {!isMuted && whisperStatus === 'ready' && <span className="text-green-500">(🔊 Voz activada)</span>}
+            <Mic className="w-3 h-3" />
+            Graba audio o escribe texto
+            {!isMuted && <span className="text-green-500">(🔊 Voz activada)</span>}
           </p>
         </form>
       </div>
