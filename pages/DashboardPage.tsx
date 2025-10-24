@@ -971,7 +971,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
       />
 
       <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-20'}`}>
-        <TopHeader onLogout={onLogout} setActiveView={setActiveView} />
+        <TopHeader onLogout={onLogout} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 p-4 md:p-6">
           {renderContent()}
         </main>

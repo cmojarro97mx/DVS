@@ -31,8 +31,6 @@ model User {
   events        Event[]
   emailAccounts EmailAccount[] @relation("UserEmailAccounts")
   notificationSettings NotificationSettings? @relation("UserNotificationSettings")
-  notifications Notification[] @relation("UserNotifications")
-  pushSubscriptions PushSubscription[] @relation("UserPushSubscriptions")
   
   @@map("users")
 }
@@ -660,38 +658,4 @@ model VirtualAssistant {
   updatedAt       DateTime     @updatedAt
   
   @@map("virtual_assistants")
-}
-
-model Notification {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  message   String
-  type      String
-  url       String?
-  read      Boolean  @default(false)
-  data      Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  @@index([userId, read])
-  @@index([createdAt])
-  @@map("notifications")
-}
-
-model PushSubscription {
-  id           String   @id @default(uuid())
-  userId       String
-  user         User     @relation("UserPushSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
-  endpoint     String
-  p256dh       String
-  auth         String
-  userAgent    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
-  @@unique([userId, endpoint])
-  @@index([userId])
-  @@map("push_subscriptions")
 }

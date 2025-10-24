@@ -91,11 +91,10 @@ export class OperationsService {
           });
 
           await this.notificationsService.sendNotificationToUser(userId, {
-            type: 'operation',
             title: 'Nueva operación asignada',
             body: `Se te ha asignado una nueva operación`,
             url: `/operations/${operation.id}`,
-            data: { operationId: operation.id },
+            data: { type: 'operation_assigned', operationId: operation.id },
           });
         } else {
           console.warn(`User with ID ${userId} not found, skipping assignment`);
@@ -172,11 +171,10 @@ export class OperationsService {
         const addedAssignees = newAssigneeIds.filter(id => !oldAssigneeIds.includes(id));
         for (const userId of addedAssignees) {
           await this.notificationsService.sendNotificationToUser(userId, {
-            type: 'operation',
             title: 'Nueva operación asignada',
             body: `Se te ha asignado una nueva operación`,
             url: `/operations/${operation.id}`,
-            data: { operationId: operation.id },
+            data: { type: 'operation_assigned', operationId: operation.id },
           });
         }
       }
@@ -184,11 +182,10 @@ export class OperationsService {
       const allAssigneeIds = assignees.length > 0 ? assignees : oldAssigneeIds;
       if (allAssigneeIds.length > 0 && Object.keys(cleanData).length > 0) {
         await this.notificationsService.sendNotificationToUsers(allAssigneeIds, {
-          type: 'operation',
           title: 'Operación actualizada',
           body: `Una de tus operaciones ha sido actualizada`,
           url: `/operations/${operation.id}`,
-          data: { operationId: operation.id },
+          data: { type: 'operation_updated', operationId: operation.id },
         });
       }
     }

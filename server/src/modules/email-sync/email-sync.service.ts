@@ -178,11 +178,11 @@ export class EmailSyncService {
 
       if (account) {
         await this.notificationsService.sendNotificationToUser(account.userId, {
-          type: 'email',
           title: `Nuevo email ${isStarred ? '⭐ ' : ''}de ${this.extractName(from)}`,
           body: subject || '(Sin asunto)',
           url: '/email-analysis',
           data: {
+            type: 'new_email',
             emailId: emailMessage.id,
             accountId,
           },

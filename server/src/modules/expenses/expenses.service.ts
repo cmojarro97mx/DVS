@@ -66,11 +66,10 @@ export class ExpensesService {
       await this.notificationsService.sendNotificationToUsers(
         admins.map(a => a.id),
         {
-          type: 'expense',
           title: 'Nuevo gasto registrado',
           body: `Se ha registrado un nuevo gasto por ${data.amount} ${data.currency}`,
           url: `/expenses/${expense.id}`,
-          data: { expenseId: expense.id },
+          data: { type: 'expense_created', expenseId: expense.id },
         },
       );
     }

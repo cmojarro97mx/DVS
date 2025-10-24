@@ -108,11 +108,10 @@ export class CalendarService {
       });
 
       await this.notificationsService.sendNotificationToUser(event.userId, {
-        type: 'calendar',
         title: 'Nuevo evento en tu calendario',
         body: `${event.title} - ${formattedDate}`,
         url: '/calendar',
-        data: { eventId: event.id },
+        data: { type: 'event_created', eventId: event.id },
       });
     }
     

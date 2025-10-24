@@ -1,13 +1,12 @@
 import React from 'react';
 import { SearchIcon } from './icons/SearchIcon';
-import { NotificationBell } from './NotificationBell';
+import { BellIcon } from './icons/BellIcon';
 
 interface TopHeaderProps {
     onLogout: () => void;
-    setActiveView?: (view: string) => void;
 }
 
-export const TopHeader: React.FC<TopHeaderProps> = ({ onLogout, setActiveView }) => {
+export const TopHeader: React.FC<TopHeaderProps> = ({ onLogout }) => {
     
     return (
         <header className="bg-white border-b border-gray-200 h-16 flex-shrink-0 sticky top-0 z-20">
@@ -27,7 +26,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onLogout, setActiveView })
                     </div>
                     
                     <div className="flex items-center flex-shrink-0">
-                        <NotificationBell setActiveView={setActiveView} />
+                        <button className="p-2 sm:p-2.5 rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-200/70 transition-colors">
+                            <BellIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+                        </button>
                     </div>
                 </div>
             </div>

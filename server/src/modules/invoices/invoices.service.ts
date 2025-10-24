@@ -67,11 +67,10 @@ export class InvoicesService {
       await this.notificationsService.sendNotificationToUsers(
         admins.map(a => a.id),
         {
-          type: 'invoice',
           title: 'Nueva factura creada',
           body: `Se ha creado una nueva factura por ${data.amount} ${data.currency}`,
           url: `/invoices/${invoice.id}`,
-          data: { invoiceId: invoice.id },
+          data: { type: 'invoice_created', invoiceId: invoice.id },
         },
       );
     }
