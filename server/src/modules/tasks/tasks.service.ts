@@ -99,10 +99,26 @@ export class TasksService {
 
     if (assignees && assignees.length > 0) {
       const validAssignees = [];
-      for (const userId of assignees) {
-        const userExists = await this.prisma.user.findUnique({
-          where: { id: userId },
+      for (const assigneeId of assignees) {
+        // First check if it's a user ID
+        let userId = assigneeId;
+        let userExists = await this.prisma.user.findUnique({
+          where: { id: assigneeId },
         });
+        
+        // If not found, check if it's an employee ID and get the userId
+        if (!userExists) {
+          const employee = await this.prisma.employee.findUnique({
+            where: { id: assigneeId },
+          });
+          if (employee && employee.userId) {
+            userId = employee.userId;
+            userExists = await this.prisma.user.findUnique({
+              where: { id: userId },
+            });
+          }
+        }
+        
         if (userExists) {
           await this.prisma.taskAssignee.create({
             data: {
@@ -167,18 +183,39 @@ export class TasksService {
       });
 
       if (assignees.length > 0) {
-        await Promise.all(
-          assignees.map((userId: string) =>
-            this.prisma.taskAssignee.create({
+        const validUserIds = [];
+        for (const assigneeId of assignees) {
+          // First check if it's a user ID
+          let userId = assigneeId;
+          let userExists = await this.prisma.user.findUnique({
+            where: { id: assigneeId },
+          });
+          
+          // If not found, check if it's an employee ID and get the userId
+          if (!userExists) {
+            const employee = await this.prisma.employee.findUnique({
+              where: { id: assigneeId },
+            });
+            if (employee && employee.userId) {
+              userId = employee.userId;
+              userExists = await this.prisma.user.findUnique({
+                where: { id: userId },
+              });
+            }
+          }
+          
+          if (userExists) {
+            await this.prisma.taskAssignee.create({
               data: {
                 taskId: id,
                 userId,
               },
-            }),
-          ),
-        );
+            });
+            validUserIds.push(userId);
+          }
+        }
 
-        const addedAssignees = assignees.filter(id => !oldAssigneeIds.includes(id));
+        const addedAssignees = validUserIds.filter(id => !oldAssigneeIds.includes(id));
         if (addedAssignees.length > 0) {
           await this.notificationsService.sendNotificationToUsers(addedAssignees, {
             title: 'Nueva tarea asignada',

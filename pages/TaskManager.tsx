@@ -237,9 +237,15 @@ const TaskManager: React.FC<TaskManagerProps> = ({
         savedTask = await tasksService.create(createData);
       }
       
+      // Transform assignees from backend format to frontend format
+      const transformedAssignees = savedTask.assignees 
+        ? savedTask.assignees.map((a: any) => a.user?.name || 'Unknown')
+        : [];
+      
       const completeTask: Task = {
         ...savedTask,
-        operationId: operationId
+        operationId: operationId,
+        assignees: transformedAssignees
       };
       onSaveTask(completeTask);
       handleCloseModal();
