@@ -31,6 +31,7 @@ model User {
   events        Event[]
   emailAccounts EmailAccount[] @relation("UserEmailAccounts")
   notificationSettings NotificationSettings? @relation("UserNotificationSettings")
+  notifications Notification[] @relation("UserNotifications")
   
   @@map("users")
 }
@@ -658,4 +659,22 @@ model VirtualAssistant {
   updatedAt       DateTime     @updatedAt
   
   @@map("virtual_assistants")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String
+  url       String?
+  read      Boolean  @default(false)
+  data      Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId, read])
+  @@index([createdAt])
+  @@map("notifications")
 }

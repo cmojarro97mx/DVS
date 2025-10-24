@@ -56,8 +56,29 @@ export class NotificationsService {
     }
   }
 
-  async sendNotificationToUser(userId: string, notification: NotificationPayload): Promise<void> {
+  async createNotification(userId: string, notification: NotificationPayload & { type: string }): Promise<void> {
     try {
+      await this.prisma.notification.create({
+        data: {
+          userId,
+          title: notification.title,
+          message: notification.body,
+          type: notification.type,
+          url: notification.url,
+          data: notification.data,
+        },
+      });
+
+      this.logger.log(`Notification created in DB for user ${userId}: ${notification.title}`);
+    } catch (error) {
+      this.logger.error(`Failed to create notification in DB for user ${userId}`, error);
+    }
+  }
+
+  async sendNotificationToUser(userId: string, notification: NotificationPayload & { type: string }): Promise<void> {
+    try {
+      await this.createNotification(userId, notification);
+
       const userSettings = await this.prisma.notificationSettings.findUnique({
         where: { userId },
       });
@@ -69,7 +90,7 @@ export class NotificationsService {
 
       const token = await this.getAccessToken();
       if (!token || !this.websiteId) {
-        this.logger.warn('SendPulse not configured, skipping notification');
+        this.logger.warn('SendPulse not configured, skipping push notification');
         return;
       }
 
@@ -115,19 +136,19 @@ export class NotificationsService {
         ),
       );
 
-      this.logger.log(`Notification sent to user ${userId}: ${notification.title}`);
+      this.logger.log(`Push notification sent to user ${userId}: ${notification.title}`);
     } catch (error) {
       this.logger.error(`Failed to send notification to user ${userId}`, error);
     }
   }
 
-  async sendNotificationToUsers(userIds: string[], notification: NotificationPayload): Promise<void> {
+  async sendNotificationToUsers(userIds: string[], notification: NotificationPayload & { type: string }): Promise<void> {
     await Promise.all(
       userIds.map((userId) => this.sendNotificationToUser(userId, notification)),
     );
   }
 
-  async sendNotificationToOrganization(organizationId: string, notification: NotificationPayload): Promise<void> {
+  async sendNotificationToOrganization(organizationId: string, notification: NotificationPayload & { type: string }): Promise<void> {
     const users = await this.prisma.user.findMany({
       where: { organizationId },
       select: { id: true },
@@ -171,6 +192,56 @@ export class NotificationsService {
         ...settings,
       },
       update: settings,
+    });
+  }
+
+  async getUserNotifications(userId: string, limit: number = 50) {
+    return this.prisma.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+  }
+
+  async getUnreadCount(userId: string): Promise<number> {
+    return this.prisma.notification.count({
+      where: {
+        userId,
+        read: false,
+      },
+    });
+  }
+
+  async markAsRead(notificationId: string, userId: string) {
+    return this.prisma.notification.updateMany({
+      where: {
+        id: notificationId,
+        userId,
+      },
+      data: {
+        read: true,
+      },
+    });
+  }
+
+  async markAllAsRead(userId: string) {
+    return this.prisma.notification.updateMany({
+      where: {
+        userId,
+        read: false,
+      },
+      data: {
+        read: true,
+      },
+    });
+  }
+
+  async deleteNotification(notificationId: string, userId: string) {
+    return this.prisma.notification.deleteMany({
+      where: {
+        id: notificationId,
+        userId,
+      },
     });
   }
 }

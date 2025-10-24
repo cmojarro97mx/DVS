@@ -116,10 +116,11 @@ export class TasksService {
 
       if (validAssignees.length > 0) {
         await this.notificationsService.sendNotificationToUsers(validAssignees, {
+          type: 'task',
           title: 'Nueva tarea asignada',
           body: `Se te ha asignado la tarea: ${task.title}`,
           url: `/tasks/${task.id}`,
-          data: { type: 'task_assigned', taskId: task.id },
+          data: { taskId: task.id },
         });
       }
     }
@@ -181,10 +182,11 @@ export class TasksService {
         const addedAssignees = assignees.filter(id => !oldAssigneeIds.includes(id));
         if (addedAssignees.length > 0) {
           await this.notificationsService.sendNotificationToUsers(addedAssignees, {
+            type: 'task',
             title: 'Nueva tarea asignada',
             body: `Se te ha asignado la tarea: ${task.title}`,
             url: `/tasks/${task.id}`,
-            data: { type: 'task_assigned', taskId: task.id },
+            data: { taskId: task.id },
           });
         }
       }
@@ -194,10 +196,11 @@ export class TasksService {
       const assigneeIds = assignees || existing.assignees.map(a => a.userId);
       if (assigneeIds.length > 0) {
         await this.notificationsService.sendNotificationToUsers(assigneeIds, {
+          type: 'task',
           title: 'Tarea completada',
           body: `La tarea "${task.title}" ha sido completada`,
           url: `/tasks/${task.id}`,
-          data: { type: 'task_completed', taskId: task.id },
+          data: { taskId: task.id },
         });
       }
     }

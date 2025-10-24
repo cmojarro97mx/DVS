@@ -65,10 +65,11 @@ export class PaymentsService {
       await this.notificationsService.sendNotificationToUsers(
         admins.map(a => a.id),
         {
+          type: 'payment',
           title: 'Nuevo pago registrado',
           body: `Se ha registrado un nuevo pago por ${payment.amount} ${payment.currency}`,
           url: `/payments/${payment.id}`,
-          data: { type: 'payment_created', paymentId: payment.id },
+          data: { paymentId: payment.id },
         },
       );
     }
