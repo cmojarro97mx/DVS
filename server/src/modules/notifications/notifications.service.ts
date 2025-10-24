@@ -74,7 +74,7 @@ export class NotificationsService {
         title: notification.title,
         body: notification.body,
         icon: notification.icon || '/logo.png',
-        url: notification.url || '/',
+        url: null,
         data: notification.data,
       });
 
