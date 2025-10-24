@@ -1,6 +1,6 @@
 import React from 'react';
 import { SearchIcon } from './icons/SearchIcon';
-import { BellIcon } from './icons/BellIcon';
+import { NotificationDropdown } from './NotificationDropdown';
 
 interface TopHeaderProps {
     onLogout: () => void;
@@ -26,9 +26,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onLogout }) => {
                     </div>
                     
                     <div className="flex items-center flex-shrink-0">
-                        <button className="p-2 sm:p-2.5 rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-200/70 transition-colors">
-                            <BellIcon className="h-5 w-5 sm:h-6 sm:w-6" />
-                        </button>
+                        <NotificationDropdown />
                     </div>
                 </div>
             </div>

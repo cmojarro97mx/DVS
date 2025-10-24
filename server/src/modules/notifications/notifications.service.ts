@@ -58,6 +58,29 @@ export class NotificationsService {
 
   async sendNotificationToUser(userId: string, notification: NotificationPayload): Promise<void> {
     try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true, organizationId: true },
+      });
+
+      if (!user) {
+        this.logger.error(`User ${userId} not found`);
+        return;
+      }
+
+      await this.prisma.notification.create({
+        data: {
+          userId,
+          organizationId: user.organizationId,
+          title: notification.title,
+          body: notification.body,
+          type: notification.data?.type || 'info',
+          icon: notification.icon,
+          url: notification.url,
+          data: notification.data,
+        },
+      });
+
       const userSettings = await this.prisma.notificationSettings.findUnique({
         where: { userId },
       });
@@ -69,17 +92,7 @@ export class NotificationsService {
 
       const token = await this.getAccessToken();
       if (!token || !this.websiteId) {
-        this.logger.warn('SendPulse not configured, skipping notification');
-        return;
-      }
-
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { email: true },
-      });
-
-      if (!user) {
-        this.logger.error(`User ${userId} not found`);
+        this.logger.warn('SendPulse not configured, skipping push notification');
         return;
       }
 
@@ -171,6 +184,56 @@ export class NotificationsService {
         ...settings,
       },
       update: settings,
+    });
+  }
+
+  async getUserNotifications(userId: string, limit: number = 20) {
+    return this.prisma.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+  }
+
+  async getUnreadCount(userId: string) {
+    return this.prisma.notification.count({
+      where: {
+        userId,
+        read: false,
+      },
+    });
+  }
+
+  async markAsRead(notificationId: string, userId: string) {
+    return this.prisma.notification.updateMany({
+      where: {
+        id: notificationId,
+        userId,
+      },
+      data: {
+        read: true,
+      },
+    });
+  }
+
+  async markAllAsRead(userId: string) {
+    return this.prisma.notification.updateMany({
+      where: {
+        userId,
+        read: false,
+      },
+      data: {
+        read: true,
+      },
+    });
+  }
+
+  async deleteNotification(notificationId: string, userId: string) {
+    return this.prisma.notification.deleteMany({
+      where: {
+        id: notificationId,
+        userId,
+      },
     });
   }
 }

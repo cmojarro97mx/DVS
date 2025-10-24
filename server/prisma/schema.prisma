@@ -31,6 +31,7 @@ model User {
   employee      Employee? @relation("EmployeeUser")
   events        Event[]
   emailAccounts EmailAccount[] @relation("UserEmailAccounts")
+  notifications Notification[] @relation("UserNotifications")
   notificationSettings NotificationSettings? @relation("UserNotificationSettings")
   
   @@map("users")
@@ -74,6 +75,7 @@ model Organization {
   payments        Payment[]
   expenses        Expense[]
   events          Event[]
+  notifications   Notification[]
   automations     Automation[]  @relation("OrganizationAutomations")
   virtualAssistants VirtualAssistant[] @relation("OrganizationVirtualAssistants")
   
@@ -631,6 +633,26 @@ model Automation {
   updatedAt      DateTime     @updatedAt
   
   @@map("automations")
+}
+
+model Notification {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  title          String
+  body           String
+  type           String    @default("info")
+  icon           String?
+  url            String?
+  read           Boolean   @default(false)
+  data           Json?
+  createdAt      DateTime  @default(now())
+  
+  @@index([userId, read])
+  @@index([organizationId])
+  @@map("notifications")
 }
 
 model NotificationSettings {

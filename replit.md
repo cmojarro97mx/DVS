@@ -57,7 +57,8 @@ The frontend uses React with TypeScript, styled using Tailwind CSS, and bundled 
         - Displays fresh attachments metadata from Gmail
         - Improved iframe rendering with adjustable heights (300-600px for fresh emails)
         - Secure temporary access without permanent storage
--   **Push Notifications**: Integrated SendPulse web push notifications for real-time alerts with automated background monitoring.
+-   **Push Notifications & Notification Center**: Integrated notification system with both external push notifications (SendPulse) and internal notification management.
+    -   **Database Storage**: `Notification` model stores all notifications in PostgreSQL with user/organization relations, types (info, success, warning, error, event, task, invoice), and read/unread status tracking.
     -   **User Controls**: `NotificationSettings` model allows users to manage preferences for various event types (operations, tasks, invoices, payments, expenses, calendar, emails).
     -   **Event-Driven**: Notifications triggered for new operations, tasks, invoices, payments, expenses, calendar events, and important emails.
     -   **Automated Background Tasks** (`NotificationsSchedulerService`):
@@ -66,6 +67,17 @@ The frontend uses React with TypeScript, styled using Tailwind CSS, and bundled 
         - **Pending Invoices**: Checks every 30 minutes for invoices due within 3 days and notifies the organization
         - **Daily Summary**: Sends a comprehensive daily report at 9 AM with upcoming events, pending tasks, and active operations
         - All scheduled notifications track sent status to avoid duplicates (fields: `notificationSent`, `overdueNotificationSent`, `reminderSent`)
+    -   **Notification Center (Frontend)**:
+        - **Real-Time UI**: Interactive dropdown in TopHeader with bell icon, animated notification badge showing unread count
+        - **Features**: View all notifications, mark as read (individual/bulk), delete notifications, automatic polling (30s intervals), click-to-navigate (optional URL per notification)
+        - **Rich Display**: Color-coded notifications by type, time-relative timestamps ("Hace 5m", "Hace 2h"), icons per type, notification preview with title and body
+        - **API Endpoints**: 
+            - GET `/api/notifications` - Fetch user notifications (paginated)
+            - GET `/api/notifications/unread-count` - Get unread count for badge
+            - POST `/api/notifications/:id/read` - Mark single as read
+            - POST `/api/notifications/read-all` - Mark all as read
+            - DELETE `/api/notifications/:id` - Delete notification
+    -   **Dual Notification System**: When `sendNotificationToUser()` is called, it both (1) stores notification in database for in-app display and (2) sends push notification via SendPulse if user has push enabled
 -   **Virtual Assistant (Voice-Enabled AI)**:
     -   **Backend**: NestJS WebSocket Gateway for real-time bidirectional communication with Gemini AI.
     -   **Frontend**: React components with Web Speech API for native browser voice recognition and synthesis.
