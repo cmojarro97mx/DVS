@@ -10,7 +10,9 @@ export class NotificationsSchedulerService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
-  ) {}
+  ) {
+    this.logger.log('✅ NotificationsScheduler initialized - Cron jobs active');
+  }
 
   @Cron(CronExpression.EVERY_5_MINUTES)
   async checkUpcomingEvents() {
