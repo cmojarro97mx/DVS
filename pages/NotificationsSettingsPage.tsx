@@ -17,6 +17,7 @@ export default function NotificationsSettingsPage() {
   const [settings, setSettings] = useState<NotificationSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -70,6 +71,21 @@ export default function NotificationsSettingsPage() {
       setMessage('Error al guardar la configuración');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSendTest = async () => {
+    setSendingTest(true);
+    setMessage('');
+    try {
+      const response = await api.post('/notifications/send-test');
+      setMessage('🎉 Notificación de prueba enviada! Deberías verla en tu navegador en unos segundos.');
+      setTimeout(() => setMessage(''), 5000);
+    } catch (error: any) {
+      console.error('Error sending test notification:', error);
+      setMessage(error.response?.data?.message || 'Error al enviar notificación de prueba');
+    } finally {
+      setSendingTest(false);
     }
   };
 
@@ -274,14 +290,25 @@ export default function NotificationsSettingsPage() {
         </div>
 
         <div className="mt-6 pt-6 border-t">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <Save className="w-4 h-4" />
-            {saving ? 'Guardando...' : 'Guardar Configuración'}
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <Save className="w-4 h-4" />
+              {saving ? 'Guardando...' : 'Guardar Configuración'}
+            </button>
+            
+            <button
+              onClick={handleSendTest}
+              disabled={sendingTest}
+              className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <Bell className="w-4 h-4" />
+              {sendingTest ? 'Enviando...' : 'Probar Notificación Push'}
+            </button>
+          </div>
           {message && (
             <p className={`mt-3 text-sm ${message.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
               {message}
