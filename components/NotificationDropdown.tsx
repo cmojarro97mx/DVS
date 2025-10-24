@@ -86,39 +86,24 @@ export const NotificationDropdown: React.FC = () => {
     }
   };
 
-  const markAsRead = async (notificationId: string) => {
+  const deleteAllNotifications = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      await fetch(`/api/notifications/${notificationId}/read`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      setNotifications(prev =>
-        prev.map(n => (n.id === notificationId ? { ...n, read: true } : n))
+      await Promise.all(
+        notifications.map(notification =>
+          fetch(`/api/notifications/${notification.id}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          })
+        )
       );
-      setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (error) {
-      console.error('Failed to mark notification as read:', error);
-    }
-  };
 
-  const markAllAsRead = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      await fetch('/api/notifications/read-all', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setNotifications([]);
       setUnreadCount(0);
     } catch (error) {
-      console.error('Failed to mark all as read:', error);
+      console.error('Failed to delete all notifications:', error);
     }
   };
 
@@ -139,15 +124,6 @@ export const NotificationDropdown: React.FC = () => {
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
     } catch (error) {
       console.error('Failed to delete notification:', error);
-    }
-  };
-
-  const handleNotificationClick = (notification: Notification) => {
-    if (!notification.read) {
-      markAsRead(notification.id);
-    }
-    if (notification.url) {
-      window.location.href = notification.url;
     }
   };
 
@@ -173,19 +149,19 @@ export const NotificationDropdown: React.FC = () => {
   const getNotificationColor = (type: string) => {
     switch (type) {
       case 'success':
-        return 'bg-green-100 text-green-600';
+        return 'bg-green-50 text-green-600';
       case 'warning':
-        return 'bg-yellow-100 text-yellow-600';
+        return 'bg-yellow-50 text-yellow-600';
       case 'error':
-        return 'bg-red-100 text-red-600';
+        return 'bg-red-50 text-red-600';
       case 'event':
-        return 'bg-blue-100 text-blue-600';
+        return 'bg-blue-50 text-blue-600';
       case 'task':
-        return 'bg-purple-100 text-purple-600';
+        return 'bg-purple-50 text-purple-600';
       case 'invoice':
-        return 'bg-emerald-100 text-emerald-600';
+        return 'bg-emerald-50 text-emerald-600';
       default:
-        return 'bg-gray-100 text-gray-600';
+        return 'bg-gray-50 text-gray-600';
     }
   };
 
@@ -222,54 +198,49 @@ export const NotificationDropdown: React.FC = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-2xl border border-gray-200 z-50">
-          <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Notificaciones</h3>
-            {unreadCount > 0 && (
+        <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-md shadow-lg border border-gray-200 z-50">
+          <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-900">Notificaciones</h3>
+            {notifications.length > 0 && (
               <button
-                onClick={markAllAsRead}
-                className="text-sm text-red-600 hover:text-red-700 font-medium"
+                onClick={deleteAllNotifications}
+                className="text-xs text-red-600 hover:text-red-700 font-medium"
               >
-                Marcar todas como leídas
+                Eliminar todas
               </button>
             )}
           </div>
 
-          <div className="max-h-[400px] overflow-y-auto">
+          <div className="max-h-80 overflow-y-auto">
             {loading ? (
-              <div className="p-8 text-center text-gray-500">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-red-600"></div>
+              <div className="p-6 text-center text-gray-500">
+                <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-red-600"></div>
               </div>
             ) : notifications.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                <BellIcon className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">No tienes notificaciones</p>
+              <div className="p-6 text-center text-gray-500">
+                <BellIcon className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                <p className="text-xs">No tienes notificaciones</p>
               </div>
             ) : (
               <div className="divide-y divide-gray-100">
                 {notifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
-                      !notification.read ? 'bg-blue-50' : ''
+                    className={`px-3 py-2.5 transition-colors ${
+                      !notification.read ? 'bg-blue-50/50' : 'bg-white'
                     }`}
-                    onClick={() => handleNotificationClick(notification)}
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-2.5">
                       <div
-                        className={`flex-shrink-0 w-10 h-10 rounded-full ${getNotificationColor(
+                        className={`flex-shrink-0 w-7 h-7 rounded ${getNotificationColor(
                           notification.type
-                        )} flex items-center justify-center text-lg`}
+                        )} flex items-center justify-center text-sm`}
                       >
                         {getNotificationIcon(notification.type)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
-                          <p
-                            className={`text-sm font-medium ${
-                              !notification.read ? 'text-gray-900' : 'text-gray-600'
-                            }`}
-                          >
+                          <p className="text-xs font-medium text-gray-900 leading-tight">
                             {notification.title}
                           </p>
                           <button
@@ -279,7 +250,7 @@ export const NotificationDropdown: React.FC = () => {
                             }}
                             className="flex-shrink-0 text-gray-400 hover:text-red-600 transition-colors"
                           >
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                               <path
                                 fillRule="evenodd"
                                 d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
@@ -288,10 +259,10 @@ export const NotificationDropdown: React.FC = () => {
                             </svg>
                           </button>
                         </div>
-                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                        <p className="text-xs text-gray-600 mt-0.5 line-clamp-2 leading-tight">
                           {notification.body}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-[10px] text-gray-500 mt-1">
                           {formatTime(notification.createdAt)}
                         </p>
                       </div>
@@ -301,19 +272,6 @@ export const NotificationDropdown: React.FC = () => {
               </div>
             )}
           </div>
-
-          {notifications.length > 0 && (
-            <div className="p-3 border-t border-gray-200 text-center">
-              <button
-                onClick={() => {
-                  setIsOpen(false);
-                }}
-                className="text-sm text-red-600 hover:text-red-700 font-medium"
-              >
-                Cerrar
-              </button>
-            </div>
-          )}
         </div>
       )}
     </div>
