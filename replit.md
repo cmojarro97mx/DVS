@@ -137,4 +137,4 @@ The frontend uses React with TypeScript, styled using Tailwind CSS, and bundled 
 -   **Cloud Storage**: Backblaze B2
 -   **AI Services**: Google Gemini API
 -   **Authentication/Authorization**: Google OAuth
--   **Push Notifications**: SendPulse
+-   **Push Notifications**: 100% Open Source (W3C Web Push API via `web-push` library)
