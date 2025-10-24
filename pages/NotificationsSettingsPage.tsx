@@ -14,7 +14,16 @@ interface NotificationSettings {
 }
 
 export default function NotificationsSettingsPage() {
-  const [settings, setSettings] = useState<NotificationSettings | null>(null);
+  const [settings, setSettings] = useState<NotificationSettings>({
+    pushEnabled: true,
+    operationsEnabled: true,
+    tasksEnabled: true,
+    paymentsEnabled: true,
+    invoicesEnabled: true,
+    expensesEnabled: true,
+    calendarEnabled: true,
+    emailsEnabled: true,
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sendingTest, setSendingTest] = useState(false);
@@ -30,7 +39,9 @@ export default function NotificationsSettingsPage() {
       setError(null);
       const response = await api.get('/notifications/settings');
       console.log('Notification settings loaded:', response.data);
-      setSettings(response.data);
+      if (response.data) {
+        setSettings(response.data);
+      }
     } catch (error: any) {
       console.error('Error loading notification settings:', error);
       console.error('Error response:', error.response);
@@ -82,22 +93,6 @@ export default function NotificationsSettingsPage() {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-gray-500">Cargando configuración...</div>
-      </div>
-    );
-  }
-
-  if (!settings) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="text-red-500 text-lg font-semibold mb-2">Error al cargar configuración</div>
-          <button
-            onClick={loadSettings}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Reintentar
-          </button>
-        </div>
       </div>
     );
   }
