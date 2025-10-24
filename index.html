@@ -24,6 +24,16 @@
     <script type="module" src="/index.tsx"></script>
     <script>
       window.addEventListener('load', function() {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(function(registration) {
+              console.log('✅ Service Worker registered successfully:', registration.scope);
+            })
+            .catch(function(error) {
+              console.error('❌ Service Worker registration failed:', error);
+            });
+        }
+
         if ('serviceWorker' in navigator && 'PushManager' in window) {
           console.log('SendPulse: Browser supports push notifications');
           setTimeout(function() {

@@ -1,16 +1,38 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { BellIcon } from './icons/BellIcon';
-import { notificationsService, Notification } from '../src/services/notificationsService';
-import { X, Check, CheckCheck, Trash2 } from 'lucide-react';
+import { notificationsService, Notification as AppNotification } from '../src/services/notificationsService';
+import { useNotificationsSocket } from '../src/hooks/useNotificationsSocket';
+import { usePushNotifications } from '../src/hooks/usePushNotifications';
+import { X, Check, CheckCheck, Trash2, Bell, BellOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const NotificationBell: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  const handleNewNotification = useCallback((notification: AppNotification) => {
+    setNotifications(prev => [notification, ...prev]);
+    setUnreadCount(prev => prev + 1);
+    
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(notification.title, {
+        body: notification.message,
+        icon: '/icon-192.png',
+        tag: notification.id,
+      });
+    }
+  }, []);
+
+  const { isConnected } = useNotificationsSocket({
+    onNotification: handleNewNotification,
+    enabled: true,
+  });
+
+  const pushNotifications = usePushNotifications();
 
   useEffect(() => {
     loadNotifications();

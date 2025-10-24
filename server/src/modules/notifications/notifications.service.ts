@@ -1,7 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { PrismaService } from '../../common/prisma.service';
+import { NotificationsGateway } from './notifications.gateway';
 import { firstValueFrom } from 'rxjs';
+import * as webPush from 'web-push';
 
 export interface NotificationPayload {
   title: string;
@@ -22,7 +24,20 @@ export class NotificationsService {
   constructor(
     private readonly httpService: HttpService,
     private readonly prisma: PrismaService,
-  ) {}
+    @Inject(forwardRef(() => NotificationsGateway))
+    private readonly notificationsGateway: NotificationsGateway,
+  ) {
+    const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
+    const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+    const vapidMailto = process.env.VAPID_MAILTO || 'mailto:admin@nexxio.com';
+
+    if (vapidPublicKey && vapidPrivateKey) {
+      webPush.setVapidDetails(vapidMailto, vapidPublicKey, vapidPrivateKey);
+      this.logger.log('✅ Web Push configured with VAPID keys');
+    } else {
+      this.logger.warn('⚠️ VAPID keys not configured, push notifications will not work');
+    }
+  }
 
   private async getAccessToken(): Promise<string> {
     if (this.accessToken && this.tokenExpiry && new Date() < this.tokenExpiry) {
@@ -56,9 +71,9 @@ export class NotificationsService {
     }
   }
 
-  async createNotification(userId: string, notification: NotificationPayload & { type: string }): Promise<void> {
+  async createNotification(userId: string, notification: NotificationPayload & { type: string }) {
     try {
-      await this.prisma.notification.create({
+      const createdNotification = await this.prisma.notification.create({
         data: {
           userId,
           title: notification.title,
@@ -70,14 +85,21 @@ export class NotificationsService {
       });
 
       this.logger.log(`Notification created in DB for user ${userId}: ${notification.title}`);
+      return createdNotification;
     } catch (error) {
       this.logger.error(`Failed to create notification in DB for user ${userId}`, error);
+      throw error;
     }
   }
 
   async sendNotificationToUser(userId: string, notification: NotificationPayload & { type: string }): Promise<void> {
     try {
-      await this.createNotification(userId, notification);
+      const createdNotification = await this.createNotification(userId, notification);
+
+      this.notificationsGateway.sendNotificationToUser(userId, createdNotification);
+      this.logger.log(`📡 WebSocket notification sent to user ${userId}`);
+
+      await this.sendWebPushNotification(userId, notification);
 
       const userSettings = await this.prisma.notificationSettings.findUnique({
         where: { userId },
@@ -90,7 +112,7 @@ export class NotificationsService {
 
       const token = await this.getAccessToken();
       if (!token || !this.websiteId) {
-        this.logger.warn('SendPulse not configured, skipping push notification');
+        this.logger.debug('SendPulse not configured, skipping SendPulse push notification');
         return;
       }
 
@@ -136,9 +158,61 @@ export class NotificationsService {
         ),
       );
 
-      this.logger.log(`Push notification sent to user ${userId}: ${notification.title}`);
+      this.logger.log(`SendPulse notification sent to user ${userId}: ${notification.title}`);
     } catch (error) {
       this.logger.error(`Failed to send notification to user ${userId}`, error);
+    }
+  }
+
+  async sendWebPushNotification(userId: string, notification: NotificationPayload): Promise<void> {
+    try {
+      const subscriptions = await this.prisma.pushSubscription.findMany({
+        where: { userId },
+      });
+
+      if (subscriptions.length === 0) {
+        this.logger.debug(`No push subscriptions found for user ${userId}`);
+        return;
+      }
+
+      const pushPayload = JSON.stringify({
+        title: notification.title,
+        body: notification.body,
+        icon: notification.icon || '/icon-192.png',
+        url: notification.url || '/',
+        data: notification.data,
+      });
+
+      const results = await Promise.allSettled(
+        subscriptions.map(async (sub) => {
+          try {
+            await webPush.sendNotification(
+              {
+                endpoint: sub.endpoint,
+                keys: {
+                  p256dh: sub.p256dh,
+                  auth: sub.auth,
+                },
+              },
+              pushPayload,
+            );
+            return { success: true, subscriptionId: sub.id };
+          } catch (error) {
+            if (error.statusCode === 410 || error.statusCode === 404) {
+              await this.prisma.pushSubscription.delete({
+                where: { id: sub.id },
+              });
+              this.logger.debug(`Removed expired push subscription ${sub.id}`);
+            }
+            throw error;
+          }
+        }),
+      );
+
+      const successCount = results.filter((r) => r.status === 'fulfilled').length;
+      this.logger.log(`🔔 Web Push sent to ${successCount}/${subscriptions.length} subscriptions for user ${userId}`);
+    } catch (error) {
+      this.logger.error(`Error sending web push notifications for user ${userId}`, error);
     }
   }
 
