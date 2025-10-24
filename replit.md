@@ -57,9 +57,17 @@ The frontend uses React with TypeScript, styled using Tailwind CSS, and bundled 
         - Displays fresh attachments metadata from Gmail
         - Improved iframe rendering with adjustable heights (300-600px for fresh emails)
         - Secure temporary access without permanent storage
--   **Push Notifications & Notification Center**: Integrated notification system with both external push notifications (SendPulse) and internal notification management.
-    -   **Database Storage**: `Notification` model stores all notifications in PostgreSQL with user/organization relations, types (info, success, warning, error, event, task, invoice), and read/unread status tracking.
-    -   **User Controls**: `NotificationSettings` model allows users to manage preferences for various event types (operations, tasks, invoices, payments, expenses, calendar, emails).
+-   **Web Push Notifications & Notification Center** (100% Open Source): Native browser push notification system using W3C Push API with in-app notification management.
+    -   **Database Storage**: 
+        - `Notification` model: Stores all notifications in PostgreSQL with user/organization relations, types (info, success, warning, error, event, task, invoice), read/unread status
+        - `PushSubscription` model: Stores device push subscriptions with endpoint, keys, user-agent, and last-used tracking
+        - `NotificationSettings` model: User preferences for various event types (operations, tasks, invoices, payments, expenses, calendar, emails)
+    -   **Backend (Open Source - web-push)**:
+        - Uses `web-push` npm library (open source implementation of W3C Push API)
+        - VAPID authentication for secure push notifications
+        - Automatic subscription management (register/unregister devices)
+        - Expired subscription cleanup (410 status code detection)
+        - Multi-device support (users can have multiple subscriptions)
     -   **Event-Driven**: Notifications triggered for new operations, tasks, invoices, payments, expenses, calendar events, and important emails.
     -   **Automated Background Tasks** (`NotificationsSchedulerService`):
         - **Upcoming Events**: Checks every 5 minutes for calendar events starting within 1 hour and sends reminders to assigned users
@@ -67,17 +75,30 @@ The frontend uses React with TypeScript, styled using Tailwind CSS, and bundled 
         - **Pending Invoices**: Checks every 30 minutes for invoices due within 3 days and notifies the organization
         - **Daily Summary**: Sends a comprehensive daily report at 9 AM with upcoming events, pending tasks, and active operations
         - All scheduled notifications track sent status to avoid duplicates (fields: `notificationSent`, `overdueNotificationSent`, `reminderSent`)
-    -   **Notification Center (Frontend)**:
-        - **Real-Time UI**: Interactive dropdown in TopHeader with bell icon, animated notification badge showing unread count
-        - **Features**: View all notifications, mark as read (individual/bulk), delete notifications, automatic polling (30s intervals), click-to-navigate (optional URL per notification)
-        - **Rich Display**: Color-coded notifications by type, time-relative timestamps ("Hace 5m", "Hace 2h"), icons per type, notification preview with title and body
-        - **API Endpoints**: 
-            - GET `/api/notifications` - Fetch user notifications (paginated)
-            - GET `/api/notifications/unread-count` - Get unread count for badge
-            - POST `/api/notifications/:id/read` - Mark single as read
-            - POST `/api/notifications/read-all` - Mark all as read
-            - DELETE `/api/notifications/:id` - Delete notification
-    -   **Dual Notification System**: When `sendNotificationToUser()` is called, it both (1) stores notification in database for in-app display and (2) sends push notification via SendPulse if user has push enabled
+    -   **Frontend (Native Web APIs)**:
+        - **Service Worker** (`/sw.js`): Handles push events, notification click/close events, and subscription changes
+        - **Automatic Registration**: Push notifications automatically requested and registered on login/register
+        - **Notification Center UI**: Interactive dropdown in TopHeader with bell icon, animated badge showing unread count
+        - **Features**: View all notifications, mark as read (individual/bulk), delete notifications, automatic polling (30s intervals), click-to-navigate
+        - **Rich Display**: Color-coded by type, time-relative timestamps ("Hace 5m"), icons per type, notification preview
+    -   **API Endpoints**: 
+        - `GET /api/notifications` - Fetch user notifications (paginated)
+        - `GET /api/notifications/unread-count` - Get unread count for badge
+        - `GET /api/notifications/vapid-public-key` - Get VAPID public key for subscription
+        - `POST /api/notifications/subscribe` - Register push subscription
+        - `DELETE /api/notifications/subscribe` - Unregister push subscription
+        - `GET /api/notifications/subscriptions` - List user's devices
+        - `POST /api/notifications/:id/read` - Mark single as read
+        - `POST /api/notifications/read-all` - Mark all as read
+        - `DELETE /api/notifications/:id` - Delete notification
+        - `GET /api/notifications/settings` - Get user notification preferences
+        - `PUT /api/notifications/settings` - Update preferences
+    -   **Configuration Page**: Full settings UI in slidemenu (`NotificationsSettingsPage`) with toggle controls for each notification type
+    -   **Browser Compatibility**:
+        - Desktop: Chrome, Firefox, Edge, Safari (full support)
+        - Android: Chrome, Firefox, Edge (full support)
+        - iOS 16.4+: Requires adding site to home screen first (PWA requirement)
+    -   **Dual System**: When `sendNotificationToUser()` is called: (1) stores in database for in-app display, (2) sends native push notification to all user devices if push enabled
 -   **Virtual Assistant (Voice-Enabled AI)**:
     -   **Backend**: NestJS WebSocket Gateway for real-time bidirectional communication with Gemini AI.
     -   **Frontend**: React components with Web Speech API for native browser voice recognition and synthesis.
