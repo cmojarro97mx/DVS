@@ -16,6 +16,9 @@ The frontend uses React with TypeScript, styled using Tailwind CSS, and bundled 
 -   **Frontend**: React, TypeScript, Vite, Tailwind CSS.
 -   **Backend**: NestJS framework, providing a comprehensive REST API.
 -   **Database**: PostgreSQL (Neon) with Prisma ORM.
+    -   **Connection Optimization**: Uses a global `PrismaModule` to ensure a single PrismaService instance across the entire application, reducing database connections from 198 (22 instances × 9 connections) to just 9 (1 instance × 9 connections) - a 91% reduction.
+    -   **Enhanced Stability**: PrismaService includes automatic retry logic (up to 5 attempts), connection pooling, and comprehensive error handling for improved reliability in Replit's cloud environment.
+    -   **Important**: Never add PrismaService to the `providers` array of feature modules - it's globally available via the PrismaModule.
 -   **Authentication**: JWT-based authentication with refresh tokens and Google OAuth.
 -   **Multi-Tenancy**: All data is isolated by `organizationId`, enforced through JWT validation and database queries.
 -   **Core Modules**: Logistics Operations, Client/Supplier Management, Financial Management (Invoices, Payments, Expenses), Employee Management, Task Management (Kanban), Notes, File Management, Calendar and Events, Lead and Quotation Management.

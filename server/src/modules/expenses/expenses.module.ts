@@ -7,7 +7,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 @Module({
   imports: [NotificationsModule],
   controllers: [ExpensesController],
-  providers: [ExpensesService, PrismaService],
+  providers: [ExpensesService],
   exports: [ExpensesService],
 })
 export class ExpensesModule {}

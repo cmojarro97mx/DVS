@@ -6,6 +6,6 @@ import { BackblazeService } from '../../common/backblaze.service';
 
 @Module({
   controllers: [OrganizationsController],
-  providers: [OrganizationsService, PrismaService, BackblazeService],
+  providers: [OrganizationsService, BackblazeService],
 })
 export class OrganizationsModule {}

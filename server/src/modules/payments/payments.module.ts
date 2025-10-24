@@ -7,7 +7,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 @Module({
   imports: [NotificationsModule],
   controllers: [PaymentsController],
-  providers: [PaymentsService, PrismaService],
+  providers: [PaymentsService],
   exports: [PaymentsService],
 })
 export class PaymentsModule {}

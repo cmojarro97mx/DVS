@@ -7,7 +7,7 @@ import { EmailSyncModule } from '../email-sync/email-sync.module';
 @Module({
   imports: [EmailSyncModule],
   controllers: [AutomationsController],
-  providers: [AutomationsService, PrismaService],
+  providers: [AutomationsService],
   exports: [AutomationsService],
 })
 export class AutomationsModule {}

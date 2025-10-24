@@ -7,7 +7,7 @@ import { PrismaService } from '../../common/prisma.service';
 @Module({
   imports: [ConfigModule],
   controllers: [GoogleAuthController],
-  providers: [GoogleAuthService, PrismaService],
+  providers: [GoogleAuthService],
   exports: [GoogleAuthService],
 })
 export class GoogleAuthModule {}

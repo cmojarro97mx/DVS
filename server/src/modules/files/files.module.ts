@@ -6,7 +6,7 @@ import { BackblazeService } from '../../common/backblaze.service';
 
 @Module({
   controllers: [FilesController],
-  providers: [FilesService, PrismaService, BackblazeService],
+  providers: [FilesService, BackblazeService],
   exports: [FilesService],
 })
 export class FilesModule {}

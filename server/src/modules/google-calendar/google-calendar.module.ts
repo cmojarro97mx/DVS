@@ -7,7 +7,7 @@ import { PrismaService } from '../../common/prisma.service';
 @Module({
   imports: [GoogleAuthModule],
   controllers: [GoogleCalendarController],
-  providers: [GoogleCalendarService, PrismaService],
+  providers: [GoogleCalendarService],
   exports: [GoogleCalendarService],
 })
 export class GoogleCalendarModule {}

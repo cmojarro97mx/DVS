@@ -7,7 +7,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 @Module({
   imports: [NotificationsModule],
   controllers: [CalendarController],
-  providers: [CalendarService, PrismaService],
+  providers: [CalendarService],
   exports: [CalendarService],
 })
 export class CalendarModule {}

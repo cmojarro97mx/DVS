@@ -10,7 +10,7 @@ import { EmailStorageModule } from '../email-storage/email-storage.module';
 @Module({
   imports: [NotificationsModule, EmailSyncModule, EmailStorageModule],
   controllers: [OperationsController],
-  providers: [OperationsService, PrismaService, BackblazeService],
+  providers: [OperationsService, BackblazeService],
   exports: [OperationsService],
 })
 export class OperationsModule {}

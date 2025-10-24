@@ -7,7 +7,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 @Module({
   imports: [NotificationsModule],
   controllers: [TasksController],
-  providers: [TasksService, PrismaService],
+  providers: [TasksService],
   exports: [TasksService],
 })
 export class TasksModule {}

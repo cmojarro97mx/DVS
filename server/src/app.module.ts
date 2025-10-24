@@ -25,7 +25,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { AppConfigModule } from './modules/config/config.module';
 import { AutomationsModule } from './modules/automations/automations.module';
 import { VirtualAssistantModule } from './modules/virtual-assistant/virtual-assistant.module';
-import { PrismaService } from './common/prisma.service';
+import { PrismaModule } from './common/prisma.module';
 
 @Module({
   imports: [
@@ -33,6 +33,7 @@ import { PrismaService } from './common/prisma.service';
       isGlobal: true,
     }),
     ScheduleModule.forRoot(),
+    PrismaModule,
     AuthModule,
     UsersModule,
     OrganizationsModule,
@@ -58,6 +59,5 @@ import { PrismaService } from './common/prisma.service';
     AutomationsModule,
     VirtualAssistantModule,
   ],
-  providers: [PrismaService],
 })
 export class AppModule {}
