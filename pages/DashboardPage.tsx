@@ -671,12 +671,15 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
       setColumns(prev => {
         const updatedColumns = { ...prev };
         
-        // Clear all task IDs first
+        // Clear all task IDs for this operation first
         Object.keys(updatedColumns).forEach(colId => {
-          updatedColumns[colId].taskIds = updatedColumns[colId].taskIds.filter(taskId => {
-            const t = tasks[taskId];
-            return t && t.operationId !== operationId;
-          });
+          updatedColumns[colId] = {
+            ...updatedColumns[colId],
+            taskIds: updatedColumns[colId].taskIds.filter(taskId => {
+              const t = transformedTasks[taskId];
+              return !t || t.operationId !== operationId;
+            })
+          };
         });
         
         // Map status to column ID
@@ -694,7 +697,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
           if (columnId && updatedColumns[columnId]) {
             // Only add if not already present
             if (!updatedColumns[columnId].taskIds.includes(task.id)) {
-              updatedColumns[columnId].taskIds.push(task.id);
+              updatedColumns[columnId] = {
+                ...updatedColumns[columnId],
+                taskIds: [...updatedColumns[columnId].taskIds, task.id]
+              };
             }
           }
         });
@@ -877,7 +883,44 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
             tasks={tasks}
             columns={columns}
             columnOrder={columnOrder}
-            onSaveTask={(task) => setTasks(prev => ({...prev, [task.id]: task}))}
+            onSaveTask={(task) => {
+                // Update tasks state
+                setTasks(prev => ({...prev, [task.id]: task}));
+                
+                // Map status to column ID
+                const statusToColumnId: Record<string, string> = {
+                  'To Do': 'column-1',
+                  'In Progress': 'column-2',
+                  'Done': 'column-3'
+                };
+                
+                // Update columns to include the new task
+                setColumns(prev => {
+                  const updatedColumns = {...prev};
+                  const taskStatus = (task as any).status || 'To Do';
+                  const columnId = statusToColumnId[taskStatus];
+                  
+                  if (columnId && updatedColumns[columnId]) {
+                    // Remove task from all columns first (in case of update)
+                    Object.keys(updatedColumns).forEach(colId => {
+                      updatedColumns[colId] = {
+                        ...updatedColumns[colId],
+                        taskIds: updatedColumns[colId].taskIds.filter(id => id !== task.id)
+                      };
+                    });
+                    
+                    // Add task to the correct column
+                    if (!updatedColumns[columnId].taskIds.includes(task.id)) {
+                      updatedColumns[columnId] = {
+                        ...updatedColumns[columnId],
+                        taskIds: [...updatedColumns[columnId].taskIds, task.id]
+                      };
+                    }
+                  }
+                  
+                  return updatedColumns;
+                });
+            }}
             onDeleteTask={(taskId) => {
                 const newTasks = {...tasks};
                 delete newTasks[taskId];
