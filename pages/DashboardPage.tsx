@@ -666,6 +666,25 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
         console.log('Updated tasks state:', newTasks);
         return newTasks;
       });
+      
+      // Update columns with task IDs from loaded tasks
+      setColumns(prev => {
+        const updatedColumns = { ...prev };
+        
+        // Add task IDs to their respective columns
+        operationTasks.forEach(task => {
+          const columnId = task.columnId || task.column?.id;
+          if (columnId && updatedColumns[columnId]) {
+            // Only add if not already present
+            if (!updatedColumns[columnId].taskIds.includes(task.id)) {
+              updatedColumns[columnId].taskIds.push(task.id);
+            }
+          }
+        });
+        
+        console.log('Updated columns with task IDs:', updatedColumns);
+        return updatedColumns;
+      });
     } catch (error) {
       console.error('Error loading tasks for operation:', error);
     }
