@@ -7,7 +7,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Nexxio</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script charset="UTF-8" src="//web.webpushs.com/js/push/00415c1a0f535b924c7f0539e26a0131_1.js" async></script>
   <script type="importmap">
 {
   "imports": {
@@ -22,24 +21,5 @@
   <body class="bg-slate-100">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
-    <script>
-      window.addEventListener('load', function() {
-        if ('serviceWorker' in navigator && 'PushManager' in window) {
-          console.log('SendPulse: Browser supports push notifications');
-          setTimeout(function() {
-            if (window.oSpP) {
-              try {
-                window.oSpP.init();
-                console.log('SendPulse: Initialized successfully');
-              } catch(e) {
-                console.error('SendPulse: Initialization error', e);
-              }
-            }
-          }, 2000);
-        } else {
-          console.warn('SendPulse: Push notifications not supported on this browser');
-        }
-      });
-    </script>
   </body>
 </html>
