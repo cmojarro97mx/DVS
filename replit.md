@@ -57,9 +57,15 @@ The frontend uses React with TypeScript, styled using Tailwind CSS, and bundled 
         - Displays fresh attachments metadata from Gmail
         - Improved iframe rendering with adjustable heights (300-600px for fresh emails)
         - Secure temporary access without permanent storage
--   **Push Notifications**: Integrated SendPulse web push notifications for real-time alerts.
+-   **Push Notifications**: Integrated SendPulse web push notifications for real-time alerts with automated background monitoring.
     -   **User Controls**: `NotificationSettings` model allows users to manage preferences for various event types (operations, tasks, invoices, payments, expenses, calendar, emails).
     -   **Event-Driven**: Notifications triggered for new operations, tasks, invoices, payments, expenses, calendar events, and important emails.
+    -   **Automated Background Tasks** (`NotificationsSchedulerService`):
+        - **Upcoming Events**: Checks every 5 minutes for calendar events starting within 1 hour and sends reminders to assigned users
+        - **Overdue Tasks**: Checks every 10 minutes for tasks past their due date and alerts assigned users
+        - **Pending Invoices**: Checks every 30 minutes for invoices due within 3 days and notifies the organization
+        - **Daily Summary**: Sends a comprehensive daily report at 9 AM with upcoming events, pending tasks, and active operations
+        - All scheduled notifications track sent status to avoid duplicates (fields: `notificationSent`, `overdueNotificationSent`, `reminderSent`)
 -   **Virtual Assistant (Voice-Enabled AI)**:
     -   **Backend**: NestJS WebSocket Gateway for real-time bidirectional communication with Gemini AI.
     -   **Frontend**: React components with Web Speech API for native browser voice recognition and synthesis.

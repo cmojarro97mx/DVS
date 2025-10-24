@@ -24,6 +24,7 @@ model User {
   
   assignedOperations OperationAssignee[]
   assignedTasks     TaskAssignee[]
+  tasksDirectlyAssigned Task[] @relation("TaskAssignedTo")
   notes         Note[]
   expenses      Expense[]
   createdOperations Operation[] @relation("OperationCreator")
@@ -243,6 +244,11 @@ model Task {
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
   order          Int           @default(0)
+  completed      Boolean       @default(false)
+  status         String        @default("To Do")
+  overdueNotificationSent Boolean? @default(false)
+  assignedToId   String?
+  assignedTo     User?         @relation("TaskAssignedTo", fields: [assignedToId], references: [id])
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   
@@ -340,6 +346,7 @@ model Invoice {
   organizationId  String?
   organization    Organization? @relation(fields: [organizationId], references: [id])
   items           Json
+  reminderSent    Boolean?      @default(false)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   
@@ -418,6 +425,7 @@ model Event {
   user            User?     @relation(fields: [userId], references: [id])
   organizationId  String?
   organization    Organization? @relation(fields: [organizationId], references: [id])
+  notificationSent Boolean? @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   
