@@ -14,7 +14,7 @@ export class NotificationsSchedulerService {
 
   @Cron(CronExpression.EVERY_5_MINUTES)
   async checkUpcomingEvents() {
-    this.logger.debug('Checking for upcoming calendar events...');
+    this.logger.log('🔔 Checking for upcoming calendar events...');
     
     try {
       const now = new Date();
@@ -93,7 +93,7 @@ export class NotificationsSchedulerService {
 
   @Cron(CronExpression.EVERY_10_MINUTES)
   async checkPendingTasks() {
-    this.logger.debug('Checking for overdue tasks...');
+    this.logger.log('📋 Checking for overdue tasks...');
     
     try {
       const now = new Date();
@@ -154,7 +154,7 @@ export class NotificationsSchedulerService {
 
   @Cron(CronExpression.EVERY_30_MINUTES)
   async checkPendingInvoices() {
-    this.logger.debug('Checking for pending invoices...');
+    this.logger.log('💰 Checking for pending invoices...');
     
     try {
       const now = new Date();
@@ -212,7 +212,7 @@ export class NotificationsSchedulerService {
 
   @Cron('0 9 * * *')
   async sendDailySummary() {
-    this.logger.debug('Sending daily summary notifications...');
+    this.logger.log('📊 Sending daily summary notifications...');
     
     try {
       const today = new Date();

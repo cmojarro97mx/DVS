@@ -71,4 +71,23 @@ export class NotificationsController {
   async getSubscriptions(@Request() req) {
     return this.notificationsService.getUserSubscriptions(req.user.userId);
   }
+
+  @Post('send-test')
+  async sendTestNotification(@Request() req) {
+    await this.notificationsService.sendNotificationToUser(req.user.userId, {
+      title: '🎉 Notificación de Prueba',
+      body: 'Este es un mensaje de prueba del sistema de notificaciones push',
+      url: '/dashboard',
+      icon: '/icons/test.png',
+      data: {
+        type: 'test_notification',
+        timestamp: new Date().toISOString(),
+      },
+    });
+    
+    return { 
+      success: true, 
+      message: 'Notificación de prueba enviada correctamente' 
+    };
+  }
 }
