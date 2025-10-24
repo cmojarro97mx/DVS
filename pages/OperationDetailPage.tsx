@@ -866,6 +866,9 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
         filtered[id] = task;
       }
     });
+    console.log('operationTasks filter - project.id:', project.id);
+    console.log('operationTasks filter - all tasks:', tasks);
+    console.log('operationTasks filter - filtered tasks:', filtered);
     return filtered;
   }, [tasks, project.id]);
 
