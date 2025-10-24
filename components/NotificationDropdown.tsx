@@ -20,7 +20,6 @@ export const NotificationDropdown: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    console.log('[NotificationDropdown] Component mounted, starting notifications poll');
     fetchUnreadCount();
     const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
@@ -70,23 +69,17 @@ export const NotificationDropdown: React.FC = () => {
   };
 
   const fetchUnreadCount = async () => {
-    console.log('[NotificationDropdown] Fetching unread count...');
     try {
       const token = localStorage.getItem('token');
-      console.log('[NotificationDropdown] Token exists:', !!token);
       const response = await fetch('/api/notifications/unread-count', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
 
-      console.log('[NotificationDropdown] Response:', response.status, response.statusText);
       if (response.ok) {
         const data = await response.json();
-        console.log('[NotificationDropdown] Unread count:', data.count);
         setUnreadCount(data.count);
-      } else {
-        console.error('[NotificationDropdown] API returned error:', response.status);
       }
     } catch (error) {
       console.error('Failed to fetch unread count:', error);
