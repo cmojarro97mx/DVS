@@ -29,15 +29,22 @@ export class GoogleAuthService {
   }
 
   private getCallbackUrl(): string {
-    if (process.env.GOOGLE_REDIRECT_URI) {
-      return process.env.GOOGLE_REDIRECT_URI;
-    }
-    
     const domain = process.env.REPLIT_DEV_DOMAIN 
       ? `https://${process.env.REPLIT_DEV_DOMAIN}`
       : process.env.REPL_SLUG 
         ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
         : 'http://localhost:3001';
+    
+    if (process.env.GOOGLE_REDIRECT_URI) {
+      const redirectUri = process.env.GOOGLE_REDIRECT_URI.trim();
+      if (redirectUri.startsWith('http://') || redirectUri.startsWith('https://')) {
+        return redirectUri;
+      }
+      if (redirectUri.startsWith('/')) {
+        return `${domain}${redirectUri}`;
+      }
+      return redirectUri;
+    }
     
     return `${domain}/api/google-auth/callback`;
   }
