@@ -35,6 +35,7 @@ import VirtualAssistantConfigPage from '../src/pages/VirtualAssistant/VirtualAss
 import { employeesService } from '../src/services/employeesService';
 import { clientsService } from '../src/services/clientsService';
 import { notesService } from '../src/services/notesService';
+import { tasksService } from '../src/services/tasksService';
 import { 
     initialProjects, 
     initialClients, 
@@ -628,10 +629,37 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
     return newClient;
   }, []);
 
-  const handleViewOperation = (operationId: string) => {
+  const handleViewOperation = async (operationId: string) => {
     setSelectedProjectId(operationId);
     setOperationDetailInitialState(null);
     setActiveView('detail-operation');
+    
+    // Load tasks for this operation from backend
+    try {
+      const operationTasks = await tasksService.getAll(operationId);
+      
+      // Transform assignees from backend format to frontend format
+      const transformedTasks = operationTasks.reduce((acc, task) => {
+        const transformedAssignees = task.assignees 
+          ? task.assignees.map((a: any) => a.user?.name || 'Unknown')
+          : [];
+        
+        acc[task.id] = {
+          ...task,
+          operationId: operationId,
+          assignees: transformedAssignees
+        };
+        return acc;
+      }, {} as Record<string, any>);
+      
+      // Update tasks state with loaded tasks
+      setTasks(prev => ({
+        ...prev,
+        ...transformedTasks
+      }));
+    } catch (error) {
+      console.error('Error loading tasks for operation:', error);
+    }
   };
 
   const handleEditInvoice = (invoiceId: string, operationId: string) => {
