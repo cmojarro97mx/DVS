@@ -24,7 +24,6 @@ model User {
   
   assignedOperations OperationAssignee[]
   assignedTasks     TaskAssignee[]
-  tasksDirectlyAssigned Task[] @relation("TaskAssignedTo")
   notes         Note[]
   expenses      Expense[]
   createdOperations Operation[] @relation("OperationCreator")
@@ -221,41 +220,21 @@ model OperationSupplier {
   @@map("operation_suppliers")
 }
 
-model Column {
-  id        String   @id @default(uuid())
-  title     String
-  order     Int
-  boardId   String   @default("default")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  tasks     Task[]
-  
-  @@map("columns")
-}
-
 model Task {
   id             String        @id @default(uuid())
   title          String
   description    String?
   priority       String        @default("Medium")
   dueDate        DateTime?
-  columnId       String
-  column         Column        @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  status         String        @default("To Do")
   operationId    String?
   operation      Operation?    @relation(fields: [operationId], references: [id], onDelete: Cascade)
   organizationId String?
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-  order          Int           @default(0)
-  completed      Boolean       @default(false)
-  status         String        @default("To Do")
-  overdueNotificationSent Boolean? @default(false)
-  assignedToId   String?
-  assignedTo     User?         @relation("TaskAssignedTo", fields: [assignedToId], references: [id])
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   
-  assignees   TaskAssignee[]
+  assignees      TaskAssignee[]
   
   @@map("tasks")
 }
