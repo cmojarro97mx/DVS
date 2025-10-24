@@ -671,9 +671,26 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
       setColumns(prev => {
         const updatedColumns = { ...prev };
         
-        // Add task IDs to their respective columns
+        // Clear all task IDs first
+        Object.keys(updatedColumns).forEach(colId => {
+          updatedColumns[colId].taskIds = updatedColumns[colId].taskIds.filter(taskId => {
+            const t = tasks[taskId];
+            return t && t.operationId !== operationId;
+          });
+        });
+        
+        // Map status to column ID
+        const statusToColumnId: Record<string, string> = {
+          'To Do': 'column-1',
+          'In Progress': 'column-2',
+          'Done': 'column-3'
+        };
+        
+        // Add task IDs to their respective columns based on status
         operationTasks.forEach(task => {
-          const columnId = task.columnId || task.column?.id;
+          const status = (task as any).status || 'To Do';
+          const columnId = statusToColumnId[status];
+          
           if (columnId && updatedColumns[columnId]) {
             // Only add if not already present
             if (!updatedColumns[columnId].taskIds.includes(task.id)) {

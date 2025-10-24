@@ -215,7 +215,6 @@ const TaskManager: React.FC<TaskManagerProps> = ({
         const updateData: any = {
           title: task.title,
           priority: task.priority,
-          columnId: task.columnId || editingTask.columnId,
         };
         
         if (task.description) updateData.description = task.description;
@@ -228,6 +227,7 @@ const TaskManager: React.FC<TaskManagerProps> = ({
           title: task.title,
           priority: task.priority || 'Medium',
           operationId: operationId,
+          status: 'To Do', // Default status for new tasks
         };
         
         if (task.description) createData.description = task.description;
@@ -308,10 +308,19 @@ const TaskManager: React.FC<TaskManagerProps> = ({
       
       onUpdateColumns(newColumns);
 
+      // Map column ID to status
+      const columnIdToStatus: Record<string, string> = {
+        'column-1': 'To Do',
+        'column-2': 'In Progress',
+        'column-3': 'Done'
+      };
+      
+      const newStatus = columnIdToStatus[destColumnId] || columns[destColumnId].title;
+
       try {
-        await tasksService.update(taskId, { columnId: destColumnId });
+        await tasksService.update(taskId, { status: newStatus });
       } catch (error) {
-        console.error('Error updating task column:', error);
+        console.error('Error updating task status:', error);
         onUpdateColumns(columns);
         alert('Error al mover la tarea. Por favor, intenta nuevamente.');
       }
