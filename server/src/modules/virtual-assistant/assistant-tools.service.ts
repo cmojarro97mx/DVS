@@ -92,24 +92,10 @@ export class AssistantToolsService {
 
   async createTask(organizationId: string, data: any) {
     try {
-      const toDoColumn = await this.prisma.column.findFirst({
-        where: {
-          title: { in: ['To Do', 'Por Hacer', 'Pendiente'] },
-        },
-      });
-
-      if (!toDoColumn) {
-        return {
-          success: false,
-          error: 'No se encontró una columna para tareas pendientes',
-          message: 'No se puede crear la tarea sin una columna válida',
-        };
-      }
-
       const task = await this.prisma.task.create({
         data: {
           organizationId,
-          columnId: toDoColumn.id,
+          status: data.status || 'To Do',
           title: data.title,
           description: data.description,
           priority: data.priority || 'Medium',
@@ -220,20 +206,11 @@ export class AssistantToolsService {
 
   async getPendingTasks(organizationId: string) {
     try {
-      const pendingColumns = await this.prisma.column.findMany({
-        where: {
-          title: { in: ['To Do', 'In Progress', 'Por Hacer', 'En Progreso'] },
-        },
-        select: {
-          id: true,
-        },
-      });
-
       const tasks = await this.prisma.task.findMany({
         where: {
           organizationId,
-          columnId: {
-            in: pendingColumns.map((col) => col.id),
+          status: {
+            in: ['To Do', 'In Progress', 'Por Hacer', 'En Progreso'],
           },
         },
         take: 15,

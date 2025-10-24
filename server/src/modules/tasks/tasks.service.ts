@@ -27,7 +27,6 @@ export class TasksService {
             },
           },
         },
-        column: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -51,7 +50,6 @@ export class TasksService {
             },
           },
         },
-        column: true,
       },
     });
     if (!task) {
@@ -63,35 +61,16 @@ export class TasksService {
   async create(data: any, organizationId: string) {
     const { assignees, ...taskData } = data;
 
-    // Si no se proporciona columnId, buscar la columna "To Do"
-    let columnId = taskData.columnId;
-    if (!columnId) {
-      const toDoColumn = await this.prisma.column.findFirst({
-        where: {
-          title: { in: ['To Do', 'Por Hacer', 'Pendiente'] },
-        },
-      });
-      
-      if (!toDoColumn) {
-        throw new Error('No se encontró una columna "To Do" en el sistema. Por favor, crea las columnas del Kanban primero.');
-      }
-      
-      columnId = toDoColumn.id;
-    }
-
-    // Limpiar campos opcionales
     const cleanedData: any = {
       title: taskData.title,
       priority: taskData.priority || 'Medium',
-      columnId: columnId,
+      status: taskData.status || 'To Do',
       organizationId,
     };
 
-    // Solo incluir campos opcionales si tienen valor
     if (taskData.description) cleanedData.description = taskData.description;
-    if (taskData.dueDate) cleanedData.dueDate = taskData.dueDate;
+    if (taskData.dueDate) cleanedData.dueDate = new Date(taskData.dueDate);
     if (taskData.operationId) cleanedData.operationId = taskData.operationId;
-    if (taskData.order !== undefined) cleanedData.order = taskData.order;
 
     const task = await this.prisma.task.create({
       data: cleanedData,
@@ -100,13 +79,11 @@ export class TasksService {
     if (assignees && assignees.length > 0) {
       const validAssignees = [];
       for (const assigneeId of assignees) {
-        // First check if it's a user ID
         let userId = assigneeId;
         let userExists = await this.prisma.user.findUnique({
           where: { id: assigneeId },
         });
         
-        // If not found, check if it's an employee ID and get the userId
         if (!userExists) {
           const employee = await this.prisma.employee.findUnique({
             where: { id: assigneeId },
@@ -159,16 +136,29 @@ export class TasksService {
 
     const { assignees, organizationId: _, ...taskData } = data;
 
-    // Limpiar datos de actualización
     const cleanedData: any = {};
     
     if (taskData.title !== undefined) cleanedData.title = taskData.title;
     if (taskData.priority !== undefined) cleanedData.priority = taskData.priority;
-    if (taskData.columnId !== undefined) cleanedData.columnId = taskData.columnId;
-    if (taskData.description !== undefined) cleanedData.description = taskData.description || null;
-    if (taskData.dueDate !== undefined) cleanedData.dueDate = taskData.dueDate || null;
     if (taskData.status !== undefined) cleanedData.status = taskData.status;
-    if (taskData.order !== undefined) cleanedData.order = taskData.order;
+    if (taskData.description !== undefined) cleanedData.description = taskData.description || null;
+    if (taskData.dueDate !== undefined) cleanedData.dueDate = taskData.dueDate ? new Date(taskData.dueDate) : null;
+
+    if (taskData.status !== undefined && taskData.status !== 'Done' && existing.status === 'Done') {
+      cleanedData.overdueNotificationSent = false;
+    }
+
+    if (taskData.dueDate !== undefined) {
+      const newDueDate = taskData.dueDate ? new Date(taskData.dueDate) : null;
+      
+      if (newDueDate === null) {
+        cleanedData.overdueNotificationSent = false;
+      } else if (existing.dueDate && newDueDate > existing.dueDate) {
+        cleanedData.overdueNotificationSent = false;
+      } else if (!existing.dueDate && existing.overdueNotificationSent) {
+        cleanedData.overdueNotificationSent = false;
+      }
+    }
 
     const task = await this.prisma.task.update({
       where: { id },
@@ -185,13 +175,11 @@ export class TasksService {
       if (assignees.length > 0) {
         const validUserIds = [];
         for (const assigneeId of assignees) {
-          // First check if it's a user ID
           let userId = assigneeId;
           let userExists = await this.prisma.user.findUnique({
             where: { id: assigneeId },
           });
           
-          // If not found, check if it's an employee ID and get the userId
           if (!userExists) {
             const employee = await this.prisma.employee.findUnique({
               where: { id: assigneeId },
@@ -227,7 +215,7 @@ export class TasksService {
       }
     }
 
-    if (taskData.status === 'completed') {
+    if (taskData.status === 'Done') {
       const assigneeIds = assignees || existing.assignees.map(a => a.userId);
       if (assigneeIds.length > 0) {
         await this.notificationsService.sendNotificationToUsers(assigneeIds, {

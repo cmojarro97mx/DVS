@@ -130,7 +130,6 @@ export class NotificationsSchedulerService {
           dueDate: {
             lt: now,
           },
-          completed: false,
           status: {
             not: 'Done',
           },
@@ -139,19 +138,24 @@ export class NotificationsSchedulerService {
           },
         },
         include: {
-          assignedTo: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
+          assignees: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
+              },
             },
           },
         },
       });
 
       for (const task of overdueTasks) {
-        if (task.assignedTo) {
-          await this.notificationsService.sendNotificationToUser(task.assignedTo.id, {
+        if (task.assignees && task.assignees.length > 0) {
+          const assigneeUserIds = task.assignees.map(a => a.userId);
+          await this.notificationsService.sendNotificationToUsers(assigneeUserIds, {
             title: `Tarea vencida: ${task.title}`,
             body: `Esta tarea venció el ${task.dueDate.toLocaleDateString()}`,
             url: `/tasks`,
@@ -167,7 +171,7 @@ export class NotificationsSchedulerService {
             data: { overdueNotificationSent: true },
           });
 
-          this.logger.log(`Overdue task notification sent to ${task.assignedTo.email}`);
+          this.logger.log(`Overdue task notification sent for task: ${task.title}`);
         }
       }
 
@@ -265,7 +269,9 @@ export class NotificationsSchedulerService {
         const pendingTasks = await this.prisma.task.count({
           where: {
             organizationId: org.id,
-            completed: false,
+            status: {
+              not: 'Done',
+            },
             dueDate: {
               lte: tomorrow,
             },
