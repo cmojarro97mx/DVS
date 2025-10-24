@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Post, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Put, Post, Delete, Body, Param, Query, UseGuards, Request, Headers } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { NotificationsService } from './notifications.service';
 
@@ -42,5 +42,33 @@ export class NotificationsController {
   @Put('settings')
   async updateSettings(@Request() req, @Body() settings: any) {
     return this.notificationsService.updateNotificationSettings(req.user.userId, settings);
+  }
+
+  @Get('vapid-public-key')
+  async getVapidPublicKey() {
+    return { publicKey: this.notificationsService.getVapidPublicKey() };
+  }
+
+  @Post('subscribe')
+  async subscribe(
+    @Request() req,
+    @Body() body: { subscription: any },
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    return this.notificationsService.subscribeToPush(
+      req.user.userId,
+      body.subscription,
+      userAgent,
+    );
+  }
+
+  @Delete('subscribe')
+  async unsubscribe(@Request() req, @Body() body: { endpoint: string }) {
+    return this.notificationsService.unsubscribeFromPush(req.user.userId, body.endpoint);
+  }
+
+  @Get('subscriptions')
+  async getSubscriptions(@Request() req) {
+    return this.notificationsService.getUserSubscriptions(req.user.userId);
   }
 }

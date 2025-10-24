@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
 import { PrismaService } from '../../common/prisma.service';
-import { firstValueFrom } from 'rxjs';
+import * as webPush from 'web-push';
 
 export interface NotificationPayload {
   title: string;
@@ -14,45 +13,17 @@ export interface NotificationPayload {
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
-  private readonly apiUrl = 'https://api.sendpulse.com';
-  private readonly websiteId = process.env.SENDPULSE_WEBSITE_ID;
-  private accessToken: string | null = null;
-  private tokenExpiry: Date | null = null;
 
-  constructor(
-    private readonly httpService: HttpService,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {
+    const publicKey = process.env.VAPID_PUBLIC_KEY;
+    const privateKey = process.env.VAPID_PRIVATE_KEY;
+    const mailto = process.env.VAPID_MAILTO || 'mailto:admin@nexxio.com';
 
-  private async getAccessToken(): Promise<string> {
-    if (this.accessToken && this.tokenExpiry && new Date() < this.tokenExpiry) {
-      return this.accessToken;
-    }
-
-    const apiId = process.env.SENDPULSE_API_ID;
-    const apiSecret = process.env.SENDPULSE_API_SECRET;
-
-    if (!apiId || !apiSecret) {
-      this.logger.warn('SendPulse API credentials not configured');
-      return null;
-    }
-
-    try {
-      const response = await firstValueFrom(
-        this.httpService.post(`${this.apiUrl}/oauth/access_token`, {
-          grant_type: 'client_credentials',
-          client_id: apiId,
-          client_secret: apiSecret,
-        }),
-      );
-
-      this.accessToken = response.data.access_token;
-      this.tokenExpiry = new Date(Date.now() + response.data.expires_in * 1000);
-      
-      return this.accessToken;
-    } catch (error) {
-      this.logger.error('Failed to get SendPulse access token', error);
-      return null;
+    if (publicKey && privateKey) {
+      webPush.setVapidDetails(mailto, publicKey, privateKey);
+      this.logger.log('Web Push configured successfully');
+    } else {
+      this.logger.warn('VAPID keys not configured, web push notifications will not work');
     }
   }
 
@@ -90,45 +61,57 @@ export class NotificationsService {
         return;
       }
 
-      const token = await this.getAccessToken();
-      if (!token || !this.websiteId) {
-        this.logger.warn('SendPulse not configured, skipping push notification');
+      const subscriptions = await this.prisma.pushSubscription.findMany({
+        where: { userId },
+      });
+
+      if (subscriptions.length === 0) {
+        this.logger.debug(`No push subscriptions found for user ${userId}`);
         return;
       }
 
-      const payload = {
+      const payload = JSON.stringify({
         title: notification.title,
         body: notification.body,
         icon: notification.icon || '/logo.png',
-        link: notification.url || '/',
-        ttl: 86400,
-        buttons: notification.data?.buttons || [],
-        filters: [
-          {
-            variable_name: 'email',
-            operator: 'eq',
-            conditions: [
-              {
-                value: user.email,
-              },
-            ],
-          },
-        ],
-      };
+        url: notification.url || '/',
+        data: notification.data,
+      });
 
-      await firstValueFrom(
-        this.httpService.post(
-          `${this.apiUrl}/push/tasks/${this.websiteId}`,
-          payload,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        ),
+      const results = await Promise.allSettled(
+        subscriptions.map(async (sub) => {
+          try {
+            await webPush.sendNotification(
+              {
+                endpoint: sub.endpoint,
+                keys: sub.keys as any,
+              },
+              payload,
+            );
+
+            await this.prisma.pushSubscription.update({
+              where: { id: sub.id },
+              data: { lastUsedAt: new Date() },
+            });
+
+            this.logger.log(`Push notification sent to subscription ${sub.id}`);
+          } catch (error) {
+            if (error.statusCode === 410) {
+              this.logger.warn(`Subscription expired, removing: ${sub.id}`);
+              await this.prisma.pushSubscription.delete({
+                where: { id: sub.id },
+              });
+            } else {
+              this.logger.error(`Failed to send push notification to subscription ${sub.id}`, error);
+            }
+          }
+        }),
       );
 
-      this.logger.log(`Notification sent to user ${userId}: ${notification.title}`);
+      const successful = results.filter((r) => r.status === 'fulfilled').length;
+      this.logger.log(
+        `Notification sent to user ${userId}: ${notification.title} (${successful}/${subscriptions.length} subscriptions)`,
+      );
     } catch (error) {
       this.logger.error(`Failed to send notification to user ${userId}`, error);
     }
@@ -235,5 +218,62 @@ export class NotificationsService {
         userId,
       },
     });
+  }
+
+  async subscribeToPush(userId: string, subscription: any, userAgent?: string) {
+    try {
+      const existing = await this.prisma.pushSubscription.findUnique({
+        where: { endpoint: subscription.endpoint },
+      });
+
+      if (existing) {
+        return this.prisma.pushSubscription.update({
+          where: { endpoint: subscription.endpoint },
+          data: {
+            keys: subscription.keys,
+            userAgent,
+            lastUsedAt: new Date(),
+          },
+        });
+      }
+
+      return this.prisma.pushSubscription.create({
+        data: {
+          userId,
+          endpoint: subscription.endpoint,
+          keys: subscription.keys,
+          userAgent,
+        },
+      });
+    } catch (error) {
+      this.logger.error('Failed to save push subscription', error);
+      throw error;
+    }
+  }
+
+  async unsubscribeFromPush(userId: string, endpoint: string) {
+    return this.prisma.pushSubscription.deleteMany({
+      where: {
+        userId,
+        endpoint,
+      },
+    });
+  }
+
+  async getUserSubscriptions(userId: string) {
+    return this.prisma.pushSubscription.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        endpoint: true,
+        userAgent: true,
+        createdAt: true,
+        lastUsedAt: true,
+      },
+    });
+  }
+
+  getVapidPublicKey(): string {
+    return process.env.VAPID_PUBLIC_KEY || '';
   }
 }

@@ -32,6 +32,7 @@ model User {
   events        Event[]
   emailAccounts EmailAccount[] @relation("UserEmailAccounts")
   notifications Notification[] @relation("UserNotifications")
+  pushSubscriptions PushSubscription[] @relation("UserPushSubscriptions")
   notificationSettings NotificationSettings? @relation("UserNotificationSettings")
   
   @@map("users")
@@ -653,6 +654,20 @@ model Notification {
   @@index([userId, read])
   @@index([organizationId])
   @@map("notifications")
+}
+
+model PushSubscription {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation("UserPushSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
+  endpoint       String    @unique
+  keys           Json
+  userAgent      String?
+  createdAt      DateTime  @default(now())
+  lastUsedAt     DateTime  @default(now())
+  
+  @@index([userId])
+  @@map("push_subscriptions")
 }
 
 model NotificationSettings {
