@@ -630,13 +630,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
   }, []);
 
   const handleViewOperation = async (operationId: string) => {
+    console.log('=== handleViewOperation called ===', operationId);
     setSelectedProjectId(operationId);
     setOperationDetailInitialState(null);
     setActiveView('detail-operation');
     
     // Load tasks for this operation from backend
     try {
+      console.log('Loading tasks for operation:', operationId);
       const operationTasks = await tasksService.getAll(operationId);
+      console.log('Tasks loaded from backend:', operationTasks);
       
       // Transform assignees from backend format to frontend format
       const transformedTasks = operationTasks.reduce((acc, task) => {
@@ -652,11 +655,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
         return acc;
       }, {} as Record<string, any>);
       
+      console.log('Transformed tasks:', transformedTasks);
+      
       // Update tasks state with loaded tasks
-      setTasks(prev => ({
-        ...prev,
-        ...transformedTasks
-      }));
+      setTasks(prev => {
+        const newTasks = {
+          ...prev,
+          ...transformedTasks
+        };
+        console.log('Updated tasks state:', newTasks);
+        return newTasks;
+      });
     } catch (error) {
       console.error('Error loading tasks for operation:', error);
     }
