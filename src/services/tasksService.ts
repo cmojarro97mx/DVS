@@ -19,7 +19,7 @@ export interface CreateTaskData {
   description?: string;
   priority?: string;
   dueDate?: string;
-  columnId: string;
+  columnId?: string;
   operationId?: string;
   order?: number;
   assignees?: string[];
