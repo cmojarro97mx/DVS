@@ -20,13 +20,16 @@ export class NotificationsSchedulerService {
     
     try {
       const now = new Date();
-      const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+      const today = new Date(now);
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
 
       const upcomingEvents = await this.prisma.event.findMany({
         where: {
           startDate: {
-            gte: now,
-            lte: oneHourFromNow,
+            gte: today,
+            lt: tomorrow,
           },
           notificationSent: {
             not: true,
@@ -44,12 +47,34 @@ export class NotificationsSchedulerService {
       });
 
       for (const event of upcomingEvents) {
-        const minutesUntil = Math.floor((event.startDate.getTime() - now.getTime()) / (1000 * 60));
+        const eventDate = new Date(event.startDate);
+        const hasSpecificTime = eventDate.getHours() !== 0 || eventDate.getMinutes() !== 0;
+        
+        let title: string;
+        let body: string;
+
+        if (hasSpecificTime) {
+          const minutesUntil = Math.floor((event.startDate.getTime() - now.getTime()) / (1000 * 60));
+          const hoursUntil = Math.floor(minutesUntil / 60);
+          
+          if (minutesUntil < 0) continue;
+          if (minutesUntil > 60) continue;
+          
+          title = `Evento próximo: ${event.title}`;
+          if (hoursUntil > 0) {
+            body = `Tu evento comienza en ${hoursUntil} hora${hoursUntil > 1 ? 's' : ''}`;
+          } else {
+            body = `Tu evento comienza en ${minutesUntil} minutos`;
+          }
+        } else {
+          title = `Evento de hoy: ${event.title}`;
+          body = `Tienes un evento programado para hoy`;
+        }
         
         if (event.user) {
           await this.notificationsService.sendNotificationToUser(event.user.id, {
-            title: `Evento próximo: ${event.title}`,
-            body: `Tu evento comienza en ${minutesUntil} minutos`,
+            title,
+            body,
             url: '/calendar',
             icon: '/icons/calendar.png',
             data: {
@@ -66,8 +91,8 @@ export class NotificationsSchedulerService {
           this.logger.log(`Notification sent for event: ${event.title} to user ${event.user.email}`);
         } else {
           await this.notificationsService.sendNotificationToOrganization(event.organizationId, {
-            title: `Evento próximo: ${event.title}`,
-            body: `El evento comienza en ${minutesUntil} minutos`,
+            title,
+            body,
             url: '/calendar',
             icon: '/icons/calendar.png',
             data: {

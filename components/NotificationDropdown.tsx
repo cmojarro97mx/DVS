@@ -51,7 +51,7 @@ export const NotificationDropdown: React.FC = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/api/notifications?limit=20', {
+      const response = await fetch('/api/notifications?limit=20', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -71,7 +71,7 @@ export const NotificationDropdown: React.FC = () => {
   const fetchUnreadCount = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/api/notifications/unread-count', {
+      const response = await fetch('/api/notifications/unread-count', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -89,7 +89,7 @@ export const NotificationDropdown: React.FC = () => {
   const markAsRead = async (notificationId: string) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`http://localhost:3001/api/notifications/${notificationId}/read`, {
+      await fetch(`/api/notifications/${notificationId}/read`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -108,7 +108,7 @@ export const NotificationDropdown: React.FC = () => {
   const markAllAsRead = async () => {
     try {
       const token = localStorage.getItem('token');
-      await fetch('http://localhost:3001/api/notifications/read-all', {
+      await fetch('/api/notifications/read-all', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -125,7 +125,7 @@ export const NotificationDropdown: React.FC = () => {
   const deleteNotification = async (notificationId: string) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`http://localhost:3001/api/notifications/${notificationId}`, {
+      await fetch(`/api/notifications/${notificationId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
