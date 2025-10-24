@@ -7,9 +7,10 @@ import * as mime from 'mime-types';
 
 @Injectable()
 export class BackblazeService {
-  private s3Client: S3Client;
+  private s3Client: S3Client | null = null;
   private bucketName: string;
   private endpoint: string;
+  private isConfigured: boolean = false;
 
   constructor() {
     const keyId = process.env.BACKBLAZE_KEY_ID?.trim();
@@ -18,7 +19,13 @@ export class BackblazeService {
     this.endpoint = (process.env.BACKBLAZE_ENDPOINT || '').trim();
 
     if (!keyId || !appKey || !this.bucketName || !this.endpoint) {
-      throw new Error('Backblaze B2 credentials are not configured properly');
+      console.warn('⚠️  Backblaze B2 credentials are not configured. File upload features will be disabled.');
+      console.warn('   To enable file uploads, set the following environment variables:');
+      console.warn('   - BACKBLAZE_KEY_ID');
+      console.warn('   - BACKBLAZE_APPLICATION_KEY');
+      console.warn('   - BACKBLAZE_BUCKET_NAME');
+      console.warn('   - BACKBLAZE_ENDPOINT');
+      return;
     }
 
     this.s3Client = new S3Client({
@@ -29,12 +36,22 @@ export class BackblazeService {
         secretAccessKey: appKey,
       },
     });
+    this.isConfigured = true;
+    console.log('✓ Backblaze B2 storage configured successfully');
+  }
+
+  private ensureConfigured(): void {
+    if (!this.isConfigured || !this.s3Client) {
+      throw new Error('Backblaze B2 credentials are not configured. Please contact your administrator to enable file upload features.');
+    }
   }
 
   async uploadFile(
     file: Express.Multer.File,
     folder?: string,
   ): Promise<{ url: string; key: string }> {
+    this.ensureConfigured();
+    
     const timestamp = Date.now();
     const sanitizedFilename = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
     const key = folder
@@ -42,7 +59,7 @@ export class BackblazeService {
       : `${timestamp}-${sanitizedFilename}`;
 
     const upload = new Upload({
-      client: this.s3Client,
+      client: this.s3Client!,
       params: {
         Bucket: this.bucketName,
         Key: key,
@@ -64,6 +81,8 @@ export class BackblazeService {
     mimeType: string,
     folder?: string,
   ): Promise<{ url: string; key: string }> {
+    this.ensureConfigured();
+    
     const timestamp = Date.now();
     const sanitizedFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
     const key = folder
@@ -71,7 +90,7 @@ export class BackblazeService {
       : `${timestamp}-${sanitizedFilename}`;
 
     const upload = new Upload({
-      client: this.s3Client,
+      client: this.s3Client!,
       params: {
         Bucket: this.bucketName,
         Key: key,
@@ -88,21 +107,25 @@ export class BackblazeService {
   }
 
   async deleteFile(key: string): Promise<void> {
+    this.ensureConfigured();
+    
     const command = new DeleteObjectCommand({
       Bucket: this.bucketName,
       Key: key,
     });
 
-    await this.s3Client.send(command);
+    await this.s3Client!.send(command);
   }
 
   async getFile(key: string): Promise<{ stream: Readable; contentType: string }> {
+    this.ensureConfigured();
+    
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
       Key: key,
     });
 
-    const response = await this.s3Client.send(command);
+    const response = await this.s3Client!.send(command);
 
     return {
       stream: response.Body as Readable,
@@ -115,6 +138,8 @@ export class BackblazeService {
   }
 
   async getSignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
+    this.ensureConfigured();
+    
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
       Key: key,
