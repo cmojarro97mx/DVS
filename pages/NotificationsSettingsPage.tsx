@@ -14,7 +14,16 @@ interface NotificationSettings {
 }
 
 export default function NotificationsSettingsPage() {
-  const [settings, setSettings] = useState<NotificationSettings | null>(null);
+  const [settings, setSettings] = useState<NotificationSettings>({
+    pushEnabled: true,
+    operationsEnabled: true,
+    tasksEnabled: true,
+    paymentsEnabled: true,
+    invoicesEnabled: true,
+    expensesEnabled: true,
+    calendarEnabled: true,
+    emailsEnabled: true,
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sendingTest, setSendingTest] = useState(false);
@@ -36,17 +45,6 @@ export default function NotificationsSettingsPage() {
       console.error('Error response:', error.response);
       const errorMsg = error.response?.data?.message || error.message || 'Error desconocido';
       setError(errorMsg);
-      // Set default values on error
-      setSettings({
-        pushEnabled: true,
-        operationsEnabled: true,
-        tasksEnabled: true,
-        paymentsEnabled: true,
-        invoicesEnabled: true,
-        expensesEnabled: true,
-        calendarEnabled: true,
-        emailsEnabled: true,
-      });
     } finally {
       setLoading(false);
     }
@@ -54,8 +52,8 @@ export default function NotificationsSettingsPage() {
 
   const handleToggle = (key: keyof NotificationSettings) => {
     setSettings((prev) => ({
-      ...prev,
-      [key]: !prev[key],
+      ...prev!,
+      [key]: !prev![key],
     }));
   };
 
@@ -93,23 +91,6 @@ export default function NotificationsSettingsPage() {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-gray-500">Cargando configuración...</div>
-      </div>
-    );
-  }
-
-  if (!settings) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="text-red-500 text-lg font-semibold mb-2">Error al cargar la configuración de notificaciones</div>
-          {error && <div className="text-gray-600 text-sm">{error}</div>}
-          <button
-            onClick={loadSettings}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Reintentar
-          </button>
-        </div>
       </div>
     );
   }
