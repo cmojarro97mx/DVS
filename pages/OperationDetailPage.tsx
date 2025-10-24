@@ -859,6 +859,16 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [emailsLoaded, setEmailsLoaded] = useState(false);
 
+  const operationTasks = useMemo(() => {
+    const filtered: Record<string, Task> = {};
+    Object.entries(tasks).forEach(([id, task]) => {
+      if (task.operationId === project.id) {
+        filtered[id] = task;
+      }
+    });
+    return filtered;
+  }, [tasks, project.id]);
+
   useEffect(() => {
     if (initialState) {
         if (initialState.openTab) {
@@ -1119,7 +1129,7 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
                                       operationId={project.id}
                                       teamMembers={teamMembers} 
                                       operationAssignees={project.assignees} 
-                                      tasks={tasks}
+                                      tasks={operationTasks}
                                       columns={columns}
                                       columnOrder={columnOrder}
                                       onSaveTask={onSaveTask}
