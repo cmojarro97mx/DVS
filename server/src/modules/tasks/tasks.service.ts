@@ -205,67 +205,6 @@ export class TasksService {
     return this.findOne(id, organizationId);
   }
 
-  async quickCreateTask(data: any, organizationId: string) {
-    console.log('[TasksService] quickCreateTask called with data:', JSON.stringify(data));
-    
-    const { assignees, ...taskData } = data;
-
-    const toDoColumn = await this.prisma.column.findFirst({
-      where: {
-        title: { in: ['To Do', 'Por Hacer', 'Pendiente'] },
-      },
-    });
-    
-    if (!toDoColumn) {
-      throw new Error('No se encontró una columna "To Do" en el sistema.');
-    }
-
-    const newTask = await this.prisma.task.create({
-      data: {
-        title: taskData.title,
-        description: taskData.description || null,
-        priority: taskData.priority || 'Medium',
-        dueDate: taskData.dueDate || null,
-        columnId: toDoColumn.id,
-        operationId: taskData.operationId || null,
-        organizationId: organizationId,
-        order: 0,
-      },
-    });
-
-    console.log('[TasksService] Task created:', newTask.id);
-
-    if (assignees && Array.isArray(assignees) && assignees.length > 0) {
-      for (const userId of assignees) {
-        try {
-          await this.prisma.taskAssignee.create({
-            data: {
-              taskId: newTask.id,
-              userId: userId,
-            },
-          });
-        } catch (error) {
-          console.error(`[TasksService] Error assigning user ${userId}:`, error);
-        }
-      }
-
-      try {
-        await this.notificationsService.sendNotificationToUsers(assignees, {
-          title: 'Nueva tarea asignada',
-          body: `Se te ha asignado la tarea: ${newTask.title}`,
-          url: `/tasks/${newTask.id}`,
-          data: { type: 'task_assigned', taskId: newTask.id },
-        });
-      } catch (error) {
-        console.error('[TasksService] Error sending notifications:', error);
-      }
-    }
-
-    const fullTask = await this.findOne(newTask.id, organizationId);
-    console.log('[TasksService] quickCreateTask completed successfully');
-    return fullTask;
-  }
-
   async remove(id: string, organizationId: string) {
     const existing = await this.prisma.task.findFirst({ 
       where: { 
