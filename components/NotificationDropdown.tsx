@@ -50,7 +50,7 @@ export const NotificationDropdown: React.FC = () => {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch('/api/notifications?limit=20', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -70,7 +70,7 @@ export const NotificationDropdown: React.FC = () => {
 
   const fetchUnreadCount = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch('/api/notifications/unread-count', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -88,7 +88,7 @@ export const NotificationDropdown: React.FC = () => {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       await fetch(`/api/notifications/${notificationId}/read`, {
         method: 'POST',
         headers: {
@@ -107,7 +107,7 @@ export const NotificationDropdown: React.FC = () => {
 
   const markAllAsRead = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       await fetch('/api/notifications/read-all', {
         method: 'POST',
         headers: {
@@ -124,7 +124,7 @@ export const NotificationDropdown: React.FC = () => {
 
   const deleteNotification = async (notificationId: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       await fetch(`/api/notifications/${notificationId}`, {
         method: 'DELETE',
         headers: {
