@@ -9,17 +9,16 @@ interface NotificationBellProps {
 }
 
 export const NotificationBell: React.FC<NotificationBellProps> = ({ setActiveView }) => {
+  const token = localStorage.getItem('token');
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    setIsAuthenticated(!!token);
-  }, []);
+  if (!token) {
+    return null;
+  }
 
   const handleNewNotification = useCallback((notification: AppNotification) => {
     setNotifications(prev => [notification, ...prev]);
@@ -71,18 +70,10 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ setActiveVie
   const loadNotifications = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.warn('No authentication token found');
-        return;
-      }
       const data = await notificationsService.getNotifications(20);
       setNotifications(data);
     } catch (error: any) {
       console.error('Error loading notifications:', error);
-      if (error.response?.status === 401) {
-        console.warn('Authentication error when loading notifications');
-      }
     } finally {
       setLoading(false);
     }
@@ -90,17 +81,10 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ setActiveVie
 
   const loadUnreadCount = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        return;
-      }
       const count = await notificationsService.getUnreadCount();
       setUnreadCount(count);
     } catch (error: any) {
       console.error('Error loading unread count:', error);
-      if (error.response?.status === 401) {
-        console.warn('Authentication error when loading unread count');
-      }
     }
   };
 
@@ -184,10 +168,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ setActiveVie
     
     return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
   };
-
-  if (!isAuthenticated) {
-    return null;
-  }
 
   return (
     <div className="relative" ref={dropdownRef}>
