@@ -210,8 +210,10 @@ const TaskManager: React.FC<TaskManagerProps> = ({
 
   const handleSave = async (task: Omit<Task, 'operationId'>) => {
     try {
+      console.log('[TaskManager] handleSave llamado con:', task);
       let savedTask;
       if (editingTask) {
+        console.log('[TaskManager] Actualizando tarea existente:', editingTask.id);
         const updateData: any = {
           title: task.title,
           priority: task.priority,
@@ -223,7 +225,9 @@ const TaskManager: React.FC<TaskManagerProps> = ({
         if (task.assignees && task.assignees.length > 0) updateData.assignees = task.assignees;
         
         savedTask = await tasksService.update(editingTask.id, updateData);
+        console.log('[TaskManager] Tarea actualizada exitosamente');
       } else {
+        console.log('[TaskManager] Creando nueva tarea');
         const createData: any = {
           title: task.title,
           priority: task.priority || 'Medium',
@@ -234,7 +238,9 @@ const TaskManager: React.FC<TaskManagerProps> = ({
         if (task.dueDate) createData.dueDate = task.dueDate;
         if (task.assignees && task.assignees.length > 0) createData.assignees = task.assignees;
         
-        savedTask = await tasksService.create(createData);
+        console.log('[TaskManager] Datos a enviar:', createData);
+        savedTask = await tasksService.quickCreate(createData);
+        console.log('[TaskManager] Tarea creada exitosamente:', savedTask);
       }
       
       const completeTask: Task = {
@@ -244,8 +250,8 @@ const TaskManager: React.FC<TaskManagerProps> = ({
       onSaveTask(completeTask);
       handleCloseModal();
     } catch (error) {
-      console.error('Error saving task:', error);
-      alert('Error al guardar la tarea. Por favor, intenta nuevamente.');
+      console.error('[TaskManager] Error saving task:', error);
+      alert(`Error al guardar la tarea: ${error.message || 'Por favor, intenta nuevamente.'}`);
     }
   };
 

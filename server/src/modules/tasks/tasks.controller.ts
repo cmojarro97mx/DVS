@@ -22,6 +22,11 @@ export class TasksController {
     return this.tasksService.create(createData, req.user.organizationId);
   }
 
+  @Post('quick-create')
+  async quickCreate(@Body() taskData: any, @Request() req) {
+    return this.tasksService.quickCreateTask(taskData, req.user.organizationId);
+  }
+
   @Put(':id')
   update(@Param('id') id: string, @Body() updateData: any, @Request() req) {
     return this.tasksService.update(id, updateData, req.user.organizationId);

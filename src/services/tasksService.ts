@@ -41,6 +41,11 @@ export const tasksService = {
     return apiService.post<Task>('/tasks', data);
   },
 
+  async quickCreate(data: CreateTaskData): Promise<Task> {
+    console.log('[tasksService] quickCreate llamado con:', data);
+    return apiService.post<Task>('/tasks/quick-create', data);
+  },
+
   async update(id: string, data: UpdateTaskData): Promise<Task> {
     return apiService.put<Task>(`/tasks/${id}`, data);
   },
