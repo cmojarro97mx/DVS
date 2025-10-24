@@ -9,16 +9,17 @@ interface NotificationBellProps {
 }
 
 export const NotificationBell: React.FC<NotificationBellProps> = ({ setActiveView }) => {
-  const token = localStorage.getItem('token');
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [hasToken, setHasToken] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  if (!token) {
-    return null;
-  }
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    setHasToken(!!token);
+  }, []);
 
   const handleNewNotification = useCallback((notification: AppNotification) => {
     setNotifications(prev => [notification, ...prev]);
@@ -168,6 +169,10 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ setActiveVie
     
     return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
   };
+
+  if (!hasToken) {
+    return null;
+  }
 
   return (
     <div className="relative" ref={dropdownRef}>
