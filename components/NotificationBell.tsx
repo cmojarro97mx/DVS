@@ -3,16 +3,17 @@ import { BellIcon } from './icons/BellIcon';
 import { notificationsService, Notification as AppNotification } from '../src/services/notificationsService';
 import { useNotificationsSocket } from '../src/hooks/useNotificationsSocket';
 import { usePushNotifications } from '../src/hooks/usePushNotifications';
-import { X, Check, CheckCheck, Trash2, Bell, BellOff } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { X, Check, CheckCheck, Trash2, Bell, BellOff, Settings } from 'lucide-react';
+interface NotificationBellProps {
+  setActiveView?: (view: string) => void;
+}
 
-export const NotificationBell: React.FC = () => {
+export const NotificationBell: React.FC<NotificationBellProps> = ({ setActiveView }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
 
   const handleNewNotification = useCallback((notification: AppNotification) => {
     setNotifications(prev => [notification, ...prev]);
@@ -90,9 +91,9 @@ export const NotificationBell: React.FC = () => {
       ));
       setUnreadCount(Math.max(0, unreadCount - 1));
       
-      if (url) {
+      if (url && setActiveView) {
         setIsOpen(false);
-        navigate(url);
+        setActiveView(url);
       }
     } catch (error) {
       console.error('Error marking notification as read:', error);
@@ -261,15 +262,16 @@ export const NotificationBell: React.FC = () => {
             )}
           </div>
 
-          {notifications.length > 0 && (
+          {notifications.length > 0 && setActiveView && (
             <div className="border-t border-gray-200 px-4 py-2">
               <button
                 onClick={() => {
                   setIsOpen(false);
-                  navigate('/notifications');
+                  setActiveView('notifications-settings');
                 }}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium w-full text-center"
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium w-full text-center flex items-center justify-center gap-2"
               >
+                <Settings className="w-4 h-4" />
                 Ver todas las notificaciones
               </button>
             </div>

@@ -4,9 +4,10 @@ import { NotificationBell } from './NotificationBell';
 
 interface TopHeaderProps {
     onLogout: () => void;
+    setActiveView?: (view: string) => void;
 }
 
-export const TopHeader: React.FC<TopHeaderProps> = ({ onLogout }) => {
+export const TopHeader: React.FC<TopHeaderProps> = ({ onLogout, setActiveView }) => {
     
     return (
         <header className="bg-white border-b border-gray-200 h-16 flex-shrink-0 sticky top-0 z-20">
@@ -26,7 +27,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onLogout }) => {
                     </div>
                     
                     <div className="flex items-center flex-shrink-0">
-                        <NotificationBell />
+                        <NotificationBell setActiveView={setActiveView} />
                     </div>
                 </div>
             </div>
