@@ -33,6 +33,7 @@ import FileManagerPage from './FileManagerPage'; // File Manager Page
 import AutomationPage from './AutomationPage'; // Automation Page
 import VirtualAssistantConfigPage from '../src/pages/VirtualAssistant/VirtualAssistantConfigPage'; // Virtual Assistant Config Page
 import TaskAutomationPage from './TaskAutomationPage'; // Task Automation Page
+import KnowledgeBasePage from '../src/pages/KnowledgeBase/KnowledgeBasePage'; // Knowledge Base Page
 import { employeesService } from '../src/services/employeesService';
 import { clientsService } from '../src/services/clientsService';
 import { notesService } from '../src/services/notesService';
@@ -1079,6 +1080,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
         return <VirtualAssistantConfigPage />;
       case 'task-automation':
         return <TaskAutomationPage />;
+      case 'knowledge-base':
+        return <KnowledgeBasePage />;
       default:
         return <div className="p-6">{viewTitles[activeView] || 'Not Implemented'}</div>;
     }
