@@ -202,6 +202,35 @@ export class TaskAutomationService {
     return { created: tasksCreated, updated: tasksUpdated };
   }
 
+  private calculateTextSimilarity(text1: string, text2: string): number {
+    const normalize = (text: string) => text.toLowerCase().trim().replace(/\s+/g, ' ');
+    const norm1 = normalize(text1);
+    const norm2 = normalize(text2);
+
+    if (norm1 === norm2) return 1.0;
+
+    const words1 = new Set(norm1.split(' '));
+    const words2 = new Set(norm2.split(' '));
+    const intersection = new Set([...words1].filter(x => words2.has(x)));
+    const union = new Set([...words1, ...words2]);
+
+    return intersection.size / union.size;
+  }
+
+  private isTaskDuplicate(newTitle: string, existingTasks: any[]): boolean {
+    const SIMILARITY_THRESHOLD = 0.75;
+
+    for (const task of existingTasks) {
+      const similarity = this.calculateTextSimilarity(newTitle, task.title);
+      if (similarity >= SIMILARITY_THRESHOLD) {
+        this.logger.log(`⚠️ Tarea duplicada detectada (similitud ${(similarity * 100).toFixed(0)}%): "${newTitle}" ≈ "${task.title}"`);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   private filterRelevantEmails(emails: any[]): any[] {
     const actionKeywords = [
       'favor', 'necesito', 'requiero', 'urgente', 'confirmar', 'enviar', 'solicitar',
@@ -305,11 +334,14 @@ EMAILS:
 ${emailContents.map((e, i) => `${i + 1}. ${e.subject} - ${e.from} (${e.date})
 ${e.body}${e.hasAttachments ? ' [Adjuntos]' : ''}`).join('\n\n')}
 
-REGLAS:
-- Usa el contexto aprendido para entender mejor la operación
-- Crea tareas SOLO si hay acciones claras
-- NO dupliques tareas existentes
-- Priority: High=urgente, Medium=importante, Low=normal
+REGLAS ESTRICTAS:
+- SOLO crea tareas si hay acciones NUEVAS y ESPECÍFICAS que requieren seguimiento
+- NO crees tareas si ya existe una similar en la lista de TAREAS
+- NO crees múltiples tareas para la misma acción
+- Si una tarea existente cubre la acción, NO crees una nueva
+- Actualiza el estado de tareas existentes en lugar de crear nuevas
+- Priority: High=urgente con fecha límite, Medium=importante, Low=informativo
+- Máximo 1-2 tareas nuevas por análisis
 
 JSON puro (sin markdown):
 {"newTasks":[{"title":"","description":"","priority":"High|Medium|Low","dueDate":"YYYY-MM-DD o null"}],"taskStatusUpdates":[{"taskTitle":"","newStatus":"To Do|In Progress|Completed","reason":""}],"reasoning":""}`;
@@ -335,6 +367,11 @@ JSON puro (sin markdown):
         
         for (const taskData of aiResponse.newTasks) {
           try {
+            if (this.isTaskDuplicate(taskData.title, operation.tasks)) {
+              this.logger.log(`⏭️ Tarea omitida (duplicada): "${taskData.title}"`);
+              continue;
+            }
+
             const task = await this.prisma.tasks.create({
               data: {
                 id: randomUUID(),
@@ -346,6 +383,7 @@ JSON puro (sin markdown):
                 updatedAt: new Date(),
                 createdBy: 'automation' as const,
                 lastModifiedBy: 'automation' as const,
+                emailSourceId: emails.length > 0 ? emails[0].id : null,
                 operations: operation.id ? {
                   connect: { id: operation.id },
                 } : undefined,
