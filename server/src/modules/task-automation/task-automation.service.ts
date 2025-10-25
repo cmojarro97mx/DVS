@@ -197,34 +197,15 @@ export class TaskAutomationService {
     let newTasks = 0;
     let updatedTasks = 0;
 
-    const emailContents = await Promise.all(
-      emails.map(async (email) => {
-        let attachmentTexts = '';
-        
-        if (email.hasAttachments && email.attachmentsData) {
-          const attachments = email.attachmentsData as any[];
-          for (const attachment of attachments.slice(0, 3)) {
-            try {
-              const text = await this.documentProcessor.processAttachment(attachment);
-              if (text) {
-                attachmentTexts += `\n\nAdjunto "${attachment.filename}":\n${text.substring(0, 2000)}`;
-              }
-            } catch (error) {
-              this.logger.warn(`Error procesando adjunto ${attachment.filename}:`, error.message);
-            }
-          }
-        }
-
-        return {
-          id: email.id,
-          subject: email.subject,
-          from: email.from,
-          date: email.date,
-          body: email.body.substring(0, 3000),
-          attachments: attachmentTexts,
-        };
-      })
-    );
+    const emailContents = emails.map((email) => ({
+      id: email.id,
+      subject: email.subject,
+      from: email.from,
+      date: email.date,
+      body: email.body.substring(0, 3000),
+      hasAttachments: email.hasAttachments || false,
+      attachmentCount: email.attachmentsData ? (email.attachmentsData as any[]).length : 0,
+    }));
 
     const existingTasks = operation.tasks.map((task: any) => ({
       title: task.title,
@@ -252,17 +233,18 @@ Email ${i + 1}:
 - Asunto: ${e.subject}
 - De: ${e.from}
 - Fecha: ${e.date}
+- Tiene adjuntos: ${e.hasAttachments ? `Sí (${e.attachmentCount})` : 'No'}
 - Contenido: ${e.body}
-${e.attachments}
 `).join('\n---\n')}
 
 INSTRUCCIONES:
-1. Analiza los emails y adjuntos para identificar acciones necesarias
-2. SOLO crea tareas si son necesarias y relevantes para la operación
-3. NO crees tareas duplicadas o similares a las existentes
-4. NO crees tareas genéricas o basura
-5. Prioriza según urgencia: High (urgente), Medium (importante), Low (normal)
-6. Sugiere también actualizar el status de tareas existentes si el email indica que se completaron
+1. Analiza el contenido de los emails para identificar acciones necesarias
+2. Si el email tiene adjuntos, infiere las acciones basándote en el contexto del asunto y cuerpo
+3. SOLO crea tareas si son necesarias y relevantes para la operación
+4. NO crees tareas duplicadas o similares a las existentes
+5. NO crees tareas genéricas o basura
+6. Prioriza según urgencia: High (urgente), Medium (importante), Low (normal)
+7. Sugiere también actualizar el status de tareas existentes si el email indica que se completaron
 
 Responde SOLO con un objeto JSON válido (sin markdown):
 {
