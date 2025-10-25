@@ -26,6 +26,7 @@ The frontend uses React with TypeScript and Tailwind CSS, bundled with Vite, foc
 -   **Google Workspace Integration (Multi-Account)**: Supports multiple Google accounts for Gmail and Calendar API access, including advanced email-to-operation linking via OCR and smart pattern matching.
 -   **Web Push Notifications & Notification Center**: An open-source, native browser push notification system with in-app management, event-driven triggers, and automated background tasks for reminders and summaries.
 -   **Virtual Assistant (Voice-Enabled AI)**: A voice-enabled AI assistant leveraging Google Gemini Flash API via NestJS WebSockets and Web Speech API for real-time, bidirectional voice interactions, featuring customizable settings and function calling capabilities.
+-   **Task Automation System**: AI-powered task automation leveraging Google Gemini to analyze operation-linked emails and attachments, automatically creating relevant tasks and updating task statuses. Features include background processing via cron jobs (every 5 minutes), duplicate prevention logic, TaskSource enum tracking (user vs automation), and visual indicators in the UI to distinguish automation-created tasks from user-created ones.
 
 **System Design Choices:**
 -   **Modular Design**: Ensures maintainability and scalability.
