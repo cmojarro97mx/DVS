@@ -1,9 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../common/prisma.service';
-import { SystemEmployeeService } from '../employees/system-employee.service';
 import { GoogleGenAI } from '@google/genai';
-import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class TaskAutomationService {
@@ -12,7 +10,6 @@ export class TaskAutomationService {
 
   constructor(
     private prisma: PrismaService,
-    private systemEmployeeService: SystemEmployeeService,
   ) {
     this.genAI = new GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY || '',
@@ -291,14 +288,10 @@ Si NO hay tareas que crear o actualizar, responde:
       this.logger.log(`🧠 IA analizó emails para operación ${operation.id}: ${aiResponse.reasoning}`);
 
       if (aiResponse.newTasks && aiResponse.newTasks.length > 0) {
-        const systemUserId = await this.systemEmployeeService.getSystemEmployeeUserId(operation.organizationId);
-        
         for (const taskData of aiResponse.newTasks) {
           try {
-            const taskId = uuidv4();
             await this.prisma.task.create({
               data: {
-                id: taskId,
                 title: taskData.title,
                 description: taskData.description || '',
                 priority: taskData.priority || 'Medium',
@@ -309,16 +302,10 @@ Si NO hay tareas que crear o actualizar, responde:
                 createdBy: 'automation' as const,
                 lastModifiedBy: 'automation' as const,
                 emailSourceId: null,
-                assignees: {
-                  create: {
-                    id: uuidv4(),
-                    userId: systemUserId,
-                  },
-                },
               },
             });
             newTasks++;
-            this.logger.log(`✅ Nueva tarea creada y asignada al empleado del sistema: ${taskData.title}`);
+            this.logger.log(`✅ Nueva tarea creada: ${taskData.title}`);
           } catch (error) {
             this.logger.error(`Error creando tarea "${taskData.title}":`, error.message);
           }

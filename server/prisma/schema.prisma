@@ -176,7 +176,6 @@ model employees {
   phone          String?
   department     String?
   salary         Float?
-  isSystemUser   Boolean        @default(false)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime
   organizationId String?
@@ -404,6 +403,7 @@ model operations {
   deliveryAddress     String?
   mbl_awb             String?
   hbl_awb             String?
+  notes               String?
   currency            String                @default("USD")
   clientId            String?
   organizationId      String?
