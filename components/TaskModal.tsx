@@ -21,14 +21,14 @@ interface TaskModalProps {
 const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = (props) => (
     <input
         {...props}
-        className="block w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
+        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:bg-white transition-all"
     />
 );
 
 const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = (props) => (
     <select
         {...props}
-        className="block w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
+        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-red-500 focus:bg-white transition-all"
     >
         {props.children}
     </select>
@@ -38,7 +38,7 @@ const Textarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement>> = (p
     <textarea
         {...props}
         rows={props.rows || 4}
-        className="block w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all resize-none"
+        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:bg-white transition-all resize-none"
     />
 );
 
@@ -62,12 +62,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, t
                     dueDate: task.dueDate || '',
                 });
             } else {
-                const defaultAssignee = teamMembers.length > 0 ? [teamMembers[0].id] : [];
                 setFormData({
                     title: '',
                     description: '',
                     priority: 'Medium',
-                    assignees: defaultAssignee,
+                    assignees: [],
                     dueDate: '',
                 });
             }
@@ -103,44 +102,41 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, t
         onSave(taskToSave);
     };
 
-    const getPriorityIcon = (priority: string) => {
-        switch (priority) {
-            case 'High': return ExclamationCircleIcon;
-            case 'Medium': return ClockIcon;
-            case 'Low': return CheckCircleIcon;
-            default: return ClockIcon;
-        }
-    };
-
     if (!isOpen) {
         return null;
     }
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative transform transition-all scale-100 animate-fade-in" onClick={(e) => e.stopPropagation()}>
-                <form onSubmit={handleSubmit}>
-                    <div className="bg-gradient-to-r from-red-600 to-red-700 p-6 rounded-t-2xl relative">
-                        <h3 className="text-2xl font-bold text-white">
-                            {task ? 'Editar Tarea' : 'Nueva Tarea'}
-                        </h3>
-                        <p className="text-red-100 text-sm mt-1">
-                            {task ? 'Actualiza los detalles de tu tarea' : 'Crea una nueva tarea para tu operación'}
-                        </p>
-                        <button 
-                            type="button" 
-                            onClick={onClose} 
-                            className="absolute top-5 right-5 text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
-                        >
-                           <XIcon className="w-6 h-6" />
-                        </button>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                    {/* Header */}
+                    <div className="px-6 py-5 border-b border-gray-100">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h2 className="text-xl font-semibold text-gray-900">
+                                    {task ? 'Editar tarea' : 'Nueva tarea'}
+                                </h2>
+                                <p className="text-sm text-gray-500 mt-0.5">
+                                    {task ? 'Actualiza la información de la tarea' : 'Completa los detalles de la nueva tarea'}
+                                </p>
+                            </div>
+                            <button 
+                                type="button" 
+                                onClick={onClose} 
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <XIcon className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
 
-                    <div className="p-6 space-y-5 max-h-[calc(100vh-300px)] overflow-y-auto">
+                    {/* Body */}
+                    <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+                        {/* Título */}
                         <div>
-                            <label htmlFor="title" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
-                                <DocumentTextIcon className="w-5 h-5 mr-2 text-gray-500" />
-                                Título <span className="text-red-500 ml-1">*</span>
+                            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                                Título <span className="text-red-500">*</span>
                             </label>
                             <Input 
                                 id="title" 
@@ -152,9 +148,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, t
                             />
                         </div>
 
+                        {/* Descripción */}
                         <div>
-                            <label htmlFor="description" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
-                                <DocumentTextIcon className="w-5 h-5 mr-2 text-gray-500" />
+                            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
                                 Descripción
                             </label>
                             <Textarea 
@@ -167,24 +163,21 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, t
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {/* Prioridad y Fecha */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label htmlFor="priority" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
-                                    <TagIcon className="w-5 h-5 mr-2 text-gray-500" />
+                                <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-2">
                                     Prioridad
                                 </label>
-                                <div className="relative">
-                                    <Select id="priority" name="priority" value={formData.priority} onChange={handleChange}>
-                                        <option value="Low">🟢 Baja</option>
-                                        <option value="Medium">🟡 Media</option>
-                                        <option value="High">🔴 Alta</option>
-                                    </Select>
-                                </div>
+                                <Select id="priority" name="priority" value={formData.priority} onChange={handleChange}>
+                                    <option value="Low">Baja</option>
+                                    <option value="Medium">Media</option>
+                                    <option value="High">Alta</option>
+                                </Select>
                             </div>
 
                             <div>
-                                <label htmlFor="dueDate" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
-                                    <CalendarIcon className="w-5 h-5 mr-2 text-gray-500" />
+                                <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 mb-2">
                                     Fecha límite
                                 </label>
                                 <Input 
@@ -197,9 +190,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, t
                             </div>
                         </div>
 
+                        {/* Asignar personas */}
                         <div>
-                            <label htmlFor="assignees" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
-                                <UserGroupIcon className="w-5 h-5 mr-2 text-gray-500" />
+                            <label htmlFor="assignees" className="block text-sm font-medium text-gray-700 mb-2">
                                 Asignar a
                             </label>
                             <Select 
@@ -208,8 +201,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, t
                                 value={formData.assignees} 
                                 onChange={handleChange} 
                                 multiple 
-                                size={Math.min(teamMembers.length, 5)}
-                                className="scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+                                size={Math.min(teamMembers.length, 4)}
                             >
                                 {teamMembers.map(member => (
                                     <option key={member.id} value={member.id} className="py-2">
@@ -217,26 +209,24 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, t
                                     </option>
                                 ))}
                             </Select>
-                            <p className="text-xs text-gray-500 mt-2 flex items-start">
-                                <svg className="w-4 h-4 mr-1 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                </svg>
+                            <p className="text-xs text-gray-500 mt-1.5">
                                 Mantén presionado Ctrl (Windows) o Cmd (Mac) para seleccionar múltiples personas
                             </p>
                         </div>
 
+                        {/* Personas asignadas */}
                         {formData.assignees.length > 0 && (
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <p className="text-sm font-medium text-blue-900 mb-2">Personas asignadas:</p>
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                <p className="text-sm font-medium text-gray-700 mb-3">Personas asignadas:</p>
                                 <div className="flex flex-wrap gap-2">
                                     {formData.assignees.map(assigneeId => {
                                         const member = teamMembers.find(m => m.id === assigneeId);
                                         return member ? (
-                                            <div key={assigneeId} className="inline-flex items-center gap-2 bg-white px-3 py-1.5 rounded-full text-sm font-medium text-gray-700 border border-blue-300">
-                                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                                            <div key={assigneeId} className="inline-flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg text-sm border border-gray-200">
+                                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xs font-semibold">
                                                     {member.name.charAt(0).toUpperCase()}
                                                 </div>
-                                                {member.name}
+                                                <span className="text-gray-700">{member.name}</span>
                                             </div>
                                         ) : null;
                                     })}
@@ -245,19 +235,20 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, t
                         )}
                     </div>
 
-                    <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 rounded-b-2xl border-t border-gray-200">
+                    {/* Footer */}
+                    <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3">
                         <button 
                             type="button" 
                             onClick={onClose} 
-                            className="px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors"
+                            className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 bg-white border border-gray-300 rounded-lg transition-colors"
                         >
                             Cancelar
                         </button>
                         <button 
                             type="submit" 
-                            className="px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-700 rounded-lg text-sm font-semibold text-white hover:from-red-700 hover:to-red-800 transition-all shadow-md hover:shadow-lg"
+                            className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-sm"
                         >
-                            {task ? '✓ Guardar Cambios' : '+ Crear Tarea'}
+                            {task ? 'Guardar cambios' : 'Crear tarea'}
                         </button>
                     </div>
                 </form>

@@ -85,67 +85,71 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, isDragging, onEdit, onDelete,
       draggable
       onDragStart={(e) => onDragStart(e, task.id)}
       onDragEnd={onDragEnd}
-      className={`group bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-40 scale-95 rotate-2' : 'opacity-100 hover:border-gray-300'}`}
+      className={`group bg-white rounded-lg border border-gray-200 transition-all duration-200 cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-50 scale-95' : 'opacity-100 hover:shadow-sm hover:border-gray-300'}`}
     >
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <h4 className="font-semibold text-gray-900 text-sm flex-1 leading-snug">{task.title}</h4>
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+      <div className="p-3.5">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3 mb-2.5">
+          <h4 className="font-medium text-gray-900 text-sm flex-1 leading-tight">{task.title}</h4>
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
             <button 
               onClick={() => onEdit(task)} 
-              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-              title="Editar tarea"
+              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+              title="Editar"
             >
-              <PencilIcon className="w-4 h-4" />
+              <PencilIcon className="w-3.5 h-3.5" />
             </button>
             <button 
               onClick={() => onDelete(task.id)} 
-              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-              title="Eliminar tarea"
+              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+              title="Eliminar"
             >
-              <TrashIcon className="w-4 h-4" />
+              <TrashIcon className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
+        {/* Description */}
         {task.description && (
-          <p className="text-xs text-gray-600 mb-3 line-clamp-2 leading-relaxed">{task.description}</p>
+          <p className="text-xs text-gray-500 mb-3 line-clamp-2">{task.description}</p>
         )}
 
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${priorityConfig.color}`}>
-            <PriorityIcon className="w-3.5 h-3.5" />
+        {/* Tags */}
+        <div className="flex flex-wrap items-center gap-1.5 mb-3">
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border ${priorityConfig.color}`}>
+            <PriorityIcon className="w-3 h-3" />
             {priorityConfig.label}
           </span>
 
           {dateInfo && (
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${dateInfo.overdue ? 'bg-red-50 text-red-700 border-red-200' : 'bg-gray-50 text-gray-700 border-gray-200'}`}>
-              <CalendarIcon className="w-3.5 h-3.5" />
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border ${dateInfo.overdue ? 'bg-red-50 text-red-600 border-red-200' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+              <CalendarIcon className="w-3 h-3" />
               {dateInfo.label || dateInfo.text}
             </span>
           )}
         </div>
 
+        {/* Assignees */}
         {task.assignees && task.assignees.length > 0 && (
-          <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
-            <div className="flex -space-x-2">
+          <div className="flex items-center gap-2 pt-2.5 border-t border-gray-100">
+            <div className="flex -space-x-1.5">
               {task.assignees.slice(0, 3).map((assignee, idx) => (
                 <div
                   key={idx}
-                  className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-semibold border-2 border-white shadow-sm"
+                  className="w-6 h-6 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xs font-semibold border-2 border-white"
                   title={assignee}
                 >
                   {assignee.charAt(0).toUpperCase()}
                 </div>
               ))}
               {task.assignees.length > 3 && (
-                <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-xs font-semibold border-2 border-white shadow-sm">
+                <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-[10px] font-semibold border-2 border-white">
                   +{task.assignees.length - 3}
                 </div>
               )}
             </div>
             <span className="text-xs text-gray-500">
-              {task.assignees.length === 1 ? '1 asignado' : `${task.assignees.length} asignados`}
+              {task.assignees.length === 1 ? task.assignees[0] : `${task.assignees.length} personas`}
             </span>
           </div>
         )}
@@ -187,7 +191,16 @@ const TaskManager: React.FC<TaskManagerProps> = ({
   };
 
   const handleEditTask = (task: Task) => {
-    setEditingTask(task);
+    // Convert assignee names back to IDs for editing
+    const assigneeIds = task.assignees?.map(assigneeName => {
+      const member = teamMembers.find(m => m.name === assigneeName);
+      return member ? member.id : null;
+    }).filter(Boolean) as string[] || [];
+    
+    setEditingTask({
+      ...task,
+      assignees: assigneeIds
+    });
     setIsModalOpen(true);
   };
   
@@ -347,77 +360,81 @@ const TaskManager: React.FC<TaskManagerProps> = ({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+      <div className="flex justify-between items-center mb-5 bg-white p-4 rounded-lg border border-gray-200">
         <div>
-          <h3 className="text-xl font-bold text-gray-900">Tablero de Tareas</h3>
-          <p className="text-sm text-gray-500 mt-1">Gestiona y organiza las tareas de tu operación</p>
+          <h3 className="text-lg font-semibold text-gray-900">Tablero de tareas</h3>
+          <p className="text-sm text-gray-500 mt-0.5">Organiza y gestiona las tareas</p>
         </div>
         <button 
           onClick={handleAddTask} 
-          className="flex items-center bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:from-red-700 hover:to-red-800 transition-all shadow-md hover:shadow-lg"
+          className="flex items-center bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
         >
-          <PlusIcon className="w-5 h-5 mr-2" />
-          Nueva Tarea
+          <PlusIcon className="w-4 h-4 mr-1.5" />
+          Nueva tarea
         </button>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
         {columnOrder.map(columnId => {
           const column = safeColumns[columnId];
           if (!column) return null;
           
           const columnTasks = column.taskIds.map(taskId => safeTasks[taskId]).filter(Boolean);
           const isDragOver = dragOverColumnId === column.id;
-          const colorClass = getColumnColor(column.title);
+
+          const columnStyles = {
+            'column-1': { bg: 'bg-gray-50', border: 'border-gray-200', header: 'bg-gray-100', text: 'text-gray-700' },
+            'column-2': { bg: 'bg-blue-50', border: 'border-blue-200', header: 'bg-blue-100', text: 'text-blue-700' },
+            'column-3': { bg: 'bg-green-50', border: 'border-green-200', header: 'bg-green-100', text: 'text-green-700' }
+          };
+
+          const style = columnStyles[columnId] || columnStyles['column-1'];
 
           return (
             <div 
               key={column.id} 
-              className="flex flex-col min-h-0"
+              className="flex flex-col min-h-0 bg-white border border-gray-200 rounded-lg overflow-hidden"
             >
-              <div className={`bg-gradient-to-r ${colorClass} rounded-t-xl px-4 py-3 shadow-sm`}>
+              {/* Column Header */}
+              <div className={`${style.header} px-4 py-3 border-b ${style.border}`}>
                 <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-white text-sm uppercase tracking-wide">
+                  <h4 className={`font-semibold text-sm ${style.text}`}>
                     {column.title}
                   </h4>
-                  <span className="bg-white/20 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+                  <span className={`${style.bg} ${style.text} text-xs font-medium px-2 py-0.5 rounded-md border ${style.border}`}>
                     {columnTasks.length}
                   </span>
                 </div>
               </div>
 
+              {/* Column Body */}
               <div 
                 onDragOver={handleDragOver}
                 onDragEnter={() => handleDragEnter(column.id)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, column.id)}
-                className={`flex-1 bg-gray-50 rounded-b-xl border-2 transition-all duration-200 min-h-[400px] overflow-hidden ${
+                className={`flex-1 p-3 ${style.bg} transition-all duration-200 min-h-[400px] overflow-hidden ${
                   isDragOver 
-                    ? 'border-blue-400 bg-blue-50/50 shadow-lg scale-[1.02]' 
-                    : 'border-gray-200'
+                    ? 'ring-2 ring-red-500 ring-inset' 
+                    : ''
                 }`}
               >
-                <div className="p-4 h-full overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                <div className="h-full overflow-y-auto space-y-2.5">
                   {columnTasks.length === 0 && !isDragOver && (
-                    <div className="flex flex-col items-center justify-center h-40 text-gray-400">
-                      <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center mb-3">
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                      </div>
-                      <p className="text-sm font-medium">No hay tareas</p>
-                      <p className="text-xs mt-1">Arrastra tareas aquí</p>
+                    <div className="flex flex-col items-center justify-center h-32 text-gray-400">
+                      <svg className="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                      <p className="text-xs font-medium">No hay tareas</p>
                     </div>
                   )}
                   
                   {isDragOver && columnTasks.length === 0 && (
-                    <div className="flex flex-col items-center justify-center h-40 text-blue-500">
-                      <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mb-3 animate-pulse">
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                      </div>
-                      <p className="text-sm font-semibold">Suelta la tarea aquí</p>
+                    <div className="flex flex-col items-center justify-center h-32 text-red-600">
+                      <svg className="w-10 h-10 mb-2 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      <p className="text-xs font-semibold">Suelta aquí</p>
                     </div>
                   )}
 
