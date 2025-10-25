@@ -1,19 +1,21 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
+
+const AUTOMATED_EMPLOYEE_ID = 'automated-system-employee';
 
 @Injectable()
 export class EmployeesService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(organizationId: string) {
-    return this.prisma.employee.findMany({
+    return this.prisma.employees.findMany({
       where: { organizationId },
       orderBy: { createdAt: 'desc' },
     });
   }
 
   async findOne(id: string, organizationId: string) {
-    const employee = await this.prisma.employee.findFirst({
+    const employee = await this.prisma.employees.findFirst({
       where: { id, organizationId },
     });
     
@@ -25,7 +27,7 @@ export class EmployeesService {
   }
 
   async create(data: any, organizationId: string) {
-    return this.prisma.employee.create({
+    return this.prisma.employees.create({
       data: {
         ...data,
         organizationId,
@@ -34,7 +36,11 @@ export class EmployeesService {
   }
 
   async update(id: string, data: any, organizationId: string) {
-    const existing = await this.prisma.employee.findFirst({
+    if (id === AUTOMATED_EMPLOYEE_ID) {
+      throw new BadRequestException('El empleado automatizado no puede ser editado');
+    }
+
+    const existing = await this.prisma.employees.findFirst({
       where: { id, organizationId },
     });
     
@@ -42,14 +48,18 @@ export class EmployeesService {
       throw new NotFoundException(`Employee with ID ${id} not found`);
     }
     
-    return this.prisma.employee.update({
+    return this.prisma.employees.update({
       where: { id },
       data,
     });
   }
 
   async remove(id: string, organizationId: string) {
-    const existing = await this.prisma.employee.findFirst({
+    if (id === AUTOMATED_EMPLOYEE_ID) {
+      throw new BadRequestException('El empleado automatizado no puede ser eliminado');
+    }
+
+    const existing = await this.prisma.employees.findFirst({
       where: { id, organizationId },
     });
     
@@ -58,7 +68,7 @@ export class EmployeesService {
     }
     
     // Verificar si es el primer empleado de la organización
-    const firstEmployee = await this.prisma.employee.findFirst({
+    const firstEmployee = await this.prisma.employees.findFirst({
       where: { organizationId },
       orderBy: { createdAt: 'asc' },
     });
@@ -67,7 +77,7 @@ export class EmployeesService {
       throw new NotFoundException(`Cannot delete the first employee of the organization`);
     }
     
-    await this.prisma.employee.delete({
+    await this.prisma.employees.delete({
       where: { id },
     });
     
