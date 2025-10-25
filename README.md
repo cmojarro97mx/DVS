@@ -265,6 +265,38 @@ Usa este checklist para verificar que la importación fue exitosa:
 
 ---
 
+## ⚠️ Problema Conocido: Límite de Backblaze B2
+
+### Síntoma
+Errores en los logs que dicen: `"Cannot download file, download bandwidth or transaction (Class B) cap exceeded"`
+
+### Causa
+La cuenta de Backblaze B2 tiene límites de:
+- **Ancho de banda**: 1 GB/día en plan gratuito
+- **Transacciones Class B**: 2,500/día en plan gratuito
+
+Cuando el sistema sincroniza emails con muchos archivos adjuntos, puede alcanzar estos límites.
+
+### Solución Implementada
+El sistema ahora detecta automáticamente cuando se alcanza el límite de Backblaze y:
+1. Pausa las descargas durante 1 hora
+2. Muestra un mensaje claro en los logs: `🚫 Backblaze límite alcanzado`
+3. Reanuda automáticamente después del período de pausa
+
+### Soluciones Permanentes
+1. **Actualizar plan de Backblaze**: Aumentar los límites de tu cuenta
+2. **Desactivar sincronización de adjuntos**: Si no necesitas los archivos adjuntos procesados
+3. **Módulo de Automatización de Tareas**: Este módulo NO procesa archivos adjuntos, solo lee el texto de los emails, por lo que no consume ancho de banda de Backblaze
+
+### Nota sobre Automatización de Tareas
+El módulo de automatización de tareas está optimizado para:
+- ✅ Leer solo el texto del asunto y cuerpo de los emails
+- ✅ NO descargar ni procesar archivos adjuntos
+- ✅ Funcionar incluso cuando se alcanza el límite de Backblaze
+- ✅ Inferir acciones necesarias del contexto del email sin necesidad de los archivos
+
+---
+
 ## 📄 Licencia
 
 Este proyecto está bajo la licencia especificada en el archivo LICENSE.

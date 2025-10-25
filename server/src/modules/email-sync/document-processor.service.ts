@@ -10,6 +10,9 @@ export class DocumentProcessorService {
   private s3Client: S3Client;
   private bucketName: string;
   private ocrWorker: any = null;
+  private backblazeErrorCount: number = 0;
+  private isBackblazePaused: boolean = false;
+  private pausedUntil: Date | null = null;
 
   constructor(private configService: ConfigService) {
     const endpoint = this.configService.get<string>('BACKBLAZE_ENDPOINT');
@@ -111,7 +114,45 @@ export class DocumentProcessorService {
     }
   }
 
+  private checkIfPaused(): boolean {
+    if (this.pausedUntil && new Date() < this.pausedUntil) {
+      return true;
+    }
+    if (this.pausedUntil && new Date() >= this.pausedUntil) {
+      this.isBackblazePaused = false;
+      this.pausedUntil = null;
+      this.backblazeErrorCount = 0;
+      this.logger.log('⚡ Backblaze pause period expired, resuming downloads');
+    }
+    return false;
+  }
+
+  private handleBackblazeError(error: any, s3Key: string): void {
+    const errorMessage = error.message || '';
+    
+    if (errorMessage.includes('bandwidth') || errorMessage.includes('cap exceeded') || errorMessage.includes('transaction')) {
+      this.backblazeErrorCount++;
+      
+      if (this.backblazeErrorCount >= 5 && !this.isBackblazePaused) {
+        this.isBackblazePaused = true;
+        this.pausedUntil = new Date(Date.now() + 60 * 60 * 1000);
+        this.logger.warn(
+          `🚫 Backblaze límite alcanzado. Pausando descargas hasta ${this.pausedUntil.toLocaleTimeString()}. ` +
+          `Revisa tu cuenta Backblaze para aumentar el límite.`
+        );
+      } else if (!this.isBackblazePaused) {
+        this.logger.warn(`⚠️ Error de límite Backblaze (${this.backblazeErrorCount}/5) para ${s3Key}`);
+      }
+    } else {
+      this.logger.error(`Error downloading from Backblaze ${s3Key}: ${errorMessage}`);
+    }
+  }
+
   private async downloadFromS3(s3Key: string): Promise<Buffer | null> {
+    if (this.checkIfPaused()) {
+      return null;
+    }
+
     try {
       const command = new GetObjectCommand({
         Bucket: this.bucketName,
@@ -132,9 +173,10 @@ export class DocumentProcessorService {
         chunks.push(Buffer.from(chunk));
       }
 
+      this.backblazeErrorCount = 0;
       return Buffer.concat(chunks);
     } catch (error) {
-      this.logger.error(`Error downloading from Backblaze ${s3Key}: ${error.message}`);
+      this.handleBackblazeError(error, s3Key);
       return null;
     }
   }

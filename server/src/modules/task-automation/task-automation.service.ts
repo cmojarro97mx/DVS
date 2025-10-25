@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../common/prisma.service';
 import { GoogleGenAI } from '@google/genai';
-import { DocumentProcessorService } from '../email-sync/document-processor.service';
 
 @Injectable()
 export class TaskAutomationService {
@@ -11,7 +10,6 @@ export class TaskAutomationService {
 
   constructor(
     private prisma: PrismaService,
-    private documentProcessor: DocumentProcessorService,
   ) {
     this.genAI = new GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY || '',
@@ -238,8 +236,8 @@ Email ${i + 1}:
 `).join('\n---\n')}
 
 INSTRUCCIONES:
-1. Analiza el contenido de los emails para identificar acciones necesarias
-2. Si el email tiene adjuntos, infiere las acciones basándote en el contexto del asunto y cuerpo
+1. Analiza SOLO el texto del asunto y cuerpo de los emails para identificar acciones necesarias
+2. Si el email menciona adjuntos, infiere las acciones basándote en el contexto del asunto y cuerpo (NO tienes acceso al contenido de los archivos adjuntos)
 3. SOLO crea tareas si son necesarias y relevantes para la operación
 4. NO crees tareas duplicadas o similares a las existentes
 5. NO crees tareas genéricas o basura
