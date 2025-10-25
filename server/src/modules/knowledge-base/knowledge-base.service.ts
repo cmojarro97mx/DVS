@@ -442,83 +442,103 @@ export class KnowledgeBaseService {
           id: true,
           organizationId: true,
           operationType: true,
-          operationNumber: true,
-          incoterm: true,
-          originPort: true,
-          destinationPort: true,
-          carrier: true,
-          trackingNumber: true,
-          blNumber: true,
+          projectName: true,
+          projectCategory: true,
+          bookingTracking: true,
+          mbl_awb: true,
+          hbl_awb: true,
+          courrier: true,
+          shippingMode: true,
+          insurance: true,
+          pickupAddress: true,
+          deliveryAddress: true,
           description: true,
         },
         take: 50,
       });
 
       for (const op of recentOperations) {
-        if (op.trackingNumber) {
+        if (op.bookingTracking) {
           await this.addKnowledge(op.organizationId, null, {
             category: 'tracking_numbers',
-            title: `Tracking: ${op.trackingNumber}`,
-            content: op.trackingNumber,
-            keywords: [op.trackingNumber],
+            title: `Booking: ${op.bookingTracking}`,
+            content: op.bookingTracking,
+            keywords: [op.bookingTracking],
             source: 'operation',
             sourceId: op.id,
           });
         }
 
-        if (op.blNumber) {
+        if (op.mbl_awb) {
           await this.addKnowledge(op.organizationId, null, {
             category: 'tracking_numbers',
-            title: `BL: ${op.blNumber}`,
-            content: op.blNumber,
-            keywords: [op.blNumber],
+            title: `MBL/AWB: ${op.mbl_awb}`,
+            content: op.mbl_awb,
+            keywords: [op.mbl_awb],
             source: 'operation',
             sourceId: op.id,
           });
         }
 
-        if (op.originPort) {
+        if (op.hbl_awb) {
           await this.addKnowledge(op.organizationId, null, {
-            category: 'ports',
-            title: `Puerto Origen: ${op.originPort}`,
-            content: op.originPort,
-            keywords: [op.originPort.split(',')[0].trim()],
+            category: 'tracking_numbers',
+            title: `HBL/AWB: ${op.hbl_awb}`,
+            content: op.hbl_awb,
+            keywords: [op.hbl_awb],
             source: 'operation',
             sourceId: op.id,
           });
         }
 
-        if (op.destinationPort) {
-          await this.addKnowledge(op.organizationId, null, {
-            category: 'ports',
-            title: `Puerto Destino: ${op.destinationPort}`,
-            content: op.destinationPort,
-            keywords: [op.destinationPort.split(',')[0].trim()],
-            source: 'operation',
-            sourceId: op.id,
-          });
-        }
-
-        if (op.carrier) {
+        if (op.courrier) {
           await this.addKnowledge(op.organizationId, null, {
             category: 'carriers',
-            title: `Naviera: ${op.carrier}`,
-            content: op.carrier,
-            keywords: [op.carrier],
+            title: `Courier: ${op.courrier}`,
+            content: op.courrier,
+            keywords: [op.courrier],
             source: 'operation',
             sourceId: op.id,
           });
         }
 
-        if (op.incoterm) {
+        if (op.shippingMode) {
           await this.addKnowledge(op.organizationId, null, {
-            category: 'incoterms',
-            title: `Incoterm: ${op.incoterm}`,
-            content: op.incoterm,
-            keywords: [op.incoterm],
+            category: 'shipping_modes',
+            title: `Modo: ${op.shippingMode}`,
+            content: op.shippingMode,
+            keywords: [op.shippingMode],
             source: 'operation',
             sourceId: op.id,
           });
+        }
+
+        if (op.pickupAddress) {
+          const city = op.pickupAddress.split(',').pop()?.trim();
+          if (city && city.length > 3) {
+            await this.addKnowledge(op.organizationId, null, {
+              category: 'locations',
+              title: `Origen: ${city}`,
+              content: city,
+              keywords: [city],
+              source: 'operation',
+              sourceId: op.id,
+            });
+          }
+        }
+
+        if (op.deliveryAddress) {
+          const city = op.deliveryAddress.split(',').pop()?.trim();
+          if (city && city.length > 3) {
+            await this.addKnowledge(op.organizationId, null, {
+              category: 'locations',
+              title: `Destino: ${city}`,
+              content: city,
+              keywords: [city],
+              source: 'operation',
+              sourceId: op.id,
+            });
+          }
         }
       }
 

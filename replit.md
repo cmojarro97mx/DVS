@@ -27,18 +27,22 @@ The frontend uses React with TypeScript and Tailwind CSS, bundled with Vite, foc
 -   **Web Push Notifications & Notification Center**: An open-source, native browser push notification system with in-app management, event-driven triggers, and automated background tasks for reminders and summaries.
 -   **Virtual Assistant (Voice-Enabled AI)**: A voice-enabled AI assistant leveraging Google Gemini Flash API via NestJS WebSockets and Web Speech API for real-time, bidirectional voice interactions, featuring customizable settings and function calling capabilities.
 -   **Task Automation System with AI Knowledge Base**: AI-powered task automation leveraging Google Gemini Flash to analyze operation-linked emails, automatically creating relevant tasks and updating task statuses. **Major optimizations achieve 85-90% token reduction**:
-    -   **Custom Knowledge Base per Organization**: System learns continuously from emails, operations, and user interactions
-        -   Auto-extracts tracking numbers, ports, carriers, contacts, and operation patterns
-        -   Anti-duplication via content hashing and keyword matching
-        -   Auto-cleanup of low-value entries (relevance scoring system)
-        -   Capacity limit of 500 entries per organization to prevent bloat
-        -   Learned context injected into AI prompts only when relevant
+    -   **Custom Knowledge Base per Organization (Self-Learning System)**: System learns continuously from emails and operations with minimal storage overhead
+        -   **Smart Update Logic**: Detects similar entries (70% threshold) and updates existing data instead of creating duplicates
+        -   Auto-extracts: Booking/tracking numbers, MBL/AWB, HBL, couriers, shipping modes, locations
+        -   **Background Processing**: Automated cron job runs hourly to extract knowledge from recent operations
+        -   **Anti-Duplication**: SHA-256 content hashing + similarity detection prevents duplicates
+        -   **Auto-Cleanup**: Removes low-value entries (score < 0.5) and unused entries (>30 days)
+        -   **Reduced Capacity**: Limit of 100 entries per organization (down from 500) for minimal DB footprint
+        -   Relevance scoring system (0.0-5.0) increases score when entries are used, decreases for unused
+        -   Learned context injected into AI prompts only when relevant to current operation
+        -   **UI Dashboard**: Visualize knowledge base, search by category, view statistics, manage entries
     -   Smart pre-filtering: Only emails with action keywords, questions, or attachments are sent to AI
     -   Limited context: Processes max 3 most recent emails (down from 20) and 5 most recent tasks (down from all)
     -   Reduced timeframe: Analyzes last 3 days of emails (down from 7 days)
     -   Ultra-concise prompts: Optimized prompt length reduced by 70%
     -   Email body truncation: 800 characters max (down from 3000), with HTML stripped
-    -   Background processing via cron jobs (every 5 minutes)
+    -   Background processing via cron jobs (every 5 minutes for tasks, every hour for knowledge extraction)
     -   Duplicate prevention logic
     -   TaskSource enum tracking (user vs automation)
     -   Visual indicators in the UI to distinguish automation-created tasks from user-created ones
