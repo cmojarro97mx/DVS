@@ -1,5 +1,5 @@
 import { Controller, Get, Delete, Param, UseGuards, Request } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { KnowledgeBaseService } from './knowledge-base.service';
 
 @Controller('knowledge-base')

@@ -403,7 +403,7 @@ model operations {
   deliveryAddress     String?
   mbl_awb             String?
   hbl_awb             String?
-  notes               String?
+  description         String?
   currency            String                @default("USD")
   clientId            String?
   organizationId      String?
