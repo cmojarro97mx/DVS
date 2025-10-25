@@ -383,7 +383,9 @@ JSON puro (sin markdown):
                 updatedAt: new Date(),
                 createdBy: 'automation' as const,
                 lastModifiedBy: 'automation' as const,
-                emailSourceId: emails.length > 0 ? emails[0].id : null,
+                email_messages: emails.length > 0 ? {
+                  connect: { id: emails[0].id },
+                } : undefined,
                 operations: operation.id ? {
                   connect: { id: operation.id },
                 } : undefined,
