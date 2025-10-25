@@ -16,9 +16,10 @@ interface KnowledgeEntry {
 @Injectable()
 export class KnowledgeBaseService {
   private readonly logger = new Logger(KnowledgeBaseService.name);
-  private readonly MAX_ENTRIES_PER_ORG = 500;
-  private readonly MIN_RELEVANCE_SCORE = 0.3;
+  private readonly MAX_ENTRIES_PER_ORG = 100;
+  private readonly MIN_RELEVANCE_SCORE = 0.5;
   private readonly CONTENT_MIN_LENGTH = 20;
+  private readonly SIMILARITY_THRESHOLD = 0.7;
 
   constructor(private prisma: PrismaService) {}
 
@@ -48,6 +49,50 @@ export class KnowledgeBaseService {
       .map(([word]) => word);
   }
 
+  private calculateSimilarity(text1: string, text2: string): number {
+    const normalize = (text: string) => text.toLowerCase().trim().replace(/\s+/g, ' ');
+    const norm1 = normalize(text1);
+    const norm2 = normalize(text2);
+
+    if (norm1 === norm2) return 1.0;
+
+    const set1 = new Set(norm1.split(' '));
+    const set2 = new Set(norm2.split(' '));
+    const intersection = new Set([...set1].filter(x => set2.has(x)));
+    const union = new Set([...set1, ...set2]);
+
+    return intersection.size / union.size;
+  }
+
+  private async findSimilarEntry(
+    organizationId: string,
+    category: string,
+    content: string,
+  ): Promise<any | null> {
+    try {
+      const entries = await this.prisma.knowledge_base.findMany({
+        where: {
+          organizationId,
+          category,
+        },
+        take: 20,
+        orderBy: { relevanceScore: 'desc' },
+      });
+
+      for (const entry of entries) {
+        const similarity = this.calculateSimilarity(content, entry.content);
+        if (similarity >= this.SIMILARITY_THRESHOLD) {
+          return entry;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      this.logger.error(`Error buscando entrada similar: ${error.message}`);
+      return null;
+    }
+  }
+
   async addKnowledge(
     organizationId: string,
     userId: string | null,
@@ -55,13 +100,12 @@ export class KnowledgeBaseService {
   ): Promise<boolean> {
     try {
       if (entry.content.length < this.CONTENT_MIN_LENGTH) {
-        this.logger.debug(`Contenido demasiado corto, ignorado: ${entry.content.substring(0, 50)}`);
         return false;
       }
 
       const contentHash = this.generateContentHash(entry.content, entry.category);
 
-      const existing = await this.prisma.knowledge_base.findUnique({
+      const exactMatch = await this.prisma.knowledge_base.findUnique({
         where: {
           organizationId_contentHash: {
             organizationId,
@@ -70,16 +114,44 @@ export class KnowledgeBaseService {
         },
       });
 
-      if (existing) {
+      if (exactMatch) {
         await this.prisma.knowledge_base.update({
-          where: { id: existing.id },
+          where: { id: exactMatch.id },
           data: {
-            usageCount: existing.usageCount + 1,
+            usageCount: exactMatch.usageCount + 1,
             lastUsedAt: new Date(),
-            relevanceScore: Math.min(existing.relevanceScore + 0.1, 5.0),
+            relevanceScore: Math.min(exactMatch.relevanceScore + 0.2, 5.0),
+            updatedAt: new Date(),
           },
         });
-        this.logger.debug(`Conocimiento existente actualizado: ${entry.title}`);
+        this.logger.debug(`📝 Actualizado (exacto): ${entry.title}`);
+        return true;
+      }
+
+      const similar = await this.findSimilarEntry(organizationId, entry.category, entry.content);
+
+      if (similar) {
+        const betterContent = entry.content.length > similar.content.length 
+          ? entry.content 
+          : similar.content;
+        
+        const keywords = entry.keywords.length > 0 
+          ? entry.keywords 
+          : this.extractKeywords(betterContent);
+
+        await this.prisma.knowledge_base.update({
+          where: { id: similar.id },
+          data: {
+            content: betterContent,
+            keywords,
+            contentHash: this.generateContentHash(betterContent, entry.category),
+            usageCount: similar.usageCount + 1,
+            lastUsedAt: new Date(),
+            relevanceScore: Math.min(similar.relevanceScore + 0.3, 5.0),
+            updatedAt: new Date(),
+          },
+        });
+        this.logger.log(`🔄 Actualizado (similar): ${entry.title}`);
         return true;
       }
 
@@ -112,10 +184,10 @@ export class KnowledgeBaseService {
         },
       });
 
-      this.logger.log(`✅ Nuevo conocimiento agregado: [${entry.category}] ${entry.title}`);
+      this.logger.log(`✅ Nuevo: [${entry.category}] ${entry.title}`);
       return true;
     } catch (error) {
-      this.logger.error(`Error agregando conocimiento: ${error.message}`);
+      this.logger.error(`Error: ${error.message}`);
       return false;
     }
   }
