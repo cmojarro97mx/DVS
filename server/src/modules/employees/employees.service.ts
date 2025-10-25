@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 
 @Injectable()
@@ -7,7 +7,10 @@ export class EmployeesService {
 
   async findAll(organizationId: string) {
     return this.prisma.employee.findMany({
-      where: { organizationId },
+      where: { 
+        organizationId,
+        isSystemUser: false,
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -41,6 +44,10 @@ export class EmployeesService {
     if (!existing) {
       throw new NotFoundException(`Employee with ID ${id} not found`);
     }
+
+    if (existing.isSystemUser) {
+      throw new ForbiddenException('Cannot modify system employee');
+    }
     
     return this.prisma.employee.update({
       where: { id },
@@ -56,10 +63,14 @@ export class EmployeesService {
     if (!existing) {
       throw new NotFoundException(`Employee with ID ${id} not found`);
     }
+
+    if (existing.isSystemUser) {
+      throw new ForbiddenException('Cannot delete system employee');
+    }
     
     // Verificar si es el primer empleado de la organización
     const firstEmployee = await this.prisma.employee.findFirst({
-      where: { organizationId },
+      where: { organizationId, isSystemUser: false },
       orderBy: { createdAt: 'asc' },
     });
     
