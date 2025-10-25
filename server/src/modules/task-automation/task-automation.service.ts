@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../common/prisma.service';
 import { GoogleGenAI } from '@google/genai';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class TaskAutomationService {
@@ -17,7 +18,7 @@ export class TaskAutomationService {
   }
 
   async createOrUpdateAutomation(organizationId: string, enabled?: boolean) {
-    const existingAutomation = await this.prisma.automation.findFirst({
+    const existingAutomation = await this.prisma.automations.findFirst({
       where: {
         organizationId,
         type: 'task_automation',
@@ -25,7 +26,7 @@ export class TaskAutomationService {
     });
 
     if (existingAutomation) {
-      return this.prisma.automation.update({
+      return this.prisma.automations.update({
         where: { id: existingAutomation.id },
         data: {
           enabled: enabled !== undefined ? enabled : existingAutomation.enabled,
@@ -34,24 +35,28 @@ export class TaskAutomationService {
       });
     }
 
-    return this.prisma.automation.create({
+    return this.prisma.automations.create({
       data: {
+        id: randomUUID(),
         name: 'Automatización de Tareas',
         description: 'Crea y actualiza tareas automáticamente basándose en el análisis de emails vinculados a operaciones',
         type: 'task_automation',
         enabled: enabled !== undefined ? enabled : false,
-        organizationId,
+        updatedAt: new Date(),
         conditions: {
           analyzeAttachments: true,
           createRecommendedTasks: true,
           updateTaskStatus: true,
+        },
+        organizations: {
+          connect: { id: organizationId },
         },
       },
     });
   }
 
   async getAutomation(organizationId: string) {
-    return this.prisma.automation.findFirst({
+    return this.prisma.automations.findFirst({
       where: {
         organizationId,
         type: 'task_automation',
@@ -64,9 +69,9 @@ export class TaskAutomationService {
     const newEnabledState = automation ? !automation.enabled : true;
 
     if (newEnabledState) {
-      const emailAccounts = await this.prisma.emailAccount.count({
+      const emailAccounts = await this.prisma.email_accounts.count({
         where: {
-          user: {
+          users: {
             organizationId: organizationId,
           },
         },
@@ -81,7 +86,7 @@ export class TaskAutomationService {
       return this.createOrUpdateAutomation(organizationId, true);
     }
 
-    return this.prisma.automation.update({
+    return this.prisma.automations.update({
       where: { id: automation.id },
       data: { enabled: !automation.enabled },
     });
@@ -92,7 +97,7 @@ export class TaskAutomationService {
     try {
       this.logger.log('🤖 Iniciando procesamiento de emails para automatización de tareas...');
 
-      const activeAutomations = await this.prisma.automation.findMany({
+      const activeAutomations = await this.prisma.automations.findMany({
         where: {
           type: 'task_automation',
           enabled: true,
@@ -113,7 +118,7 @@ export class TaskAutomationService {
           totalTasksCreated += created;
           totalTasksUpdated += updated;
 
-          await this.prisma.automation.update({
+          await this.prisma.automations.update({
             where: { id: automation.id },
             data: {
               lastRunAt: new Date(),
@@ -138,13 +143,13 @@ export class TaskAutomationService {
     let tasksCreated = 0;
     let tasksUpdated = 0;
 
-    const operations = await this.prisma.operation.findMany({
+    const operations = await this.prisma.operations.findMany({
       where: {
         organizationId,
         status: { notIn: ['cancelled', 'completed'] },
       },
       include: {
-        emails: {
+        email_messages: {
           where: {
             date: {
               gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
@@ -155,22 +160,17 @@ export class TaskAutomationService {
         },
         tasks: {
           include: {
-            assignees: true,
-          },
-        },
-        assignees: {
-          include: {
-            user: true,
+            task_assignees: true,
           },
         },
       },
     });
 
     for (const operation of operations) {
-      if (operation.emails.length === 0) continue;
+      if (operation.email_messages.length === 0) continue;
 
       try {
-        const emailsToProcess = operation.emails.filter(
+        const emailsToProcess = operation.email_messages.filter(
           email => !operation.tasks.some(task => task.emailSourceId === email.id)
         );
 
@@ -288,24 +288,44 @@ Si NO hay tareas que crear o actualizar, responde:
       this.logger.log(`🧠 IA analizó emails para operación ${operation.id}: ${aiResponse.reasoning}`);
 
       if (aiResponse.newTasks && aiResponse.newTasks.length > 0) {
+        const AUTOMATED_USER_ID = 'automated-system-user';
+        
         for (const taskData of aiResponse.newTasks) {
           try {
-            await this.prisma.task.create({
+            const task = await this.prisma.tasks.create({
               data: {
+                id: randomUUID(),
                 title: taskData.title,
                 description: taskData.description || '',
                 priority: taskData.priority || 'Medium',
                 dueDate: taskData.dueDate ? new Date(taskData.dueDate) : null,
                 status: 'To Do',
-                operationId: operation.id,
-                organizationId: operation.organizationId,
+                updatedAt: new Date(),
                 createdBy: 'automation' as const,
                 lastModifiedBy: 'automation' as const,
-                emailSourceId: null,
+                operations: operation.id ? {
+                  connect: { id: operation.id },
+                } : undefined,
+                organizations: operation.organizationId ? {
+                  connect: { id: operation.organizationId },
+                } : undefined,
               },
             });
+
+            await this.prisma.task_assignees.create({
+              data: {
+                id: randomUUID(),
+                tasks: {
+                  connect: { id: task.id },
+                },
+                users: {
+                  connect: { id: AUTOMATED_USER_ID },
+                },
+              },
+            });
+
             newTasks++;
-            this.logger.log(`✅ Nueva tarea creada: ${taskData.title}`);
+            this.logger.log(`✅ Nueva tarea creada y asignada a usuario automatizado: ${taskData.title}`);
           } catch (error) {
             this.logger.error(`Error creando tarea "${taskData.title}":`, error.message);
           }
@@ -320,7 +340,7 @@ Si NO hay tareas que crear o actualizar, responde:
             );
 
             if (taskToUpdate && taskToUpdate.status !== update.newStatus) {
-              await this.prisma.task.update({
+              await this.prisma.tasks.update({
                 where: { id: taskToUpdate.id },
                 data: {
                   status: update.newStatus,
