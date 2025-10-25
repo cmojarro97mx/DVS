@@ -39,6 +39,12 @@ export default function KnowledgeBasePage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('access_token');
+      if (!token) {
+        console.error('No access token found - user may not be logged in');
+        setLoading(false);
+        return;
+      }
+      
       const headers = { Authorization: `Bearer ${token}` };
 
       const [entriesRes, statsRes] = await Promise.all([
@@ -46,8 +52,21 @@ export default function KnowledgeBasePage() {
         fetch(`${API_URL}/knowledge-base/statistics`, { headers }),
       ]);
 
-      if (entriesRes.ok) setEntries(await entriesRes.json());
-      if (statsRes.ok) setStatistics(await statsRes.json());
+      if (!entriesRes.ok) {
+        console.error(`Failed to fetch entries: ${entriesRes.status} ${entriesRes.statusText}`);
+      } else {
+        const entriesData = await entriesRes.json();
+        console.log(`Loaded ${entriesData.length} knowledge base entries`);
+        setEntries(entriesData);
+      }
+      
+      if (!statsRes.ok) {
+        console.error(`Failed to fetch statistics: ${statsRes.status} ${statsRes.statusText}`);
+      } else {
+        const statsData = await statsRes.json();
+        console.log('Loaded statistics:', statsData);
+        setStatistics(statsData);
+      }
     } catch (error) {
       console.error('Error loading knowledge base:', error);
     } finally {
