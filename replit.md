@@ -44,7 +44,12 @@ The frontend uses React with TypeScript and Tailwind CSS, bundled with Vite, foc
     -   Ultra-concise prompts: Optimized prompt length reduced by 70%
     -   Email body truncation: 800 characters max (down from 3000), with HTML stripped
     -   Background processing via cron jobs (every 5 minutes for tasks, every hour for knowledge extraction)
-    -   Duplicate prevention logic
+    -   **Advanced Duplicate Prevention System**:
+        -   Text similarity algorithm (Jaccard index) compares new task titles against existing tasks
+        -   75% similarity threshold prevents creation of duplicate tasks
+        -   Email source tracking via `emailSourceId` ensures emails aren't processed multiple times
+        -   Pre-flight duplicate check before AI task creation
+        -   Improved AI prompts with strict anti-duplication rules (max 1-2 tasks per analysis)
     -   TaskSource enum tracking (user vs automation)
     -   Visual indicators in the UI to distinguish automation-created tasks from user-created ones
     -   Automated "Automatizado" system user (automatizado@nexxio.system) auto-assigned to all AI-generated tasks
