@@ -200,6 +200,71 @@ Solo necesitas configurar tus variables de entorno en los Secrets de Replit.
 
 ---
 
+## 📦 Importación/Migración del Proyecto
+
+Si estás importando este proyecto a un nuevo entorno Replit o migrando de otro sistema, sigue estos pasos:
+
+### Proceso de Importación
+
+1. **Instalar dependencias del Frontend**
+   ```bash
+   npm install
+   ```
+
+2. **Instalar dependencias del Backend**
+   ```bash
+   cd server && npm install && cd ..
+   ```
+
+3. **Verificar workflows**
+   - Asegúrate de que los workflows `Backend` y `Frontend` estén configurados
+   - Backend: `cd server && ./start.sh`
+   - Frontend: `npm run dev -- --host 0.0.0.0 --port 5000`
+
+4. **Reiniciar workflows**
+   - Reinicia ambos workflows después de la instalación de dependencias
+   - El backend puede tomar 30-60 segundos en compilar TypeScript
+
+### Problemas Comunes durante la Importación
+
+#### Backend killed durante compilación
+Si el backend se cierra con "Killed" durante la compilación:
+- **Causa:** Compilación de TypeScript consume mucha memoria
+- **Solución:** Reiniciar el workflow del backend, generalmente funciona en el segundo intento
+
+#### Frontend: "vite: not found"
+Si el frontend falla con este error:
+- **Causa:** Dependencias no instaladas
+- **Solución:** Ejecutar `npm install` en la raíz del proyecto
+
+#### Base de datos no conecta
+Si el backend no puede conectar a la base de datos:
+- Verifica que `DATABASE_URL` esté configurado en los Secrets de Replit
+- El formato correcto es: `postgresql://usuario:contraseña@host:puerto/nombre_bd`
+
+#### Prisma no generado
+Si hay errores relacionados con Prisma Client:
+```bash
+cd server
+npx prisma generate
+npx prisma db push
+```
+
+### Checklist de Importación
+
+Usa este checklist para verificar que la importación fue exitosa:
+
+- [ ] ✅ Dependencias del frontend instaladas (`npm install`)
+- [ ] ✅ Dependencias del backend instaladas (`cd server && npm install`)
+- [ ] ✅ Workflow Backend ejecutándose sin errores
+- [ ] ✅ Workflow Frontend ejecutándose sin errores
+- [ ] ✅ Frontend accesible en puerto 5000
+- [ ] ✅ Backend API respondiendo en puerto 3001
+- [ ] ✅ Base de datos conectada (revisar logs del backend)
+- [ ] ✅ Variables de entorno configuradas en Secrets
+
+---
+
 ## 📄 Licencia
 
 Este proyecto está bajo la licencia especificada en el archivo LICENSE.
