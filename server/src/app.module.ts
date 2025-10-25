@@ -25,6 +25,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { AppConfigModule } from './modules/config/config.module';
 import { AutomationsModule } from './modules/automations/automations.module';
 import { VirtualAssistantModule } from './modules/virtual-assistant/virtual-assistant.module';
+import { TaskAutomationModule } from './modules/task-automation/task-automation.module';
 import { PrismaModule } from './common/prisma.module';
 
 @Module({
@@ -58,6 +59,7 @@ import { PrismaModule } from './common/prisma.module';
     AppConfigModule,
     AutomationsModule,
     VirtualAssistantModule,
+    TaskAutomationModule,
   ],
 })
 export class AppModule {}

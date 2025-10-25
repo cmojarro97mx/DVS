@@ -7,6 +7,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum TaskSource {
+  user
+  automation
+}
+
 model User {
   id            String    @id @default(uuid())
   email         String    @unique
@@ -228,6 +233,10 @@ model Task {
   dueDate                 DateTime?
   status                  String        @default("To Do")
   overdueNotificationSent Boolean       @default(false)
+  createdBy               TaskSource    @default(user)
+  lastModifiedBy          TaskSource    @default(user)
+  emailSourceId           String?
+  emailSource             EmailMessage? @relation("TaskEmailSource", fields: [emailSourceId], references: [id], onDelete: SetNull)
   operationId             String?
   operation               Operation?    @relation(fields: [operationId], references: [id], onDelete: Cascade)
   organizationId          String?
@@ -523,6 +532,8 @@ model EmailMessage {
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt
   
+  generatedTasks      Task[]     @relation("TaskEmailSource")
+  
   @@unique([accountId, gmailMessageId])
   @@index([accountId, date(sort: Desc)])
   @@index([accountId, unread])
@@ -608,6 +619,9 @@ model Automation {
   trigger        Json?
   actions        Json?
   conditions     Json?
+  lastRunAt      DateTime?
+  tasksCreated   Int          @default(0)
+  tasksUpdated   Int          @default(0)
   organizationId String
   organization   Organization @relation("OrganizationAutomations", fields: [organizationId], references: [id], onDelete: Cascade)
   createdAt      DateTime     @default(now())

@@ -32,6 +32,7 @@ import NotificationsSettingsPage from './NotificationsSettingsPage'; // Notifica
 import FileManagerPage from './FileManagerPage'; // File Manager Page
 import AutomationPage from './AutomationPage'; // Automation Page
 import VirtualAssistantConfigPage from '../src/pages/VirtualAssistant/VirtualAssistantConfigPage'; // Virtual Assistant Config Page
+import TaskAutomationPage from './TaskAutomationPage'; // Task Automation Page
 import { employeesService } from '../src/services/employeesService';
 import { clientsService } from '../src/services/clientsService';
 import { notesService } from '../src/services/notesService';
@@ -140,6 +141,9 @@ export interface Task {
   priority: 'Low' | 'Medium' | 'High';
   assignees: string[];
   dueDate: string;
+  createdBy?: string;
+  lastModifiedBy?: string;
+  emailSourceId?: string;
 }
 
 export interface Column {
@@ -424,7 +428,8 @@ export type View =
   | 'email-hub'
   | 'notifications-settings'
   | 'automations'
-  | 'virtual-assistant';
+  | 'virtual-assistant'
+  | 'task-automation';
 
 const viewTitles: Record<View, string> = {
   dashboard: 'Dashboard',
@@ -457,7 +462,8 @@ const viewTitles: Record<View, string> = {
   'company-hub': 'Empresa',
   'email-hub': 'Email & Calendario',
   'virtual-assistant': 'Asistente Virtual',
-  'notifications-settings': 'Configuración de Notificaciones'
+  'notifications-settings': 'Configuración de Notificaciones',
+  'task-automation': 'Task Automatizados'
 };
 
 
@@ -1071,6 +1077,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
         return <AutomationPage setActiveView={setActiveView} />;
       case 'virtual-assistant':
         return <VirtualAssistantConfigPage />;
+      case 'task-automation':
+        return <TaskAutomationPage />;
       default:
         return <div className="p-6">{viewTitles[activeView] || 'Not Implemented'}</div>;
     }

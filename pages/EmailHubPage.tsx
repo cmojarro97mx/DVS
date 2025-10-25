@@ -84,6 +84,12 @@ const EmailHubPage: React.FC<EmailHubPageProps> = ({ setActiveView }) => {
                         icon={CpuChipIcon}
                         onClick={() => setActiveView('ai-operation-creator')}
                     />
+                    <HubCard
+                        title="Task Automatizados"
+                        description="Crea y actualiza tareas automáticamente analizando emails vinculados con IA."
+                        icon={CpuChipIcon}
+                        onClick={() => setActiveView('task-automation')}
+                    />
                 </EmailSection>
 
             </div>

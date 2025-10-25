@@ -66,6 +66,8 @@ export class TasksService {
       priority: taskData.priority || 'Medium',
       status: taskData.status || 'To Do',
       organizationId,
+      createdBy: 'user' as const,
+      lastModifiedBy: 'user' as const,
     };
 
     if (taskData.description) cleanedData.description = taskData.description;
@@ -136,7 +138,9 @@ export class TasksService {
 
     const { assignees, organizationId: _, ...taskData } = data;
 
-    const cleanedData: any = {};
+    const cleanedData: any = {
+      lastModifiedBy: 'user' as const,
+    };
     
     if (taskData.title !== undefined) cleanedData.title = taskData.title;
     if (taskData.priority !== undefined) cleanedData.priority = taskData.priority;
