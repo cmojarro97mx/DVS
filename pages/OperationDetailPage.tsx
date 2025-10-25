@@ -532,6 +532,190 @@ const ProjectMembers: React.FC<{
   );
 };
 
+interface OperationHealthProps {
+  project: Project;
+  tasks: Record<string, Task>;
+  documents: FileSystemItem[];
+  emails: EmailMessage[];
+  invoices: Invoice[];
+  payments: Payment[];
+}
+
+const OperationHealth: React.FC<OperationHealthProps> = ({ project, tasks, documents, emails, invoices, payments }) => {
+  const calculateHealth = () => {
+    let totalScore = 0;
+    const issues: { type: 'warning' | 'error' | 'success'; message: string }[] = [];
+
+    const progressScore = project.progress;
+    totalScore += progressScore * 0.25;
+    if (progressScore < 30) {
+      issues.push({ type: 'warning', message: 'Progreso bajo: ' + progressScore + '%' });
+    } else if (progressScore >= 80) {
+      issues.push({ type: 'success', message: 'Excelente progreso: ' + progressScore + '%' });
+    }
+
+    const taskArray = Object.values(tasks);
+    const completedTasks = taskArray.filter(t => t.status === 'Done').length;
+    const taskCompletionRate = taskArray.length > 0 ? (completedTasks / taskArray.length) * 100 : 100;
+    totalScore += taskCompletionRate * 0.20;
+    const pendingTasks = taskArray.length - completedTasks;
+    if (pendingTasks > 10) {
+      issues.push({ type: 'warning', message: pendingTasks + ' tareas pendientes' });
+    }
+
+    let dateScore = 100;
+    const today = new Date();
+    if (project.deadline) {
+      const deadline = new Date(project.deadline);
+      const daysUntilDeadline = Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysUntilDeadline < 0) {
+        dateScore = 0;
+        issues.push({ type: 'error', message: 'Operación vencida hace ' + Math.abs(daysUntilDeadline) + ' días' });
+      } else if (daysUntilDeadline < 3) {
+        dateScore = 30;
+        issues.push({ type: 'warning', message: 'Vence en ' + daysUntilDeadline + ' días' });
+      } else if (daysUntilDeadline < 7) {
+        dateScore = 60;
+        issues.push({ type: 'warning', message: 'Vence en ' + daysUntilDeadline + ' días' });
+      }
+    }
+    if (project.eta) {
+      const eta = new Date(project.eta);
+      const daysUntilETA = Math.ceil((eta.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysUntilETA < 0 && project.status !== 'Delivered') {
+        dateScore = Math.min(dateScore, 20);
+        issues.push({ type: 'error', message: 'ETA excedido - En tránsito' });
+      }
+    }
+    totalScore += dateScore * 0.20;
+
+    const documentScore = documents.length >= 3 ? 100 : (documents.length / 3) * 100;
+    totalScore += documentScore * 0.15;
+    if (documents.length === 0) {
+      issues.push({ type: 'warning', message: 'Sin documentos cargados' });
+    }
+
+    const totalInvoiced = invoices.reduce((sum, inv) => sum + Number(inv.total || 0), 0);
+    const totalPaid = payments.reduce((sum, pay) => sum + Number(pay.amount || 0), 0);
+    const paymentRate = totalInvoiced > 0 ? (totalPaid / totalInvoiced) * 100 : 100;
+    totalScore += paymentRate * 0.15;
+    if (totalInvoiced > 0 && paymentRate < 50) {
+      issues.push({ type: 'warning', message: 'Pagos pendientes: ' + paymentRate.toFixed(0) + '% cobrado' });
+    }
+
+    const recentEmails = emails.filter(e => {
+      const emailDate = new Date(e.receivedAt || e.sentAt);
+      const daysSince = (today.getTime() - emailDate.getTime()) / (1000 * 60 * 60 * 24);
+      return daysSince <= 7;
+    });
+    const emailScore = recentEmails.length > 0 ? 100 : 50;
+    totalScore += emailScore * 0.05;
+
+    return {
+      score: Math.round(totalScore),
+      issues: issues.slice(0, 5),
+      metrics: {
+        progress: progressScore,
+        tasks: taskCompletionRate,
+        dates: dateScore,
+        documents: documentScore,
+        payments: paymentRate,
+      }
+    };
+  };
+
+  const health = calculateHealth();
+
+  const getHealthColor = (score: number) => {
+    if (score >= 80) return { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800', icon: 'text-green-600', bar: 'bg-green-500' };
+    if (score >= 60) return { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', icon: 'text-blue-600', bar: 'bg-blue-500' };
+    if (score >= 40) return { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-800', icon: 'text-yellow-600', bar: 'bg-yellow-500' };
+    return { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-800', icon: 'text-red-600', bar: 'bg-red-500' };
+  };
+
+  const healthColor = getHealthColor(health.score);
+
+  const getHealthLabel = (score: number) => {
+    if (score >= 80) return 'Excelente';
+    if (score >= 60) return 'Buena';
+    if (score >= 40) return 'Regular';
+    return 'Requiere Atención';
+  };
+
+  return (
+    <div className={`rounded-xl shadow-sm border ${healthColor.border} ${healthColor.bg} p-6`}>
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className={`p-3 rounded-lg bg-white border ${healthColor.border}`}>
+            <CpuChipIcon className={`w-6 h-6 ${healthColor.icon}`} />
+          </div>
+          <div>
+            <h3 className={`text-lg font-bold ${healthColor.text}`}>
+              Salud de la Operación: {getHealthLabel(health.score)}
+            </h3>
+            <p className="text-sm text-gray-600">Análisis en tiempo real</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className={`text-3xl font-bold ${healthColor.text}`}>{health.score}%</div>
+          <div className="text-xs text-gray-500">Score General</div>
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <div className="flex justify-between text-xs text-gray-600 mb-1">
+          <span>Salud General</span>
+          <span>{health.score}%</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-3">
+          <div className={`h-3 rounded-full ${healthColor.bar} transition-all duration-500`} style={{ width: `${health.score}%` }}></div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-4">
+        <div className="bg-white rounded-lg p-3 border border-gray-200">
+          <div className="text-xs text-gray-500 mb-1">Progreso</div>
+          <div className="text-lg font-bold text-gray-800">{Math.round(health.metrics.progress)}%</div>
+        </div>
+        <div className="bg-white rounded-lg p-3 border border-gray-200">
+          <div className="text-xs text-gray-500 mb-1">Tareas</div>
+          <div className="text-lg font-bold text-gray-800">{Math.round(health.metrics.tasks)}%</div>
+        </div>
+        <div className="bg-white rounded-lg p-3 border border-gray-200">
+          <div className="text-xs text-gray-500 mb-1">Fechas</div>
+          <div className="text-lg font-bold text-gray-800">{Math.round(health.metrics.dates)}%</div>
+        </div>
+        <div className="bg-white rounded-lg p-3 border border-gray-200">
+          <div className="text-xs text-gray-500 mb-1">Documentos</div>
+          <div className="text-lg font-bold text-gray-800">{Math.round(health.metrics.documents)}%</div>
+        </div>
+        <div className="bg-white rounded-lg p-3 border border-gray-200">
+          <div className="text-xs text-gray-500 mb-1">Pagos</div>
+          <div className="text-lg font-bold text-gray-800">{Math.round(health.metrics.payments)}%</div>
+        </div>
+      </div>
+
+      {health.issues.length > 0 && (
+        <div className="bg-white rounded-lg p-4 border border-gray-200">
+          <div className="text-sm font-semibold text-gray-700 mb-2">Alertas y Recomendaciones:</div>
+          <div className="space-y-2">
+            {health.issues.map((issue, idx) => (
+              <div key={idx} className="flex items-start gap-2">
+                {issue.type === 'error' && <ExclamationTriangleIcon className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />}
+                {issue.type === 'warning' && <ExclamationTriangleIcon className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />}
+                {issue.type === 'success' && <CheckCircleIcon className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />}
+                <span className={`text-sm ${issue.type === 'error' ? 'text-red-700' : issue.type === 'warning' ? 'text-yellow-700' : 'text-green-700'}`}>
+                  {issue.message}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const FinancialSummary: React.FC<{
   invoices: Invoice[];
   payments: Payment[];
@@ -968,6 +1152,14 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
 
   const renderOverview = () => (
     <div className="space-y-6">
+      <OperationHealth 
+        project={project} 
+        tasks={tasks} 
+        documents={documents} 
+        emails={emails} 
+        invoices={invoices} 
+        payments={payments} 
+      />
       <FinancialSummary invoices={invoices} payments={payments} expenses={expenses} currency={project.currency} />
       <DetailCard title="Project Details" icon={ClipboardListIcon}>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-6">
