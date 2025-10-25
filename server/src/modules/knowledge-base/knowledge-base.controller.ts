@@ -14,10 +14,7 @@ export class KnowledgeBaseController {
 
   @Get('entries')
   async getEntries(@Request() req: any) {
-    return this.knowledgeBaseService.getRelevantKnowledge(
-      req.user.organizationId,
-      { limit: 100 },
-    );
+    return this.knowledgeBaseService.getAllEntries(req.user.organizationId);
   }
 
   @Delete('entries/:id')
