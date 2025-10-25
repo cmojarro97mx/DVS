@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 import { GoogleGenAI } from '@google/genai';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class VirtualAssistantService {
@@ -19,10 +20,13 @@ export class VirtualAssistantService {
       personality: 'profesional',
     };
 
-    const assistant = await this.prisma.virtualAssistant.create({
+    const assistant = await this.prisma.virtual_assistants.create({
       data: {
+        id: randomUUID(),
+        updatedAt: new Date(),
         userId,
-        organizationId,
+        token: randomUUID(),
+        organizations: { connect: { id: organizationId } },
         name: name || 'Asistente Virtual',
         settings: defaultSettings,
       },
@@ -43,7 +47,7 @@ export class VirtualAssistantService {
       };
     },
   ) {
-    const assistant = await this.prisma.virtualAssistant.findFirst({
+    const assistant = await this.prisma.virtual_assistants.findFirst({
       where: { id, organizationId },
     });
 
@@ -56,7 +60,7 @@ export class VirtualAssistantService {
       ? { ...currentSettings, ...data.settings }
       : currentSettings;
 
-    return this.prisma.virtualAssistant.update({
+    return this.prisma.virtual_assistants.update({
       where: { id },
       data: {
         name: data.name,
@@ -66,10 +70,10 @@ export class VirtualAssistantService {
   }
 
   async getAssistantByToken(token: string) {
-    const assistant = await this.prisma.virtualAssistant.findUnique({
+    const assistant = await this.prisma.virtual_assistants.findUnique({
       where: { token },
       include: {
-        organization: true,
+        organizations: true,
       },
     });
 
@@ -81,7 +85,7 @@ export class VirtualAssistantService {
       throw new UnauthorizedException('Este asistente está deshabilitado');
     }
 
-    await this.prisma.virtualAssistant.update({
+    await this.prisma.virtual_assistants.update({
       where: { id: assistant.id },
       data: {
         lastUsedAt: new Date(),
@@ -93,14 +97,14 @@ export class VirtualAssistantService {
   }
 
   async getAssistantsByOrganization(organizationId: string) {
-    return this.prisma.virtualAssistant.findMany({
+    return this.prisma.virtual_assistants.findMany({
       where: { organizationId },
       orderBy: { createdAt: 'desc' },
     });
   }
 
   async toggleAssistant(id: string, organizationId: string) {
-    const assistant = await this.prisma.virtualAssistant.findFirst({
+    const assistant = await this.prisma.virtual_assistants.findFirst({
       where: { id, organizationId },
     });
 
@@ -108,14 +112,14 @@ export class VirtualAssistantService {
       throw new NotFoundException('Asistente no encontrado');
     }
 
-    return this.prisma.virtualAssistant.update({
+    return this.prisma.virtual_assistants.update({
       where: { id },
       data: { enabled: !assistant.enabled },
     });
   }
 
   async deleteAssistant(id: string, organizationId: string) {
-    const assistant = await this.prisma.virtualAssistant.findFirst({
+    const assistant = await this.prisma.virtual_assistants.findFirst({
       where: { id, organizationId },
     });
 
@@ -123,34 +127,34 @@ export class VirtualAssistantService {
       throw new NotFoundException('Asistente no encontrado');
     }
 
-    return this.prisma.virtualAssistant.delete({
+    return this.prisma.virtual_assistants.delete({
       where: { id },
     });
   }
 
   async getOrganizationContext(organizationId: string) {
     const [operations, clients, employees, events, tasks] = await Promise.all([
-      this.prisma.operation.findMany({
+      this.prisma.operations.findMany({
         where: { organizationId },
         take: 50,
         orderBy: { createdAt: 'desc' },
         include: {
-          client: true,
+          clients: true,
         },
       }),
-      this.prisma.client.findMany({
+      this.prisma.clients.findMany({
         where: { organizationId },
         take: 50,
       }),
-      this.prisma.employee.findMany({
+      this.prisma.employees.findMany({
         where: { organizationId },
       }),
-      this.prisma.event.findMany({
+      this.prisma.events.findMany({
         where: { organizationId },
         orderBy: { startDate: 'desc' },
         take: 20,
       }),
-      this.prisma.task.findMany({
+      this.prisma.tasks.findMany({
         where: { organizationId },
         orderBy: { createdAt: 'desc' },
         take: 30,

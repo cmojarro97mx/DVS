@@ -6,22 +6,22 @@ export class LeadsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll() {
-    return this.prisma.lead.findMany();
+    return this.prisma.leads.findMany();
   }
 
   async findOne(id: string) {
-    return this.prisma.lead.findUnique({ where: { id } });
+    return this.prisma.leads.findUnique({ where: { id } });
   }
 
   async create(data: any) {
-    return this.prisma.lead.create({ data });
+    return this.prisma.leads.create({ data });
   }
 
   async update(id: string, data: any) {
-    return this.prisma.lead.update({ where: { id }, data });
+    return this.prisma.leads.update({ where: { id }, data });
   }
 
   async remove(id: string) {
-    return this.prisma.lead.delete({ where: { id } });
+    return this.prisma.leads.delete({ where: { id } });
   }
 }

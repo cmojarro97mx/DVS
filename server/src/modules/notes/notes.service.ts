@@ -1,12 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class NotesService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(organizationId: string, userId?: string, operationId?: string) {
-    return this.prisma.note.findMany({
+    return this.prisma.notes.findMany({
       where: {
         organizationId,
         ...(userId && { userId }),
@@ -17,7 +18,7 @@ export class NotesService {
   }
 
   async findOne(id: string, organizationId: string) {
-    const note = await this.prisma.note.findFirst({ 
+    const note = await this.prisma.notes.findFirst({ 
       where: { 
         id,
         organizationId,
@@ -30,20 +31,22 @@ export class NotesService {
   }
 
   async create(data: any, userId: string, organizationId: string) {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prisma.users.findUnique({
       where: { id: userId },
       select: { name: true },
     });
 
     const { operationId, content, attachmentUrl, attachmentName } = data;
 
-    return this.prisma.note.create({
+    return this.prisma.notes.create({
       data: {
+        id: randomUUID(),
+        updatedAt: new Date(),
         content,
         author: user?.name || 'Usuario',
-        userId,
-        organizationId,
-        ...(operationId && { operationId }),
+        users: { connect: { id: userId } },
+        organizations: { connect: { id: organizationId } },
+        ...(operationId && { operations: { connect: { id: operationId } } }),
         ...(attachmentUrl && { attachmentUrl }),
         ...(attachmentName && { attachmentName }),
       },
@@ -51,7 +54,7 @@ export class NotesService {
   }
 
   async update(id: string, data: any, organizationId: string) {
-    const existing = await this.prisma.note.findFirst({ 
+    const existing = await this.prisma.notes.findFirst({ 
       where: { 
         id,
         organizationId,
@@ -63,14 +66,14 @@ export class NotesService {
     
     const { organizationId: _, userId: __, ...updateData } = data;
     
-    return this.prisma.note.update({ 
+    return this.prisma.notes.update({ 
       where: { id }, 
       data: updateData 
     });
   }
 
   async remove(id: string, organizationId: string) {
-    const existing = await this.prisma.note.findFirst({ 
+    const existing = await this.prisma.notes.findFirst({ 
       where: { 
         id,
         organizationId,
@@ -80,6 +83,6 @@ export class NotesService {
       throw new NotFoundException(`Note with ID ${id} not found`);
     }
     
-    return this.prisma.note.delete({ where: { id } });
+    return this.prisma.notes.delete({ where: { id } });
   }
 }

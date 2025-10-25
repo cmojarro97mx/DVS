@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/co
 import { ConfigService } from '@nestjs/config';
 import { google } from 'googleapis';
 import { PrismaService } from '../../common/prisma.service';
+import { randomUUID } from 'crypto';
 import * as crypto from 'crypto';
 
 interface OAuthState {
@@ -138,7 +139,7 @@ export class GoogleAuthService {
       throw new Error('Could not retrieve email from Google');
     }
 
-    const existingAccount = await this.prisma.emailAccount.findFirst({
+    const existingAccount = await this.prisma.email_accounts.findFirst({
       where: {
         userId,
         email,
@@ -148,7 +149,7 @@ export class GoogleAuthService {
 
     if (existingAccount) {
       console.log(`[GoogleAuth] Updating existing account: ${existingAccount.id} with email: ${email}`);
-      await this.prisma.emailAccount.update({
+      await this.prisma.email_accounts.update({
         where: { id: existingAccount.id },
         data: {
           accessToken: tokens.access_token,
@@ -159,9 +160,11 @@ export class GoogleAuthService {
       });
     } else {
       console.log(`[GoogleAuth] Creating new EmailAccount for userId: ${userId} with email: ${email}`);
-      await this.prisma.emailAccount.create({
+      await this.prisma.email_accounts.create({
         data: {
-          userId,
+          id: randomUUID(),
+          updatedAt: new Date(),
+          users: { connect: { id: userId } },
           email,
           provider: 'google',
           status: 'connected',
@@ -177,7 +180,7 @@ export class GoogleAuthService {
   }
 
   async getConnectionStatus(userId: string) {
-    const accounts = await this.prisma.emailAccount.findMany({
+    const accounts = await this.prisma.email_accounts.findMany({
       where: {
         userId,
         provider: 'google',
@@ -210,7 +213,7 @@ export class GoogleAuthService {
   }
 
   async disconnect(userId: string, accountId: string): Promise<{ eventsDeleted: number }> {
-    const account = await this.prisma.emailAccount.findFirst({
+    const account = await this.prisma.email_accounts.findFirst({
       where: {
         id: accountId,
         userId,
@@ -221,11 +224,11 @@ export class GoogleAuthService {
       throw new NotFoundException('Email account not found');
     }
 
-    const eventsCount = await this.prisma.event.count({
+    const eventsCount = await this.prisma.events.count({
       where: { emailAccountId: accountId },
     });
 
-    await this.prisma.emailAccount.delete({
+    await this.prisma.email_accounts.delete({
       where: { id: accountId },
     });
 
@@ -235,7 +238,7 @@ export class GoogleAuthService {
   }
 
   async enableGmailSync(userId: string, accountId: string): Promise<void> {
-    const account = await this.prisma.emailAccount.findFirst({
+    const account = await this.prisma.email_accounts.findFirst({
       where: {
         id: accountId,
         userId,
@@ -246,7 +249,7 @@ export class GoogleAuthService {
       throw new NotFoundException('Email account not found');
     }
 
-    await this.prisma.emailAccount.update({
+    await this.prisma.email_accounts.update({
       where: { id: accountId },
       data: {
         syncEmail: true,
@@ -255,7 +258,7 @@ export class GoogleAuthService {
   }
 
   async disableGmailSync(userId: string, accountId: string): Promise<void> {
-    const account = await this.prisma.emailAccount.findFirst({
+    const account = await this.prisma.email_accounts.findFirst({
       where: {
         id: accountId,
         userId,
@@ -266,7 +269,7 @@ export class GoogleAuthService {
       throw new NotFoundException('Email account not found');
     }
 
-    await this.prisma.emailAccount.update({
+    await this.prisma.email_accounts.update({
       where: { id: accountId },
       data: {
         syncEmail: false,
@@ -275,7 +278,7 @@ export class GoogleAuthService {
   }
 
   async enableCalendarSync(userId: string, accountId: string): Promise<void> {
-    const account = await this.prisma.emailAccount.findFirst({
+    const account = await this.prisma.email_accounts.findFirst({
       where: {
         id: accountId,
         userId,
@@ -286,7 +289,7 @@ export class GoogleAuthService {
       throw new NotFoundException('Email account not found');
     }
 
-    await this.prisma.emailAccount.update({
+    await this.prisma.email_accounts.update({
       where: { id: accountId },
       data: {
         syncCalendar: true,
@@ -295,7 +298,7 @@ export class GoogleAuthService {
   }
 
   async disableCalendarSync(userId: string, accountId: string): Promise<void> {
-    const account = await this.prisma.emailAccount.findFirst({
+    const account = await this.prisma.email_accounts.findFirst({
       where: {
         id: accountId,
         userId,
@@ -306,7 +309,7 @@ export class GoogleAuthService {
       throw new NotFoundException('Email account not found');
     }
 
-    await this.prisma.emailAccount.update({
+    await this.prisma.email_accounts.update({
       where: { id: accountId },
       data: {
         syncCalendar: false,
@@ -318,14 +321,14 @@ export class GoogleAuthService {
     let account;
     
     if (accountId) {
-      account = await this.prisma.emailAccount.findFirst({
+      account = await this.prisma.email_accounts.findFirst({
         where: {
           id: accountId,
           userId,
         },
       });
     } else {
-      account = await this.prisma.emailAccount.findFirst({
+      account = await this.prisma.email_accounts.findFirst({
         where: {
           userId,
           provider: 'google',
@@ -352,7 +355,7 @@ export class GoogleAuthService {
 
       const { credentials } = await this.oauth2Client.refreshAccessToken();
       
-      await this.prisma.emailAccount.update({
+      await this.prisma.email_accounts.update({
         where: { id: account.id },
         data: {
           accessToken: credentials.access_token,
@@ -367,7 +370,7 @@ export class GoogleAuthService {
   }
 
   async getEmailAccountById(accountId: string) {
-    return this.prisma.emailAccount.findUnique({
+    return this.prisma.email_accounts.findUnique({
       where: { id: accountId },
     });
   }
@@ -377,7 +380,7 @@ export class GoogleAuthService {
       ? { lastEmailSync: new Date() }
       : { lastCalendarSync: new Date() };
 
-    await this.prisma.emailAccount.update({
+    await this.prisma.email_accounts.update({
       where: { id: accountId },
       data: updateData,
     });

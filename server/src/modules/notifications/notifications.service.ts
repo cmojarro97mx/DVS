@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 import * as webPush from 'web-push';
+import { randomUUID } from 'crypto';
 
 export interface NotificationPayload {
   title: string;
@@ -29,7 +30,7 @@ export class NotificationsService {
 
   async sendNotificationToUser(userId: string, notification: NotificationPayload): Promise<void> {
     try {
-      const user = await this.prisma.user.findUnique({
+      const user = await this.prisma.users.findUnique({
         where: { id: userId },
         select: { email: true, organizationId: true },
       });
@@ -39,10 +40,11 @@ export class NotificationsService {
         return;
       }
 
-      await this.prisma.notification.create({
+      await this.prisma.notifications.create({
         data: {
-          userId,
-          organizationId: user.organizationId,
+          id: randomUUID(),
+          users: { connect: { id: userId } },
+          organizations: { connect: { id: user.organizationId } },
           title: notification.title,
           body: notification.body,
           type: notification.data?.type || 'info',
@@ -52,7 +54,7 @@ export class NotificationsService {
         },
       });
 
-      const userSettings = await this.prisma.notificationSettings.findUnique({
+      const userSettings = await this.prisma.notification_settings.findUnique({
         where: { userId },
       });
 
@@ -61,7 +63,7 @@ export class NotificationsService {
         return;
       }
 
-      const subscriptions = await this.prisma.pushSubscription.findMany({
+      const subscriptions = await this.prisma.push_subscriptions.findMany({
         where: { userId },
       });
 
@@ -89,7 +91,7 @@ export class NotificationsService {
               payload,
             );
 
-            await this.prisma.pushSubscription.update({
+            await this.prisma.push_subscriptions.update({
               where: { id: sub.id },
               data: { lastUsedAt: new Date() },
             });
@@ -98,7 +100,7 @@ export class NotificationsService {
           } catch (error) {
             if (error.statusCode === 410) {
               this.logger.warn(`Subscription expired, removing: ${sub.id}`);
-              await this.prisma.pushSubscription.delete({
+              await this.prisma.push_subscriptions.delete({
                 where: { id: sub.id },
               });
             } else {
@@ -124,7 +126,7 @@ export class NotificationsService {
   }
 
   async sendNotificationToOrganization(organizationId: string, notification: NotificationPayload): Promise<void> {
-    const users = await this.prisma.user.findMany({
+    const users = await this.prisma.users.findMany({
       where: { organizationId },
       select: { id: true },
     });
@@ -136,14 +138,16 @@ export class NotificationsService {
   }
 
   async getUserNotificationSettings(userId: string) {
-    let settings = await this.prisma.notificationSettings.findUnique({
+    let settings = await this.prisma.notification_settings.findUnique({
       where: { userId },
     });
 
     if (!settings) {
-      settings = await this.prisma.notificationSettings.create({
+      settings = await this.prisma.notification_settings.create({
         data: {
-          userId,
+          id: randomUUID(),
+          updatedAt: new Date(),
+          users: { connect: { id: userId } },
           pushEnabled: true,
           operationsEnabled: true,
           tasksEnabled: true,
@@ -160,10 +164,10 @@ export class NotificationsService {
   }
 
   async updateNotificationSettings(userId: string, settings: any) {
-    return this.prisma.notificationSettings.upsert({
+    return this.prisma.notification_settings.upsert({
       where: { userId },
       create: {
-        userId,
+        users: { connect: { id: userId } },
         ...settings,
       },
       update: settings,
@@ -171,7 +175,7 @@ export class NotificationsService {
   }
 
   async getUserNotifications(userId: string, limit: number = 20) {
-    return this.prisma.notification.findMany({
+    return this.prisma.notifications.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
       take: limit,
@@ -179,7 +183,7 @@ export class NotificationsService {
   }
 
   async getUnreadCount(userId: string) {
-    return this.prisma.notification.count({
+    return this.prisma.notifications.count({
       where: {
         userId,
         read: false,
@@ -188,7 +192,7 @@ export class NotificationsService {
   }
 
   async markAsRead(notificationId: string, userId: string) {
-    return this.prisma.notification.updateMany({
+    return this.prisma.notifications.updateMany({
       where: {
         id: notificationId,
         userId,
@@ -200,7 +204,7 @@ export class NotificationsService {
   }
 
   async markAllAsRead(userId: string) {
-    return this.prisma.notification.deleteMany({
+    return this.prisma.notifications.deleteMany({
       where: {
         userId,
       },
@@ -208,7 +212,7 @@ export class NotificationsService {
   }
 
   async deleteNotification(notificationId: string, userId: string) {
-    return this.prisma.notification.deleteMany({
+    return this.prisma.notifications.deleteMany({
       where: {
         id: notificationId,
         userId,
@@ -218,12 +222,12 @@ export class NotificationsService {
 
   async subscribeToPush(userId: string, subscription: any, userAgent?: string) {
     try {
-      const existing = await this.prisma.pushSubscription.findUnique({
+      const existing = await this.prisma.push_subscriptions.findUnique({
         where: { endpoint: subscription.endpoint },
       });
 
       if (existing) {
-        return this.prisma.pushSubscription.update({
+        return this.prisma.push_subscriptions.update({
           where: { endpoint: subscription.endpoint },
           data: {
             keys: subscription.keys,
@@ -233,9 +237,10 @@ export class NotificationsService {
         });
       }
 
-      return this.prisma.pushSubscription.create({
+      return this.prisma.push_subscriptions.create({
         data: {
-          userId,
+          id: randomUUID(),
+          users: { connect: { id: userId } },
           endpoint: subscription.endpoint,
           keys: subscription.keys,
           userAgent,
@@ -248,7 +253,7 @@ export class NotificationsService {
   }
 
   async unsubscribeFromPush(userId: string, endpoint: string) {
-    return this.prisma.pushSubscription.deleteMany({
+    return this.prisma.push_subscriptions.deleteMany({
       where: {
         userId,
         endpoint,
@@ -257,7 +262,7 @@ export class NotificationsService {
   }
 
   async getUserSubscriptions(userId: string) {
-    return this.prisma.pushSubscription.findMany({
+    return this.prisma.push_subscriptions.findMany({
       where: { userId },
       select: {
         id: true,

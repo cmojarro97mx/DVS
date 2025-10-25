@@ -119,7 +119,7 @@ export class AutomationsService {
     let linkedCount = 0;
 
     // Obtener todas las cuentas de email de la organización
-    const emailAccounts = await this.prisma.emailAccount.findMany({
+    const emailAccounts = await this.prisma.email_accounts.findMany({
       where: {
         user: {
           organizationId,
@@ -139,13 +139,13 @@ export class AutomationsService {
     const accountIds = emailAccounts.map(a => a.id);
 
     // Obtener todas las operaciones de la organización que no tienen muchos emails vinculados
-    const operations = await this.prisma.operation.findMany({
+    const operations = await this.prisma.operations.findMany({
       where: {
         organizationId,
         status: { notIn: ['cancelled', 'completed'] },
       },
       include: {
-        client: {
+        clients: {
           select: {
             email: true,
           },
@@ -239,8 +239,8 @@ export class AutomationsService {
       }
     }
 
-    if (useClientEmail && operation.client?.email) {
-      const clientEmail = operation.client.email.toLowerCase();
+    if (useClientEmail && operation.clients?.email) {
+      const clientEmail = operation.clients.email.toLowerCase();
       searchConditions.push({
         OR: [
           { from: { contains: clientEmail, mode: 'insensitive' as any } },
@@ -294,7 +294,7 @@ export class AutomationsService {
       return 0;
     }
 
-    const matchingEmails = await this.prisma.emailMessage.findMany({
+    const matchingEmails = await this.prisma.email_messages.findMany({
       where: {
         accountId: { in: accountIds },
         OR: searchConditions,
@@ -318,7 +318,7 @@ export class AutomationsService {
     }
 
     const emailIds = Array.from(matchingEmailIds);
-    await this.prisma.emailMessage.updateMany({
+    await this.prisma.email_messages.updateMany({
       where: {
         id: { in: emailIds },
       },
@@ -343,7 +343,7 @@ export class AutomationsService {
       return [];
     }
 
-    const emailsWithAttachments = await this.prisma.emailMessage.findMany({
+    const emailsWithAttachments = await this.prisma.email_messages.findMany({
       where: {
         accountId: { in: accountIds },
         operationId: null,

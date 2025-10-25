@@ -4,6 +4,7 @@ import { BackblazeService } from '../../common/backblaze.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { DocumentProcessorService } from '../email-sync/document-processor.service';
 import { EmailStorageService } from '../email-storage/email-storage.service';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class OperationsService {
@@ -16,13 +17,13 @@ export class OperationsService {
   ) {}
 
   async findAll(organizationId: string) {
-    return this.prisma.operation.findMany({
+    return this.prisma.operations.findMany({
       where: { organizationId },
       include: {
-        client: true,
-        assignees: {
+        clients: true,
+        operation_assignees: {
           include: {
-            user: {
+            users: {
               select: {
                 id: true,
                 name: true,
@@ -37,13 +38,13 @@ export class OperationsService {
   }
 
   async findOne(id: string, organizationId: string) {
-    const operation = await this.prisma.operation.findFirst({
+    const operation = await this.prisma.operations.findFirst({
       where: { id, organizationId },
       include: {
-        client: true,
-        assignees: {
+        clients: true,
+        operation_assignees: {
           include: {
-            user: {
+            users: {
               select: {
                 id: true,
                 name: true,
@@ -68,7 +69,7 @@ export class OperationsService {
 
       const cleanData = this.cleanOperationData(operationData);
 
-      const operation = await this.prisma.operation.create({
+      const operation = await this.prisma.operations.create({
         data: {
           ...cleanData,
           organizationId,
@@ -78,15 +79,16 @@ export class OperationsService {
 
     if (assignees && assignees.length > 0) {
       for (const userId of assignees) {
-        const userExists = await this.prisma.user.findUnique({
+        const userExists = await this.prisma.users.findUnique({
           where: { id: userId },
         });
 
         if (userExists) {
-          await this.prisma.operationAssignee.create({
+          await this.prisma.operation_assignees.create({
             data: {
-              operationId: operation.id,
-              userId: userId,
+              id: randomUUID(),
+              operations: { connect: { id: operation.id } },
+              users: { connect: { id: userId } },
             },
           });
 
@@ -129,10 +131,10 @@ export class OperationsService {
   }
 
   async update(id: string, data: any, organizationId: string) {
-    const existing = await this.prisma.operation.findFirst({
+    const existing = await this.prisma.operations.findFirst({
       where: { id, organizationId },
       include: {
-        assignees: true,
+        operation_assignees: true,
       },
     });
 
@@ -143,26 +145,27 @@ export class OperationsService {
     const { assignees, ...operationData } = data;
     const cleanData = this.cleanOperationData(operationData);
 
-    const operation = await this.prisma.operation.update({
+    const operation = await this.prisma.operations.update({
       where: { id },
       data: cleanData,
     });
 
     if (assignees !== undefined) {
-      const oldAssigneeIds = existing.assignees.map(a => a.userId);
+      const oldAssigneeIds = existing.operation_assignees.map(a => a.userId);
       const newAssigneeIds = assignees;
       
-      await this.prisma.operationAssignee.deleteMany({
+      await this.prisma.operation_assignees.deleteMany({
         where: { operationId: id },
       });
 
       if (assignees.length > 0) {
         await Promise.all(
           assignees.map((assigneeName: string) =>
-            this.prisma.operationAssignee.create({
+            this.prisma.operation_assignees.create({
               data: {
-                operationId: id,
-                userId: assigneeName,
+                id: randomUUID(),
+                operations: { connect: { id: id } },
+                users: { connect: { id: assigneeName } },
               },
             }),
           ),
@@ -194,7 +197,7 @@ export class OperationsService {
   }
 
   async remove(id: string, organizationId: string) {
-    const existing = await this.prisma.operation.findFirst({
+    const existing = await this.prisma.operations.findFirst({
       where: { id, organizationId },
     });
 
@@ -202,7 +205,7 @@ export class OperationsService {
       throw new NotFoundException(`Operation with ID ${id} not found`);
     }
 
-    await this.prisma.operation.delete({
+    await this.prisma.operations.delete({
       where: { id },
     });
 
@@ -214,7 +217,7 @@ export class OperationsService {
     file: Express.Multer.File,
     organizationId: string,
   ) {
-    const operation = await this.prisma.operation.findFirst({
+    const operation = await this.prisma.operations.findFirst({
       where: { id: operationId, organizationId },
     });
 
@@ -225,14 +228,16 @@ export class OperationsService {
     const folder = `operations/${operationId}`;
     const { url, key } = await this.backblazeService.uploadFile(file, folder);
 
-    const document = await this.prisma.document.create({
+    const document = await this.prisma.documents.create({
       data: {
+        id: randomUUID(),
+        updatedAt: new Date(),
         name: file.originalname,
         type: 'file',
         url,
         size: file.size,
         mimeType: file.mimetype,
-        operationId,
+        operations: { connect: { id: operationId } },
       },
     });
 
@@ -240,7 +245,7 @@ export class OperationsService {
   }
 
   async getDocuments(operationId: string, organizationId: string) {
-    const operation = await this.prisma.operation.findFirst({
+    const operation = await this.prisma.operations.findFirst({
       where: { id: operationId, organizationId },
     });
 
@@ -248,7 +253,7 @@ export class OperationsService {
       throw new NotFoundException(`Operation with ID ${operationId} not found`);
     }
 
-    return this.prisma.document.findMany({
+    return this.prisma.documents.findMany({
       where: { operationId },
       orderBy: { createdAt: 'desc' },
     });
@@ -259,7 +264,7 @@ export class OperationsService {
     operationId: string,
     organizationId: string,
   ) {
-    const operation = await this.prisma.operation.findFirst({
+    const operation = await this.prisma.operations.findFirst({
       where: { id: operationId, organizationId },
     });
 
@@ -267,7 +272,7 @@ export class OperationsService {
       throw new NotFoundException(`Operation with ID ${operationId} not found`);
     }
 
-    const document = await this.prisma.document.findFirst({
+    const document = await this.prisma.documents.findFirst({
       where: { id: documentId, operationId },
     });
 
@@ -275,7 +280,7 @@ export class OperationsService {
       throw new NotFoundException(`Document with ID ${documentId} not found`);
     }
 
-    await this.prisma.document.delete({
+    await this.prisma.documents.delete({
       where: { id: documentId },
     });
 
@@ -287,7 +292,7 @@ export class OperationsService {
     commissionHistory: any,
     organizationId: string,
   ) {
-    const operation = await this.prisma.operation.findFirst({
+    const operation = await this.prisma.operations.findFirst({
       where: { id: operationId, organizationId },
     });
 
@@ -295,7 +300,7 @@ export class OperationsService {
       throw new NotFoundException(`Operation with ID ${operationId} not found`);
     }
 
-    return this.prisma.operation.update({
+    return this.prisma.operations.update({
       where: { id: operationId },
       data: { commissionHistory },
     });
@@ -306,13 +311,13 @@ export class OperationsService {
     organizationId: string,
     userId: string,
   ) {
-    const operation = await this.prisma.operation.findFirst({
+    const operation = await this.prisma.operations.findFirst({
       where: { id: operationId, organizationId },
       include: {
-        client: true,
-        assignees: {
+        clients: true,
+        operation_assignees: {
           include: {
-            user: true,
+            users: true,
           },
         },
       },
@@ -322,9 +327,9 @@ export class OperationsService {
       throw new NotFoundException(`Operation with ID ${operationId} not found`);
     }
 
-    const emailAccounts = await this.prisma.emailAccount.findMany({
+    const emailAccounts = await this.prisma.email_accounts.findMany({
       where: {
-        user: {
+        users: {
           organizationId,
         },
       },
@@ -339,7 +344,7 @@ export class OperationsService {
       return [];
     }
 
-    const automations = await this.prisma.automation.findMany({
+    const automations = await this.prisma.automations.findMany({
       where: {
         organizationId,
         type: 'email_to_operation',
@@ -430,8 +435,8 @@ export class OperationsService {
       }
     }
 
-    if (useClientEmail && operation.client?.email) {
-      const clientEmail = operation.client.email.toLowerCase();
+    if (useClientEmail && operation.clients?.email) {
+      const clientEmail = operation.clients.email.toLowerCase();
       searchConditions.push({
         OR: [
           { from: { contains: clientEmail, mode: 'insensitive' as any } },
@@ -485,7 +490,7 @@ export class OperationsService {
       return [];
     }
 
-    const emails = await this.prisma.emailMessage.findMany({
+    const emails = await this.prisma.email_messages.findMany({
       where: {
         accountId: { in: accountIds },
         OR: searchConditions,
@@ -561,7 +566,7 @@ export class OperationsService {
     const additionalEmailIds = new Set<string>(emails.map(e => e.id));
     
     // Buscar en emails con adjuntos
-    const emailsWithAttachments = await this.prisma.emailMessage.findMany({
+    const emailsWithAttachments = await this.prisma.email_messages.findMany({
       where: {
         accountId: { in: accountIds },
         hasAttachments: true,
@@ -672,10 +677,10 @@ export class OperationsService {
   }
 
   async getEmailLinkingCriteria(operationId: string, organizationId: string) {
-    const operation = await this.prisma.operation.findFirst({
+    const operation = await this.prisma.operations.findFirst({
       where: { id: operationId, organizationId },
       include: {
-        client: {
+        clients: {
           select: {
             email: true,
           },
@@ -687,7 +692,7 @@ export class OperationsService {
       throw new NotFoundException(`Operation with ID ${operationId} not found`);
     }
 
-    const automations = await this.prisma.automation.findMany({
+    const automations = await this.prisma.automations.findMany({
       where: {
         organizationId,
         type: 'email_to_operation',
@@ -702,7 +707,7 @@ export class OperationsService {
       useBookingTracking: false,
       useMBL: false,
       useHBL: false,
-      clientEmail: operation.client?.email || null,
+      clientEmail: operation.clients?.email || null,
       operationId: operation.id,
       bookingTracking: operation.bookingTracking || null,
       mbl_awb: operation.mbl_awb || null,

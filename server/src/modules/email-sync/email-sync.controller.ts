@@ -27,7 +27,7 @@ export class EmailSyncController {
   @Get('accounts')
   async getAccounts(@Req() req: Request) {
     const user = req.user as any;
-    const accounts = await this.prisma.emailAccount.findMany({
+    const accounts = await this.prisma.email_accounts.findMany({
       where: {
         userId: user.userId,
         syncEmail: true,
@@ -53,7 +53,7 @@ export class EmailSyncController {
   async getMetrics(@Req() req: Request, @Param('accountId') accountId: string) {
     const user = req.user as any;
 
-    const account = await this.prisma.emailAccount.findFirst({
+    const account = await this.prisma.email_accounts.findFirst({
       where: { id: accountId, userId: user.userId },
     });
 
@@ -68,19 +68,19 @@ export class EmailSyncController {
       ? { date: { gte: account.syncFromDate } } 
       : {};
 
-    const downloadedMessages = await this.prisma.emailMessage.count({
+    const downloadedMessages = await this.prisma.email_messages.count({
       where: { accountId, ...dateFilter },
     });
 
-    const repliedMessages = await this.prisma.emailMessage.count({
+    const repliedMessages = await this.prisma.email_messages.count({
       where: { accountId, isReplied: true, ...dateFilter },
     });
 
-    const unrepliedMessages = await this.prisma.emailMessage.count({
+    const unrepliedMessages = await this.prisma.email_messages.count({
       where: { accountId, isReplied: false, folder: { not: 'sent' }, ...dateFilter },
     });
 
-    const unreadMessages = await this.prisma.emailMessage.count({
+    const unreadMessages = await this.prisma.email_messages.count({
       where: { accountId, unread: true, ...dateFilter },
     });
 
@@ -108,7 +108,7 @@ export class EmailSyncController {
   ) {
     const user = req.user as any;
 
-    const account = await this.prisma.emailAccount.findFirst({
+    const account = await this.prisma.email_accounts.findFirst({
       where: { id: accountId, userId: user.userId },
     });
 
@@ -135,7 +135,7 @@ export class EmailSyncController {
     }
 
     const [messages, total] = await Promise.all([
-      this.prisma.emailMessage.findMany({
+      this.prisma.email_messages.findMany({
         where,
         orderBy: { date: 'desc' },
         skip,
@@ -159,7 +159,7 @@ export class EmailSyncController {
           labels: true,
         },
       }),
-      this.prisma.emailMessage.count({ where }),
+      this.prisma.email_messages.count({ where }),
     ]);
 
     return {
@@ -177,7 +177,7 @@ export class EmailSyncController {
   async getMessageDetails(@Req() req: Request, @Param('messageId') messageId: string) {
     const user = req.user as any;
 
-    const message = await this.prisma.emailMessage.findFirst({
+    const message = await this.prisma.email_messages.findFirst({
       where: {
         id: messageId,
         account: {
@@ -226,7 +226,7 @@ export class EmailSyncController {
   async getHtmlBody(@Req() req: Request, @Param('messageId') messageId: string) {
     const user = req.user as any;
 
-    const message = await this.prisma.emailMessage.findFirst({
+    const message = await this.prisma.email_messages.findFirst({
       where: {
         id: messageId,
         account: {
@@ -260,7 +260,7 @@ export class EmailSyncController {
     const user = req.user as any;
     console.log('[Discovery] Request received for accountId:', accountId, 'userId:', user.userId);
 
-    const account = await this.prisma.emailAccount.findFirst({
+    const account = await this.prisma.email_accounts.findFirst({
       where: { id: accountId, userId: user.userId },
     });
 
@@ -304,7 +304,7 @@ export class EmailSyncController {
   ) {
     const user = req.user as any;
 
-    const account = await this.prisma.emailAccount.findFirst({
+    const account = await this.prisma.email_accounts.findFirst({
       where: { id: accountId, userId: user.userId },
     });
 
@@ -340,7 +340,7 @@ export class EmailSyncController {
   ) {
     const user = req.user as any;
     
-    const account = await this.prisma.emailAccount.findFirst({
+    const account = await this.prisma.email_accounts.findFirst({
       where: { id: accountId, userId: user.userId },
     });
 

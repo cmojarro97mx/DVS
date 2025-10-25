@@ -6,11 +6,11 @@ export class ClientsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll() {
-    return this.prisma.client.findMany();
+    return this.prisma.clients.findMany();
   }
 
   async findOne(id: string) {
-    return this.prisma.client.findUnique({ where: { id } });
+    return this.prisma.clients.findUnique({ where: { id } });
   }
 
   private mapClientData(data: any) {
@@ -52,7 +52,7 @@ export class ClientsService {
 
   async create(data: any) {
     const mappedData = this.mapClientData(data);
-    return this.prisma.client.create({ data: mappedData });
+    return this.prisma.clients.create({ data: mappedData });
   }
 
   async update(id: string, data: any) {
@@ -61,10 +61,10 @@ export class ClientsService {
     if (data.organizationId !== undefined) {
       mappedData.organizationId = data.organizationId;
     }
-    return this.prisma.client.update({ where: { id }, data: mappedData });
+    return this.prisma.clients.update({ where: { id }, data: mappedData });
   }
 
   async remove(id: string) {
-    return this.prisma.client.delete({ where: { id } });
+    return this.prisma.clients.delete({ where: { id } });
   }
 }

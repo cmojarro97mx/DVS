@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 import { BackblazeService } from '../../common/backblaze.service';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class FilesService {
@@ -53,7 +54,7 @@ export class FilesService {
     
     if (folderId) {
       console.log('[FilesService] Validating folder...');
-      const folder = await this.prisma.fileFolder.findFirst({
+      const folder = await this.prisma.file_folders.findFirst({
         where: {
           id: folderId,
           organizationId,
@@ -122,7 +123,7 @@ export class FilesService {
     console.log('[FilesService] Found', files.length, 'general files');
 
     // Get operation documents
-    const documents = await this.prisma.document.findMany({
+    const documents = await this.prisma.documents.findMany({
       where: {
         operationId: {
           not: null,
@@ -141,10 +142,10 @@ export class FilesService {
     console.log('[FilesService] Found', documents.length, 'operation documents');
 
     // Get email attachments and HTML content stored in Backblaze
-    const emailMessages = await this.prisma.emailMessage.findMany({
+    const emailMessages = await this.prisma.email_messages.findMany({
       where: {
-        account: {
-          user: {
+        email_accounts: {
+          users: {
             organizationId,
           },
         },
@@ -285,7 +286,7 @@ export class FilesService {
         updatedAt: doc.updatedAt,
         source: 'operations' as const,
         folder: null,
-        operationReference: doc.operation?.projectName || null,
+        operationReference: doc.operations?.projectName || null,
         emailReference: null,
       })),
       ...emailFiles,
@@ -299,7 +300,7 @@ export class FilesService {
   }
 
   async getFileStats(organizationId: string) {
-    const files = await this.prisma.file.findMany({
+    const files = await this.prisma.files.findMany({
       where: { organizationId },
       select: {
         size: true,
@@ -307,9 +308,9 @@ export class FilesService {
       },
     });
 
-    const documents = await this.prisma.document.findMany({
+    const documents = await this.prisma.documents.findMany({
       where: {
-        operation: {
+        operations: {
           organizationId,
         },
       },
@@ -320,7 +321,7 @@ export class FilesService {
     });
 
     // Get email files statistics
-    const emailMessages = await this.prisma.emailMessage.findMany({
+    const emailMessages = await this.prisma.email_messages.findMany({
       where: {
         account: {
           user: {
@@ -395,7 +396,7 @@ export class FilesService {
 
   async createFolder(name: string, parentId: string | undefined, organizationId: string) {
     if (parentId) {
-      const parent = await this.prisma.fileFolder.findFirst({
+      const parent = await this.prisma.file_folders.findFirst({
         where: {
           id: parentId,
           organizationId,
@@ -407,8 +408,10 @@ export class FilesService {
       }
     }
 
-    return this.prisma.fileFolder.create({
+    return this.prisma.file_folders.create({
       data: {
+        id: randomUUID(),
+        updatedAt: new Date(),
         name,
         parentId: parentId || null,
         organizationId,
@@ -417,7 +420,7 @@ export class FilesService {
   }
 
   async getFolders(organizationId: string) {
-    return this.prisma.fileFolder.findMany({
+    return this.prisma.file_folders.findMany({
       where: {
         organizationId,
       },
@@ -428,7 +431,7 @@ export class FilesService {
   }
 
   async deleteFolder(id: string, organizationId: string) {
-    const folder = await this.prisma.fileFolder.findFirst({
+    const folder = await this.prisma.file_folders.findFirst({
       where: {
         id,
         organizationId,
@@ -446,6 +449,6 @@ export class FilesService {
       await this.remove(file.id, organizationId);
     }
 
-    return this.prisma.fileFolder.delete({ where: { id } });
+    return this.prisma.file_folders.delete({ where: { id } });
   }
 }

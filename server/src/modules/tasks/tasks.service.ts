@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class TasksService {
@@ -10,15 +11,15 @@ export class TasksService {
   ) {}
 
   async findAll(organizationId: string, operationId?: string) {
-    return this.prisma.task.findMany({
+    return this.prisma.tasks.findMany({
       where: {
         organizationId,
         ...(operationId && { operationId }),
       },
       include: {
-        assignees: {
+        task_assignees: {
           include: {
-            user: {
+            users: {
               select: {
                 id: true,
                 name: true,
@@ -33,15 +34,15 @@ export class TasksService {
   }
 
   async findOne(id: string, organizationId: string) {
-    const task = await this.prisma.task.findFirst({
+    const task = await this.prisma.tasks.findFirst({
       where: { 
         id,
         organizationId,
       },
       include: {
-        assignees: {
+        task_assignees: {
           include: {
-            user: {
+            users: {
               select: {
                 id: true,
                 name: true,
@@ -74,7 +75,7 @@ export class TasksService {
     if (taskData.dueDate) cleanedData.dueDate = new Date(taskData.dueDate);
     if (taskData.operationId) cleanedData.operationId = taskData.operationId;
 
-    const task = await this.prisma.task.create({
+    const task = await this.prisma.tasks.create({
       data: cleanedData,
     });
 
@@ -82,27 +83,28 @@ export class TasksService {
       const validAssignees = [];
       for (const assigneeId of assignees) {
         let userId = assigneeId;
-        let userExists = await this.prisma.user.findUnique({
+        let userExists = await this.prisma.users.findUnique({
           where: { id: assigneeId },
         });
         
         if (!userExists) {
-          const employee = await this.prisma.employee.findUnique({
+          const employee = await this.prisma.employees.findUnique({
             where: { id: assigneeId },
           });
           if (employee && employee.userId) {
             userId = employee.userId;
-            userExists = await this.prisma.user.findUnique({
+            userExists = await this.prisma.users.findUnique({
               where: { id: userId },
             });
           }
         }
         
         if (userExists) {
-          await this.prisma.taskAssignee.create({
+          await this.prisma.task_assignees.create({
             data: {
-              taskId: task.id,
-              userId,
+              id: randomUUID(),
+              tasks: { connect: { id: task.id } },
+              users: { connect: { id: userId } },
             },
           });
           validAssignees.push(userId);
@@ -123,13 +125,13 @@ export class TasksService {
   }
 
   async update(id: string, data: any, organizationId: string) {
-    const existing = await this.prisma.task.findFirst({ 
+    const existing = await this.prisma.tasks.findFirst({ 
       where: { 
         id,
         organizationId,
       },
       include: {
-        assignees: true,
+        task_assignees: true,
       },
     });
     if (!existing) {
@@ -164,15 +166,15 @@ export class TasksService {
       }
     }
 
-    const task = await this.prisma.task.update({
+    const task = await this.prisma.tasks.update({
       where: { id },
       data: cleanedData,
     });
 
     if (assignees !== undefined) {
-      const oldAssigneeIds = existing.assignees.map(a => a.userId);
+      const oldAssigneeIds = existing.task_assignees.map(a => a.userId);
       
-      await this.prisma.taskAssignee.deleteMany({
+      await this.prisma.task_assignees.deleteMany({
         where: { taskId: id },
       });
 
@@ -180,27 +182,28 @@ export class TasksService {
         const validUserIds = [];
         for (const assigneeId of assignees) {
           let userId = assigneeId;
-          let userExists = await this.prisma.user.findUnique({
+          let userExists = await this.prisma.users.findUnique({
             where: { id: assigneeId },
           });
           
           if (!userExists) {
-            const employee = await this.prisma.employee.findUnique({
+            const employee = await this.prisma.employees.findUnique({
               where: { id: assigneeId },
             });
             if (employee && employee.userId) {
               userId = employee.userId;
-              userExists = await this.prisma.user.findUnique({
+              userExists = await this.prisma.users.findUnique({
                 where: { id: userId },
               });
             }
           }
           
           if (userExists) {
-            await this.prisma.taskAssignee.create({
+            await this.prisma.task_assignees.create({
               data: {
-                taskId: id,
-                userId,
+                id: randomUUID(),
+                tasks: { connect: { id: id } },
+                users: { connect: { id: userId } },
               },
             });
             validUserIds.push(userId);
@@ -220,7 +223,7 @@ export class TasksService {
     }
 
     if (taskData.status === 'Done') {
-      const assigneeIds = assignees || existing.assignees.map(a => a.userId);
+      const assigneeIds = assignees || existing.task_assignees.map(a => a.userId);
       if (assigneeIds.length > 0) {
         await this.notificationsService.sendNotificationToUsers(assigneeIds, {
           title: 'Tarea completada',
@@ -235,7 +238,7 @@ export class TasksService {
   }
 
   async remove(id: string, organizationId: string) {
-    const existing = await this.prisma.task.findFirst({ 
+    const existing = await this.prisma.tasks.findFirst({ 
       where: { 
         id,
         organizationId,
@@ -245,6 +248,6 @@ export class TasksService {
       throw new NotFoundException(`Task with ID ${id} not found`);
     }
 
-    return this.prisma.task.delete({ where: { id } });
+    return this.prisma.tasks.delete({ where: { id } });
   }
 }

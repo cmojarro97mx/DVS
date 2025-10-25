@@ -20,7 +20,7 @@ export class EmailSyncService {
   async syncEmailsForAccount(userId: string, accountId: string): Promise<{ synced: number; total: number }> {
     this.logger.log(`Starting email sync for account ${accountId}`);
 
-    const account = await this.prisma.emailAccount.findFirst({
+    const account = await this.prisma.email_accounts.findFirst({
       where: { id: accountId, userId },
     });
 
@@ -73,7 +73,7 @@ export class EmailSyncService {
       pageToken = response.data.nextPageToken;
     } while (pageToken);
 
-    await this.prisma.emailAccount.update({
+    await this.prisma.email_accounts.update({
       where: { id: accountId },
       data: {
         lastEmailSync: new Date(),
@@ -87,7 +87,7 @@ export class EmailSyncService {
   }
 
   private async syncSingleMessage(gmail: any, accountId: string, messageId: string): Promise<void> {
-    const existing = await this.prisma.emailMessage.findFirst({
+    const existing = await this.prisma.email_messages.findFirst({
       where: { accountId, gmailMessageId: messageId },
     });
 
@@ -137,7 +137,7 @@ export class EmailSyncService {
     const isStarred = message.labelIds?.includes('STARRED') || false;
     const isReplied = message.labelIds?.includes('SENT') || !!inReplyTo;
 
-    const emailMessage = await this.prisma.emailMessage.create({
+    const emailMessage = await this.prisma.email_messages.create({
       data: {
         gmailMessageId: messageId,
         threadId: message.threadId,
@@ -171,7 +171,7 @@ export class EmailSyncService {
     const recentThreshold = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
     if (emailDate && emailDate > recentThreshold && (isUnread || isStarred)) {
-      const account = await this.prisma.emailAccount.findUnique({
+      const account = await this.prisma.email_accounts.findUnique({
         where: { id: accountId },
         select: { userId: true, email: true },
       });
@@ -308,7 +308,7 @@ export class EmailSyncService {
     this.logger.log('Starting automatic email sync for all accounts...');
 
     try {
-      const accounts = await this.prisma.emailAccount.findMany({
+      const accounts = await this.prisma.email_accounts.findMany({
         where: {
           provider: 'google',
           status: 'connected',
@@ -352,7 +352,7 @@ export class EmailSyncService {
   }> {
     this.logger.log(`Starting discovery for account ${accountId}`);
 
-    const account = await this.prisma.emailAccount.findFirst({
+    const account = await this.prisma.email_accounts.findFirst({
       where: { id: accountId, userId },
     });
 
@@ -448,7 +448,7 @@ export class EmailSyncService {
       }
     }
 
-    await this.prisma.emailAccount.update({
+    await this.prisma.email_accounts.update({
       where: { id: accountId },
       data: {
         detectedOldestEmailDate: oldestEmailDate,
@@ -470,7 +470,7 @@ export class EmailSyncService {
   async updateSyncSettings(userId: string, accountId: string, syncFromDate: Date): Promise<void> {
     this.logger.log(`Updating sync settings for account ${accountId}: syncFromDate=${syncFromDate.toISOString()}`);
 
-    const account = await this.prisma.emailAccount.findFirst({
+    const account = await this.prisma.email_accounts.findFirst({
       where: { id: accountId, userId },
     });
 
@@ -485,7 +485,7 @@ export class EmailSyncService {
       await this.cleanupOldMessages(accountId, syncFromDate);
     }
 
-    await this.prisma.emailAccount.update({
+    await this.prisma.email_accounts.update({
       where: { id: accountId },
       data: {
         syncFromDate,
@@ -499,7 +499,7 @@ export class EmailSyncService {
   private async cleanupOldMessages(accountId: string, newSyncFromDate: Date): Promise<void> {
     this.logger.log(`Starting cleanup of messages before ${newSyncFromDate.toISOString()} for account ${accountId}`);
 
-    const messagesToDelete = await this.prisma.emailMessage.findMany({
+    const messagesToDelete = await this.prisma.email_messages.findMany({
       where: {
         accountId,
         date: {
@@ -594,7 +594,7 @@ export class EmailSyncService {
   async getFreshEmailFromGmail(userId: string, accountId: string, gmailMessageId: string): Promise<any> {
     this.logger.log(`Fetching fresh email from Gmail: ${gmailMessageId}`);
 
-    const account = await this.prisma.emailAccount.findFirst({
+    const account = await this.prisma.email_accounts.findFirst({
       where: { id: accountId, userId },
     });
 

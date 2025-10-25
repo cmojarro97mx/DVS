@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { google } from 'googleapis';
 import { GoogleAuthService } from '../google-auth/google-auth.service';
 import { PrismaService } from '../../common/prisma.service';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class GoogleCalendarService {
@@ -90,15 +91,15 @@ export class GoogleCalendarService {
 
   async syncLocalEventToGoogle(eventId: string, userId: string) {
     try {
-      const event = await this.prisma.event.findFirst({
+      const event = await this.prisma.events.findFirst({
         where: { 
           id: eventId,
           userId,
           source: 'local',
         },
         include: {
-          emailAccount: true,
-          user: {
+          email_accounts: true,
+          users: {
             select: {
               organizationId: true,
             },
@@ -106,7 +107,7 @@ export class GoogleCalendarService {
         },
       });
 
-      if (!event || !event.emailAccount) {
+      if (!event || !event.email_accounts) {
         throw new Error('Event not found or no email account associated');
       }
 
@@ -133,7 +134,7 @@ export class GoogleCalendarService {
           event.googleCalendarId || 'primary'
         );
         
-        await this.prisma.event.update({
+        await this.prisma.events.update({
           where: { id: eventId },
           data: {
             googleUpdated: googleEvent.updated ? new Date(googleEvent.updated) : new Date(),
@@ -150,7 +151,7 @@ export class GoogleCalendarService {
           'primary'
         );
 
-        await this.prisma.event.update({
+        await this.prisma.events.update({
           where: { id: eventId },
           data: {
             googleEventId: googleEvent.id,
@@ -192,14 +193,14 @@ export class GoogleCalendarService {
 
   async syncGoogleCalendarEvents(userId: string, accountId: string) {
     try {
-      const account = await this.prisma.emailAccount.findFirst({
+      const account = await this.prisma.email_accounts.findFirst({
         where: { 
           id: accountId,
           userId,
           syncCalendar: true,
         },
         include: {
-          user: {
+          users: {
             select: {
               organizationId: true,
             },
@@ -233,7 +234,7 @@ export class GoogleCalendarService {
       let updated = 0;
       let deleted = 0;
 
-      const existingEvents = await this.prisma.event.findMany({
+      const existingEvents = await this.prisma.events.findMany({
         where: {
           emailAccountId: accountId,
         },
@@ -251,7 +252,7 @@ export class GoogleCalendarService {
         if (gEvent.status === 'cancelled') {
           const existingEvent = existingEventMap.get(gEvent.id);
           if (existingEvent) {
-            await this.prisma.event.update({
+            await this.prisma.events.update({
               where: { id: existingEvent.id },
               data: { 
                 status: 'cancelled',
@@ -283,19 +284,19 @@ export class GoogleCalendarService {
           lastSyncedAt: new Date(),
           emailAccountId: accountId,
           userId,
-          organizationId: account.user.organizationId,
+          organizationId: account.users.organizationId,
         };
 
         const existingEvent = existingEventMap.get(gEvent.id);
 
         if (existingEvent) {
-          if (existingEvent.userId === userId && existingEvent.organizationId === account.user.organizationId) {
+          if (existingEvent.userId === userId && existingEvent.organizationId === account.users.organizationId) {
             const googleUpdated = gEvent.updated ? new Date(gEvent.updated) : null;
             const shouldUpdate = !existingEvent.googleUpdated || 
                                  (googleUpdated && googleUpdated > existingEvent.googleUpdated);
 
             if (shouldUpdate) {
-              await this.prisma.event.update({
+              await this.prisma.events.update({
                 where: { id: existingEvent.id },
                 data: eventData,
               });
@@ -305,8 +306,16 @@ export class GoogleCalendarService {
             this.logger.error(`Security violation: Event ${existingEvent.id} ownership mismatch for user ${userId}`);
           }
         } else {
-          await this.prisma.event.create({
-            data: eventData,
+          const { userId, organizationId, emailAccountId, ...eventDataWithoutIds } = eventData;
+          await this.prisma.events.create({
+            data: {
+              id: randomUUID(),
+              updatedAt: new Date(),
+              ...eventDataWithoutIds,
+              users: { connect: { id: userId } },
+              organizations: { connect: { id: organizationId } },
+              email_accounts: { connect: { id: emailAccountId } },
+            },
           });
           created++;
         }
@@ -315,7 +324,7 @@ export class GoogleCalendarService {
       for (const existingEvent of existingEvents) {
         if (existingEvent.googleEventId && !googleEventIds.has(existingEvent.googleEventId)) {
           if (existingEvent.status !== 'deleted' && existingEvent.status !== 'cancelled') {
-            await this.prisma.event.update({
+            await this.prisma.events.update({
               where: { id: existingEvent.id },
               data: { 
                 status: 'deleted',
@@ -349,7 +358,7 @@ export class GoogleCalendarService {
     this.logger.log('Starting automatic calendar sync for all accounts...');
     
     try {
-      const accounts = await this.prisma.emailAccount.findMany({
+      const accounts = await this.prisma.email_accounts.findMany({
         where: {
           provider: 'google',
           status: 'connected',
@@ -357,7 +366,7 @@ export class GoogleCalendarService {
           refreshToken: { not: null },
         },
         include: {
-          user: {
+          users: {
             select: {
               id: true,
               email: true,

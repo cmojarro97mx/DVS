@@ -6,7 +6,7 @@ export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   async findAll() {
-    return this.prisma.user.findMany({
+    return this.prisma.users.findMany({
       select: {
         id: true,
         email: true,
@@ -20,7 +20,7 @@ export class UsersService {
   }
 
   async findOne(id: string) {
-    return this.prisma.user.findUnique({
+    return this.prisma.users.findUnique({
       where: { id },
       select: {
         id: true,
@@ -35,7 +35,7 @@ export class UsersService {
   }
 
   async update(id: string, data: any) {
-    return this.prisma.user.update({
+    return this.prisma.users.update({
       where: { id },
       data,
     });
@@ -43,12 +43,12 @@ export class UsersService {
 
   async remove(id: string) {
     // Primero eliminar todos los refresh tokens del usuario para invalidar sus sesiones
-    await this.prisma.refreshToken.deleteMany({
+    await this.prisma.refresh_tokens.deleteMany({
       where: { userId: id },
     });
     
     // Luego eliminar el usuario (esto también eliminará registros relacionados por CASCADE)
-    return this.prisma.user.delete({
+    return this.prisma.users.delete({
       where: { id },
     });
   }

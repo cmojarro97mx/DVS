@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class AssistantToolsService {
@@ -7,9 +8,11 @@ export class AssistantToolsService {
 
   async createOperation(organizationId: string, data: any) {
     try {
-      const operation = await this.prisma.operation.create({
+      const operation = await this.prisma.operations.create({
         data: {
-          organizationId,
+          id: randomUUID(),
+          updatedAt: new Date(),
+          organizations: { connect: { id: organizationId } },
           projectName: data.projectName,
           projectCategory: data.projectCategory,
           operationType: data.operationType,
@@ -17,7 +20,7 @@ export class AssistantToolsService {
           progress: data.progress || 0,
           startDate: data.startDate ? new Date(data.startDate) : null,
           deadline: data.deadline ? new Date(data.deadline) : null,
-          clientId: data.clientId,
+          ...(data.clientId && { clients: { connect: { id: data.clientId } } }),
           notes: data.notes,
         },
       });
@@ -37,9 +40,11 @@ export class AssistantToolsService {
 
   async createClient(organizationId: string, data: any) {
     try {
-      const client = await this.prisma.client.create({
+      const client = await this.prisma.clients.create({
         data: {
-          organizationId,
+          id: randomUUID(),
+          updatedAt: new Date(),
+          organizations: { connect: { id: organizationId } },
           name: data.name,
           contactPerson: data.contactPerson,
           email: data.email,
@@ -64,10 +69,12 @@ export class AssistantToolsService {
 
   async createEvent(organizationId: string, userId: string, data: any) {
     try {
-      const event = await this.prisma.event.create({
+      const event = await this.prisma.events.create({
         data: {
-          organizationId,
-          userId,
+          id: randomUUID(),
+          updatedAt: new Date(),
+          organizations: { connect: { id: organizationId } },
+          users: { connect: { id: userId } },
           title: data.title,
           description: data.description,
           startDate: new Date(data.startDate),
@@ -92,15 +99,19 @@ export class AssistantToolsService {
 
   async createTask(organizationId: string, data: any) {
     try {
-      const task = await this.prisma.task.create({
+      const task = await this.prisma.tasks.create({
         data: {
-          organizationId,
+          id: randomUUID(),
+          updatedAt: new Date(),
+          organizations: { connect: { id: organizationId } },
           status: data.status || 'To Do',
           title: data.title,
           description: data.description,
           priority: data.priority || 'Medium',
           dueDate: data.dueDate ? new Date(data.dueDate) : null,
-          operationId: data.operationId,
+          createdBy: 'user' as const,
+          lastModifiedBy: 'user' as const,
+          ...(data.operationId && { operations: { connect: { id: data.operationId } } }),
         },
       });
       return {
@@ -119,7 +130,7 @@ export class AssistantToolsService {
 
   async searchOperations(organizationId: string, query: string) {
     try {
-      const operations = await this.prisma.operation.findMany({
+      const operations = await this.prisma.operations.findMany({
         where: {
           organizationId,
           OR: [
@@ -132,7 +143,7 @@ export class AssistantToolsService {
         },
         take: 10,
         include: {
-          client: true,
+          clients: true,
         },
       });
       return {
@@ -151,7 +162,7 @@ export class AssistantToolsService {
 
   async searchClients(organizationId: string, query: string) {
     try {
-      const clients = await this.prisma.client.findMany({
+      const clients = await this.prisma.clients.findMany({
         where: {
           organizationId,
           OR: [
@@ -178,7 +189,7 @@ export class AssistantToolsService {
 
   async getUpcomingEvents(organizationId: string) {
     try {
-      const events = await this.prisma.event.findMany({
+      const events = await this.prisma.events.findMany({
         where: {
           organizationId,
           startDate: {
@@ -206,7 +217,7 @@ export class AssistantToolsService {
 
   async getPendingTasks(organizationId: string) {
     try {
-      const tasks = await this.prisma.task.findMany({
+      const tasks = await this.prisma.tasks.findMany({
         where: {
           organizationId,
           status: {

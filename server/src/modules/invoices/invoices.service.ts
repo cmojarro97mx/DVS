@@ -10,12 +10,12 @@ export class InvoicesService {
   ) {}
 
   async findAll(organizationId: string) {
-    return this.prisma.invoice.findMany({
+    return this.prisma.invoices.findMany({
       where: { organizationId },
       include: {
-        client: true,
-        operation: true,
-        bankAccount: true,
+        clients: true,
+        operations: true,
+        bank_accounts: true,
         payments: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -23,12 +23,12 @@ export class InvoicesService {
   }
 
   async findOne(id: string, organizationId: string) {
-    const invoice = await this.prisma.invoice.findFirst({
+    const invoice = await this.prisma.invoices.findFirst({
       where: { id, organizationId },
       include: {
-        client: true,
-        operation: true,
-        bankAccount: true,
+        clients: true,
+        operations: true,
+        bank_accounts: true,
         payments: true,
       },
     });
@@ -43,19 +43,19 @@ export class InvoicesService {
   async create(data: any, organizationId: string) {
     await this.validateRelatedEntities(data, organizationId);
     
-    const invoice = await this.prisma.invoice.create({
+    const invoice = await this.prisma.invoices.create({
       data: {
         ...data,
         organizationId,
       },
       include: {
-        client: true,
-        operation: true,
-        bankAccount: true,
+        clients: true,
+        operations: true,
+        bank_accounts: true,
       },
     });
 
-    const admins = await this.prisma.user.findMany({
+    const admins = await this.prisma.users.findMany({
       where: {
         organizationId,
         role: { in: ['admin', 'owner'] },
@@ -85,13 +85,13 @@ export class InvoicesService {
     
     const { organizationId: _, ...updateData } = data;
     
-    return this.prisma.invoice.update({
+    return this.prisma.invoices.update({
       where: { id: existing.id },
       data: updateData,
       include: {
-        client: true,
-        operation: true,
-        bankAccount: true,
+        clients: true,
+        operations: true,
+        bank_accounts: true,
         payments: true,
       },
     });
@@ -99,12 +99,12 @@ export class InvoicesService {
 
   async remove(id: string, organizationId: string) {
     const existing = await this.findOne(id, organizationId);
-    return this.prisma.invoice.delete({ where: { id: existing.id } });
+    return this.prisma.invoices.delete({ where: { id: existing.id } });
   }
 
   private async validateRelatedEntities(data: any, organizationId: string) {
     if (data.clientId) {
-      const client = await this.prisma.client.findFirst({
+      const client = await this.prisma.clients.findFirst({
         where: { id: data.clientId, organizationId },
       });
       if (!client) {
@@ -113,7 +113,7 @@ export class InvoicesService {
     }
 
     if (data.operationId) {
-      const operation = await this.prisma.operation.findFirst({
+      const operation = await this.prisma.operations.findFirst({
         where: { id: data.operationId, organizationId },
       });
       if (!operation) {
@@ -122,7 +122,7 @@ export class InvoicesService {
     }
 
     if (data.bankAccountId) {
-      const bankAccount = await this.prisma.bankAccount.findFirst({
+      const bankAccount = await this.prisma.bank_accounts.findFirst({
         where: { id: data.bankAccountId, organizationId },
       });
       if (!bankAccount) {

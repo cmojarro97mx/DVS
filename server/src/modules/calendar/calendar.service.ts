@@ -56,7 +56,7 @@ export class CalendarService {
       };
     }
 
-    return this.prisma.event.findMany({
+    return this.prisma.events.findMany({
       where,
       include: {
         emailAccount: {
@@ -74,7 +74,7 @@ export class CalendarService {
   }
 
   async findOne(id: string) {
-    return this.prisma.event.findUnique({ 
+    return this.prisma.events.findUnique({ 
       where: { id },
       include: {
         emailAccount: {
@@ -89,7 +89,7 @@ export class CalendarService {
   }
 
   async create(data: any) {
-    const event = await this.prisma.event.create({ 
+    const event = await this.prisma.events.create({ 
       data: {
         ...data,
         source: data.source || 'local',
@@ -119,7 +119,7 @@ export class CalendarService {
   }
 
   async update(id: string, data: any) {
-    const event = await this.prisma.event.update({ 
+    const event = await this.prisma.events.update({ 
       where: { id }, 
       data: {
         ...data,
@@ -131,10 +131,10 @@ export class CalendarService {
   }
 
   async remove(id: string) {
-    const event = await this.prisma.event.findUnique({ where: { id } });
+    const event = await this.prisma.events.findUnique({ where: { id } });
     
     if (event?.googleEventId && event?.emailAccountId) {
-      await this.prisma.event.update({
+      await this.prisma.events.update({
         where: { id },
         data: { 
           status: 'deleted',
@@ -143,7 +143,7 @@ export class CalendarService {
       });
       return { soft: true, event };
     } else {
-      return this.prisma.event.delete({ where: { id } });
+      return this.prisma.events.delete({ where: { id } });
     }
   }
 
@@ -158,10 +158,10 @@ export class CalendarService {
     }
 
     const [total, scheduled, completed, cancelled] = await Promise.all([
-      this.prisma.event.count({ where: { ...where, status: { notIn: ['deleted'] } } }),
-      this.prisma.event.count({ where: { ...where, status: 'scheduled' } }),
-      this.prisma.event.count({ where: { ...where, status: 'completed' } }),
-      this.prisma.event.count({ where: { ...where, status: 'cancelled' } }),
+      this.prisma.events.count({ where: { ...where, status: { notIn: ['deleted'] } } }),
+      this.prisma.events.count({ where: { ...where, status: 'scheduled' } }),
+      this.prisma.events.count({ where: { ...where, status: 'completed' } }),
+      this.prisma.events.count({ where: { ...where, status: 'cancelled' } }),
     ]);
 
     return {
@@ -180,7 +180,7 @@ export class CalendarService {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      const result = await this.prisma.event.deleteMany({
+      const result = await this.prisma.events.deleteMany({
         where: {
           status: {
             in: ['deleted', 'cancelled'],
@@ -203,7 +203,7 @@ export class CalendarService {
     try {
       this.logger.log('Checking for events with disconnected accounts...');
       
-      const disconnectedAccounts = await this.prisma.emailAccount.findMany({
+      const disconnectedAccounts = await this.prisma.email_accounts.findMany({
         where: {
           status: 'disconnected',
         },
@@ -217,7 +217,7 @@ export class CalendarService {
         return { deleted: 0 };
       }
 
-      const result = await this.prisma.event.deleteMany({
+      const result = await this.prisma.events.deleteMany({
         where: {
           emailAccountId: {
             in: disconnectedAccounts.map(a => a.id),

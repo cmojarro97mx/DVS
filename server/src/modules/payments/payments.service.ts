@@ -10,24 +10,24 @@ export class PaymentsService {
   ) {}
 
   async findAll(organizationId: string) {
-    return this.prisma.payment.findMany({
+    return this.prisma.payments.findMany({
       where: { organizationId },
       include: {
-        invoice: true,
-        operation: true,
-        bankAccount: true,
+        invoices: true,
+        operations: true,
+        bank_accounts: true,
       },
       orderBy: { createdAt: 'desc' },
     });
   }
 
   async findOne(id: string, organizationId: string) {
-    const payment = await this.prisma.payment.findFirst({
+    const payment = await this.prisma.payments.findFirst({
       where: { id, organizationId },
       include: {
-        invoice: true,
-        operation: true,
-        bankAccount: true,
+        invoices: true,
+        operations: true,
+        bank_accounts: true,
       },
     });
     
@@ -41,19 +41,19 @@ export class PaymentsService {
   async create(data: any, organizationId: string) {
     await this.validateRelatedEntities(data, organizationId);
     
-    const payment = await this.prisma.payment.create({
+    const payment = await this.prisma.payments.create({
       data: {
         ...data,
         organizationId,
       },
       include: {
-        invoice: true,
-        operation: true,
-        bankAccount: true,
+        invoices: true,
+        operations: true,
+        bank_accounts: true,
       },
     });
 
-    const admins = await this.prisma.user.findMany({
+    const admins = await this.prisma.users.findMany({
       where: {
         organizationId,
         role: { in: ['admin', 'owner'] },
@@ -83,25 +83,25 @@ export class PaymentsService {
     
     const { organizationId: _, ...updateData } = data;
     
-    return this.prisma.payment.update({
+    return this.prisma.payments.update({
       where: { id: existing.id },
       data: updateData,
       include: {
-        invoice: true,
-        operation: true,
-        bankAccount: true,
+        invoices: true,
+        operations: true,
+        bank_accounts: true,
       },
     });
   }
 
   async remove(id: string, organizationId: string) {
     const existing = await this.findOne(id, organizationId);
-    return this.prisma.payment.delete({ where: { id: existing.id } });
+    return this.prisma.payments.delete({ where: { id: existing.id } });
   }
 
   private async validateRelatedEntities(data: any, organizationId: string) {
     if (data.invoiceId) {
-      const invoice = await this.prisma.invoice.findFirst({
+      const invoice = await this.prisma.invoices.findFirst({
         where: { id: data.invoiceId, organizationId },
       });
       if (!invoice) {
@@ -110,7 +110,7 @@ export class PaymentsService {
     }
 
     if (data.operationId) {
-      const operation = await this.prisma.operation.findFirst({
+      const operation = await this.prisma.operations.findFirst({
         where: { id: data.operationId, organizationId },
       });
       if (!operation) {
@@ -119,7 +119,7 @@ export class PaymentsService {
     }
 
     if (data.bankAccountId) {
-      const bankAccount = await this.prisma.bankAccount.findFirst({
+      const bankAccount = await this.prisma.bank_accounts.findFirst({
         where: { id: data.bankAccountId, organizationId },
       });
       if (!bankAccount) {

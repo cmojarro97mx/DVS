@@ -25,7 +25,7 @@ export class NotificationsSchedulerService {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const upcomingEvents = await this.prisma.event.findMany({
+      const upcomingEvents = await this.prisma.events.findMany({
         where: {
           startDate: {
             gte: today,
@@ -36,7 +36,7 @@ export class NotificationsSchedulerService {
           },
         },
         include: {
-          user: {
+          users: {
             select: {
               id: true,
               name: true,
@@ -71,8 +71,8 @@ export class NotificationsSchedulerService {
           body = `Tienes un evento programado para hoy`;
         }
         
-        if (event.user) {
-          await this.notificationsService.sendNotificationToUser(event.user.id, {
+        if (event.users) {
+          await this.notificationsService.sendNotificationToUser(event.users.id, {
             title,
             body,
             url: '/calendar',
@@ -83,12 +83,12 @@ export class NotificationsSchedulerService {
             },
           });
 
-          await this.prisma.event.update({
+          await this.prisma.events.update({
             where: { id: event.id },
             data: { notificationSent: true },
           });
 
-          this.logger.log(`Notification sent for event: ${event.title} to user ${event.user.email}`);
+          this.logger.log(`Notification sent for event: ${event.title} to user ${event.users.email}`);
         } else {
           await this.notificationsService.sendNotificationToOrganization(event.organizationId, {
             title,
@@ -101,7 +101,7 @@ export class NotificationsSchedulerService {
             },
           });
 
-          await this.prisma.event.update({
+          await this.prisma.events.update({
             where: { id: event.id },
             data: { notificationSent: true },
           });
@@ -125,7 +125,7 @@ export class NotificationsSchedulerService {
     try {
       const now = new Date();
 
-      const overdueTasks = await this.prisma.task.findMany({
+      const overdueTasks = await this.prisma.tasks.findMany({
         where: {
           dueDate: {
             lt: now,
@@ -138,9 +138,9 @@ export class NotificationsSchedulerService {
           },
         },
         include: {
-          assignees: {
+          task_assignees: {
             include: {
-              user: {
+              users: {
                 select: {
                   id: true,
                   name: true,
@@ -153,8 +153,8 @@ export class NotificationsSchedulerService {
       });
 
       for (const task of overdueTasks) {
-        if (task.assignees && task.assignees.length > 0) {
-          const assigneeUserIds = task.assignees.map(a => a.userId);
+        if (task.task_assignees && task.task_assignees.length > 0) {
+          const assigneeUserIds = task.task_assignees.map(a => a.userId);
           await this.notificationsService.sendNotificationToUsers(assigneeUserIds, {
             title: `Tarea vencida: ${task.title}`,
             body: `Esta tarea venció el ${task.dueDate.toLocaleDateString()}`,
@@ -166,7 +166,7 @@ export class NotificationsSchedulerService {
             },
           });
 
-          await this.prisma.task.update({
+          await this.prisma.tasks.update({
             where: { id: task.id },
             data: { overdueNotificationSent: true },
           });
@@ -191,7 +191,7 @@ export class NotificationsSchedulerService {
       const now = new Date();
       const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
 
-      const pendingInvoices = await this.prisma.invoice.findMany({
+      const pendingInvoices = await this.prisma.invoices.findMany({
         where: {
           dueDate: {
             gte: now,
@@ -203,7 +203,7 @@ export class NotificationsSchedulerService {
           },
         },
         include: {
-          client: {
+          clients: {
             select: {
               name: true,
             },
@@ -216,7 +216,7 @@ export class NotificationsSchedulerService {
         
         await this.notificationsService.sendNotificationToOrganization(invoice.organizationId, {
           title: `Factura próxima a vencer: ${invoice.invoiceNumber}`,
-          body: `La factura de ${invoice.client.name} vence en ${daysUntilDue} días`,
+          body: `La factura de ${invoice.clients.name} vence en ${daysUntilDue} días`,
           url: `/invoices`,
           icon: '/icons/invoice.png',
           data: {
@@ -225,7 +225,7 @@ export class NotificationsSchedulerService {
           },
         });
 
-        await this.prisma.invoice.update({
+        await this.prisma.invoices.update({
           where: { id: invoice.id },
           data: { reminderSent: true },
         });
@@ -251,12 +251,12 @@ export class NotificationsSchedulerService {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const organizations = await this.prisma.organization.findMany({
+      const organizations = await this.prisma.organizations.findMany({
         select: { id: true },
       });
 
       for (const org of organizations) {
-        const todayEvents = await this.prisma.event.count({
+        const todayEvents = await this.prisma.events.count({
           where: {
             organizationId: org.id,
             startDate: {
@@ -266,7 +266,7 @@ export class NotificationsSchedulerService {
           },
         });
 
-        const pendingTasks = await this.prisma.task.count({
+        const pendingTasks = await this.prisma.tasks.count({
           where: {
             organizationId: org.id,
             status: {
@@ -278,7 +278,7 @@ export class NotificationsSchedulerService {
           },
         });
 
-        const activeOperations = await this.prisma.operation.count({
+        const activeOperations = await this.prisma.operations.count({
           where: {
             organizationId: org.id,
             status: {

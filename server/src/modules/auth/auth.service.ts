@@ -15,7 +15,7 @@ export class AuthService {
       throw new UnauthorizedException('Todos los campos son requeridos');
     }
 
-    const existingUser = await this.prisma.user.findUnique({
+    const existingUser = await this.prisma.users.findUnique({
       where: { email },
     });
 
@@ -29,35 +29,35 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const organization = await this.prisma.organization.create({
+    const organization = await this.prisma.organizations.create({
       data: {
         name: organizationName,
         email: email,
       },
     });
 
-    const user = await this.prisma.user.create({
+    const user = await this.prisma.users.create({
       data: {
         email,
         password: hashedPassword,
         name,
         role: 'admin',
         status: 'Active',
-        organizationId: organization.id,
+        organizations: { connect: { id: organization.id } },
       },
       include: {
-        organization: true,
+        organizations: true,
       },
     });
 
-    await this.prisma.employee.create({
+    await this.prisma.employees.create({
       data: {
         name: user.name,
         email: user.email,
         role: 'CEO',
         status: 'Active',
-        userId: user.id,
-        organizationId: organization.id,
+        users: { connect: { id: user.id } },
+        organizations: { connect: { id: organization.id } },
         hireDate: new Date(),
       },
     });
@@ -72,17 +72,17 @@ export class AuthService {
         role: user.role,
         status: user.status,
         organizationId: user.organizationId,
-        organization: user.organization,
+        organization: user.organizations,
       },
       ...tokens,
     };
   }
 
   async login(email: string, password: string) {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prisma.users.findUnique({
       where: { email },
       include: {
-        organization: true,
+        organizations: true,
       },
     });
 
@@ -100,7 +100,7 @@ export class AuthService {
       throw new UnauthorizedException('Esta cuenta está inactiva. Contacta al administrador');
     }
 
-    await this.prisma.refreshToken.deleteMany({
+    await this.prisma.refresh_tokens.deleteMany({
       where: { userId: user.id },
     });
 
@@ -116,7 +116,7 @@ export class AuthService {
         phone: user.phone,
         avatar: user.avatar,
         organizationId: user.organizationId,
-        organization: user.organization,
+        organization: user.organizations,
       },
       ...tokens,
     };
@@ -128,10 +128,10 @@ export class AuthService {
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = this.jwtService.sign(payload, { expiresIn: '30d' });
 
-    await this.prisma.refreshToken.create({
+    await this.prisma.refresh_tokens.create({
       data: {
         token: refreshToken,
-        userId,
+        users: { connect: { id: userId } },
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       },
     });
@@ -140,7 +140,7 @@ export class AuthService {
   }
 
   async validateUser(userId: string) {
-    return this.prisma.user.findUnique({
+    return this.prisma.users.findUnique({
       where: { id: userId },
       select: {
         id: true,
@@ -161,9 +161,9 @@ export class AuthService {
     try {
       const payload = this.jwtService.verify(refreshToken);
       
-      const storedToken = await this.prisma.refreshToken.findUnique({
+      const storedToken = await this.prisma.refresh_tokens.findUnique({
         where: { token: refreshToken },
-        include: { user: true },
+        include: { users: true },
       });
 
       if (!storedToken) {
@@ -171,30 +171,30 @@ export class AuthService {
       }
 
       if (new Date() > storedToken.expiresAt) {
-        await this.prisma.refreshToken.delete({ where: { id: storedToken.id } });
+        await this.prisma.refresh_tokens.delete({ where: { id: storedToken.id } });
         throw new UnauthorizedException('Refresh token expirado');
       }
 
-      if (storedToken.user.status !== 'Active') {
+      if (storedToken.users.status !== 'Active') {
         throw new UnauthorizedException('Usuario inactivo');
       }
 
-      await this.prisma.refreshToken.delete({ where: { id: storedToken.id } });
+      await this.prisma.refresh_tokens.delete({ where: { id: storedToken.id } });
 
       const tokens = await this.generateTokens(
         storedToken.userId,
-        storedToken.user.email,
-        storedToken.user.organizationId,
+        storedToken.users.email,
+        storedToken.users.organizationId,
       );
 
       return {
         user: {
-          id: storedToken.user.id,
-          email: storedToken.user.email,
-          name: storedToken.user.name,
-          role: storedToken.user.role,
-          status: storedToken.user.status,
-          organizationId: storedToken.user.organizationId,
+          id: storedToken.users.id,
+          email: storedToken.users.email,
+          name: storedToken.users.name,
+          role: storedToken.users.role,
+          status: storedToken.users.status,
+          organizationId: storedToken.users.organizationId,
         },
         ...tokens,
       };
@@ -209,7 +209,7 @@ export class AuthService {
     }
 
     try {
-      await this.prisma.refreshToken.deleteMany({
+      await this.prisma.refresh_tokens.deleteMany({
         where: { token: refreshToken },
       });
       return { message: 'Sesión cerrada exitosamente' };
