@@ -5,6 +5,7 @@ import { UsersIcon } from '../components/icons/UsersIcon';
 import { UserGroupIcon } from '../components/icons/UserGroupIcon';
 import { CogIcon } from '../components/icons/CogIcon';
 import { MicrophoneIcon } from '../components/icons/MicrophoneIcon';
+import { CpuChipIcon } from '../components/icons/CpuChipIcon';
 import { Banner } from '../components/Banner';
 import { ChevronRightIcon } from '../components/icons/ChevronRightIcon';
 
@@ -86,6 +87,12 @@ const CompanyHubPage: React.FC<CompanyHubPageProps> = ({ setActiveView }) => {
                         description="Accede a tu asistente de voz con IA para gestionar operaciones y consultas."
                         icon={MicrophoneIcon}
                         onClick={() => setActiveView('virtual-assistant')}
+                    />
+                    <HubCard
+                        title="Base de Conocimientos"
+                        description="Visualiza y gestiona el conocimiento aprendido por la IA de tu organización."
+                        icon={CpuChipIcon}
+                        onClick={() => setActiveView('knowledge-base')}
                     />
                 </CompanySection>
 
