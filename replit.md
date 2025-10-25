@@ -26,7 +26,17 @@ The frontend uses React with TypeScript and Tailwind CSS, bundled with Vite, foc
 -   **Google Workspace Integration (Multi-Account)**: Supports multiple Google accounts for Gmail and Calendar API access, including advanced email-to-operation linking via OCR and smart pattern matching.
 -   **Web Push Notifications & Notification Center**: An open-source, native browser push notification system with in-app management, event-driven triggers, and automated background tasks for reminders and summaries.
 -   **Virtual Assistant (Voice-Enabled AI)**: A voice-enabled AI assistant leveraging Google Gemini Flash API via NestJS WebSockets and Web Speech API for real-time, bidirectional voice interactions, featuring customizable settings and function calling capabilities.
--   **Task Automation System**: AI-powered task automation leveraging Google Gemini to analyze operation-linked emails and attachments, automatically creating relevant tasks and updating task statuses. Features include background processing via cron jobs (every 5 minutes), duplicate prevention logic, TaskSource enum tracking (user vs automation), and visual indicators in the UI to distinguish automation-created tasks from user-created ones.
+-   **Task Automation System (Optimized for Cost Efficiency)**: AI-powered task automation leveraging Google Gemini Flash to analyze operation-linked emails, automatically creating relevant tasks and updating task statuses. **Optimizations for reduced token consumption (70-80% reduction)**:
+    -   Smart pre-filtering: Only emails with action keywords, questions, or attachments are sent to AI
+    -   Limited context: Processes max 3 most recent emails (down from 20) and 5 most recent tasks (down from all)
+    -   Reduced timeframe: Analyzes last 3 days of emails (down from 7 days)
+    -   Concise prompts: Optimized prompt length reduced by 60%
+    -   Email body truncation: 800 characters max (down from 3000), with HTML stripped
+    -   Background processing via cron jobs (every 5 minutes)
+    -   Duplicate prevention logic
+    -   TaskSource enum tracking (user vs automation)
+    -   Visual indicators in the UI to distinguish automation-created tasks from user-created ones
+    -   Automated "Automatizado" system user (automatizado@nexxio.system) auto-assigned to all AI-generated tasks
 
 **System Design Choices:**
 -   **Modular Design**: Ensures maintainability and scalability.
