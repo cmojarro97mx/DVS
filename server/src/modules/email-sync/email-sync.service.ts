@@ -5,6 +5,7 @@ import { PrismaService } from '../../common/prisma.service';
 import { GoogleAuthService } from '../google-auth/google-auth.service';
 import { EmailStorageService } from '../email-storage/email-storage.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class EmailSyncService {
@@ -139,9 +140,10 @@ export class EmailSyncService {
 
     const emailMessage = await this.prisma.email_messages.create({
       data: {
+        id: randomUUID(),
         gmailMessageId: messageId,
         threadId: message.threadId,
-        accountId,
+        email_accounts: { connect: { id: accountId } },
         folder: this.getFolderFromLabels(message.labelIds || []),
         labels: message.labelIds || [],
         from,
@@ -163,6 +165,7 @@ export class EmailSyncService {
         hasAttachments,
         attachmentsData,
         messageId: messageIdHeader,
+        updatedAt: new Date(),
       },
     });
 
@@ -316,7 +319,7 @@ export class EmailSyncService {
           refreshToken: { not: null },
         },
         include: {
-          user: {
+          users: {
             select: {
               id: true,
               email: true,
@@ -330,7 +333,7 @@ export class EmailSyncService {
       for (const account of accounts) {
         try {
           this.logger.log(`Syncing emails for account ${account.email} (${account.id})`);
-          await this.syncEmailsForAccount(account.user.id, account.id);
+          await this.syncEmailsForAccount(account.users.id, account.id);
         } catch (error) {
           this.logger.error(
             `Failed to auto-sync emails for account ${account.email}:`,
@@ -551,17 +554,17 @@ export class EmailSyncService {
 
     try {
       await this.prisma.$transaction(async (tx) => {
-        await tx.emailMessage.deleteMany({
+        await tx.email_messages.deleteMany({
           where: {
             id: { in: messageIds },
           },
         });
 
-        const remainingCount = await tx.emailMessage.count({
+        const remainingCount = await tx.email_messages.count({
           where: { accountId },
         });
 
-        await tx.emailAccount.update({
+        await tx.email_accounts.update({
           where: { id: accountId },
           data: {
             syncedMessagesCount: remainingCount,

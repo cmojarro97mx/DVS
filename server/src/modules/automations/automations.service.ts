@@ -13,14 +13,14 @@ export class AutomationsService {
   ) {}
 
   async findAll(organizationId: string) {
-    return this.prisma.automation.findMany({
+    return this.prisma.automations.findMany({
       where: { organizationId },
       orderBy: { createdAt: 'desc' },
     });
   }
 
   async findOne(id: string, organizationId: string) {
-    const automation = await this.prisma.automation.findFirst({
+    const automation = await this.prisma.automations.findFirst({
       where: { id, organizationId },
     });
 
@@ -32,7 +32,7 @@ export class AutomationsService {
   }
 
   async create(data: any, organizationId: string) {
-    return this.prisma.automation.create({
+    return this.prisma.automations.create({
       data: {
         ...data,
         organizationId,
@@ -43,7 +43,7 @@ export class AutomationsService {
   async update(id: string, data: any, organizationId: string) {
     const automation = await this.findOne(id, organizationId);
 
-    return this.prisma.automation.update({
+    return this.prisma.automations.update({
       where: { id: automation.id },
       data,
     });
@@ -52,7 +52,7 @@ export class AutomationsService {
   async delete(id: string, organizationId: string) {
     const automation = await this.findOne(id, organizationId);
 
-    await this.prisma.automation.delete({
+    await this.prisma.automations.delete({
       where: { id: automation.id },
     });
 
@@ -62,7 +62,7 @@ export class AutomationsService {
   async toggleEnabled(id: string, organizationId: string) {
     const automation = await this.findOne(id, organizationId);
 
-    return this.prisma.automation.update({
+    return this.prisma.automations.update({
       where: { id: automation.id },
       data: { enabled: !automation.enabled },
     });
@@ -74,7 +74,7 @@ export class AutomationsService {
     
     try {
       // Buscar todas las automaciones activas
-      const automations = await this.prisma.automation.findMany({
+      const automations = await this.prisma.automations.findMany({
         where: {
           type: 'email_to_operation',
           enabled: true,
@@ -121,7 +121,7 @@ export class AutomationsService {
     // Obtener todas las cuentas de email de la organización
     const emailAccounts = await this.prisma.email_accounts.findMany({
       where: {
-        user: {
+        users: {
           organizationId,
         },
         status: 'connected',

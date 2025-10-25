@@ -59,7 +59,7 @@ export class CalendarService {
     return this.prisma.events.findMany({
       where,
       include: {
-        emailAccount: {
+        email_accounts: {
           select: {
             id: true,
             email: true,
@@ -77,7 +77,7 @@ export class CalendarService {
     return this.prisma.events.findUnique({ 
       where: { id },
       include: {
-        emailAccount: {
+        email_accounts: {
           select: {
             id: true,
             email: true,

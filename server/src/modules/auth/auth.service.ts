@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../common/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -31,18 +32,22 @@ export class AuthService {
 
     const organization = await this.prisma.organizations.create({
       data: {
+        id: randomUUID(),
         name: organizationName,
         email: email,
+        updatedAt: new Date(),
       },
     });
 
     const user = await this.prisma.users.create({
       data: {
+        id: randomUUID(),
         email,
         password: hashedPassword,
         name,
         role: 'admin',
         status: 'Active',
+        updatedAt: new Date(),
         organizations: { connect: { id: organization.id } },
       },
       include: {
@@ -52,10 +57,12 @@ export class AuthService {
 
     await this.prisma.employees.create({
       data: {
+        id: randomUUID(),
         name: user.name,
         email: user.email,
         role: 'CEO',
         status: 'Active',
+        updatedAt: new Date(),
         users: { connect: { id: user.id } },
         organizations: { connect: { id: organization.id } },
         hireDate: new Date(),
@@ -130,6 +137,7 @@ export class AuthService {
 
     await this.prisma.refresh_tokens.create({
       data: {
+        id: randomUUID(),
         token: refreshToken,
         users: { connect: { id: userId } },
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),

@@ -180,12 +180,12 @@ export class EmailSyncController {
     const message = await this.prisma.email_messages.findFirst({
       where: {
         id: messageId,
-        account: {
+        email_accounts: {
           userId: user.userId,
         },
       },
       include: {
-        account: {
+        email_accounts: {
           select: {
             email: true,
             id: true,
@@ -215,7 +215,7 @@ export class EmailSyncController {
 
     return {
       ...message,
-      accountId: message.account.id,
+      accountId: message.email_accounts.id,
       htmlBodyContent,
       htmlBodyUrl: htmlBodyContent,
       attachmentsData: attachmentsWithUrls,
@@ -229,7 +229,7 @@ export class EmailSyncController {
     const message = await this.prisma.email_messages.findFirst({
       where: {
         id: messageId,
-        account: {
+        email_accounts: {
           userId: user.userId,
         },
       },

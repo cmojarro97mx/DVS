@@ -11,12 +11,12 @@ export class FilesService {
   ) {}
 
   async findAll(organizationId: string) {
-    return this.prisma.file.findMany({
+    return this.prisma.files.findMany({
       where: {
         organizationId,
       },
       include: {
-        folder: true,
+        file_folders: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -25,13 +25,13 @@ export class FilesService {
   }
 
   async findOne(id: string, organizationId: string) {
-    const file = await this.prisma.file.findFirst({
+    const file = await this.prisma.files.findFirst({
       where: {
         id,
         organizationId,
       },
       include: {
-        folder: true,
+        file_folders: true,
       },
     });
 
@@ -80,18 +80,20 @@ export class FilesService {
     console.log('[FilesService] Backblaze upload successful. URL:', url);
 
     console.log('[FilesService] Saving file record to database...');
-    const createdFile = await this.prisma.file.create({
+    const createdFile = await this.prisma.files.create({
       data: {
+        id: randomUUID(),
         name: file.originalname,
         url,
         storageKey: key,
         size: file.size,
         mimeType: file.mimetype,
-        folderId: folderId || null,
-        organizationId,
+        updatedAt: new Date(),
+        ...(folderId ? { file_folders: { connect: { id: folderId } } } : {}),
+        organizations: { connect: { id: organizationId } },
       },
       include: {
-        folder: true,
+        file_folders: true,
       },
     });
 
@@ -104,17 +106,17 @@ export class FilesService {
 
     await this.backblaze.deleteFile(file.storageKey);
 
-    return this.prisma.file.delete({ where: { id } });
+    return this.prisma.files.delete({ where: { id } });
   }
 
   async getAllOrganizationFiles(organizationId: string) {
     console.log('[FilesService] getAllOrganizationFiles - Starting');
     
     // Get files from Files table
-    const files = await this.prisma.file.findMany({
+    const files = await this.prisma.files.findMany({
       where: { organizationId },
       include: {
-        folder: true,
+        file_folders: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -128,12 +130,12 @@ export class FilesService {
         operationId: {
           not: null,
         },
-        operation: {
+        operations: {
           organizationId,
         },
       },
       include: {
-        operation: true,
+        operations: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -270,7 +272,7 @@ export class FilesService {
         createdAt: file.createdAt,
         updatedAt: file.updatedAt,
         source: 'files' as const,
-        folder: file.folder,
+        folder: file.file_folders,
         operationReference: null,
         emailReference: null,
       })),
@@ -323,8 +325,8 @@ export class FilesService {
     // Get email files statistics
     const emailMessages = await this.prisma.email_messages.findMany({
       where: {
-        account: {
-          user: {
+        email_accounts: {
+          users: {
             organizationId,
           },
         },
