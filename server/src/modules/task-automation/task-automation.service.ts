@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../common/prisma.service';
 import { GoogleGenAI } from '@google/genai';
 import { randomUUID } from 'crypto';
+import { KnowledgeBaseService } from '../knowledge-base/knowledge-base.service';
 
 @Injectable()
 export class TaskAutomationService {
@@ -11,6 +12,7 @@ export class TaskAutomationService {
 
   constructor(
     private prisma: PrismaService,
+    private knowledgeBase: KnowledgeBaseService,
   ) {
     this.genAI = new GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY || '',
@@ -243,6 +245,29 @@ export class TaskAutomationService {
     let newTasks = 0;
     let updatedTasks = 0;
 
+    for (const email of emails.slice(0, 3)) {
+      await this.knowledgeBase.extractKnowledgeFromEmail(
+        operation.organizationId,
+        null,
+        email,
+        operation,
+      );
+    }
+
+    const emailKeywords = emails
+      .slice(0, 3)
+      .flatMap(e => e.subject.toLowerCase().split(/\s+/))
+      .filter((w: string) => w.length > 4);
+
+    const relevantKnowledge = await this.knowledgeBase.getRelevantKnowledge(
+      operation.organizationId,
+      {
+        keywords: emailKeywords.slice(0, 5),
+        operationType: operation.operationType,
+        limit: 5,
+      },
+    );
+
     const emailContents = emails.slice(0, 3).map((email) => {
       const cleanBody = email.body
         .replace(/<[^>]*>/g, '')
@@ -268,22 +293,25 @@ export class TaskAutomationService {
         priority: task.priority,
       }));
 
-    const prompt = `Analiza emails de operación logística "${operation.projectName}" (${operation.status}).
+    const knowledgeContext = relevantKnowledge.length > 0
+      ? `\nCONTEXTO APRENDIDO:\n${relevantKnowledge.map(k => `• ${k.title}: ${k.content}`).join('\n')}\n`
+      : '';
 
-TAREAS ACTUALES (últimas 5):
+    const prompt = `Analiza emails de operación "${operation.projectName}" (${operation.status}).${knowledgeContext}
+TAREAS (últimas 5):
 ${existingTasks.length > 0 ? existingTasks.map(t => `• ${t.title} [${t.status}]`).join('\n') : 'Sin tareas'}
 
-EMAILS (últimos 3 días):
+EMAILS:
 ${emailContents.map((e, i) => `${i + 1}. ${e.subject} - ${e.from} (${e.date})
 ${e.body}${e.hasAttachments ? ' [Adjuntos]' : ''}`).join('\n\n')}
 
 REGLAS:
-- Crea tareas SOLO si hay acciones claras y específicas
+- Usa el contexto aprendido para entender mejor la operación
+- Crea tareas SOLO si hay acciones claras
 - NO dupliques tareas existentes
 - Priority: High=urgente, Medium=importante, Low=normal
-- Actualiza status de tareas si el email lo indica
 
-Responde JSON puro (sin markdown):
+JSON puro (sin markdown):
 {"newTasks":[{"title":"","description":"","priority":"High|Medium|Low","dueDate":"YYYY-MM-DD o null"}],"taskStatusUpdates":[{"taskTitle":"","newStatus":"To Do|In Progress|Completed","reason":""}],"reasoning":""}`;
 
     try {
