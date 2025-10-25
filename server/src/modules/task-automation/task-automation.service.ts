@@ -251,8 +251,7 @@ Responde SOLO con un objeto JSON válido (sin markdown):
       "title": "Título conciso y claro",
       "description": "Descripción detallada con contexto del email",
       "priority": "High|Medium|Low",
-      "dueDate": "YYYY-MM-DD o null",
-      "emailSourceId": "id del email que originó esta tarea"
+      "dueDate": "YYYY-MM-DD o null"
     }
   ],
   "taskStatusUpdates": [
@@ -302,7 +301,7 @@ Si NO hay tareas que crear o actualizar, responde:
                 organizationId: operation.organizationId,
                 createdBy: 'automation' as const,
                 lastModifiedBy: 'automation' as const,
-                emailSourceId: taskData.emailSourceId || emailContents[0].id,
+                emailSourceId: null,
               },
             });
             newTasks++;
