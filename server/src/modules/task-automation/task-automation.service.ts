@@ -152,13 +152,15 @@ export class TaskAutomationService {
         email_messages: {
           where: {
             date: {
-              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+              gte: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
             },
           },
           orderBy: { date: 'desc' },
-          take: 20,
+          take: 5,
         },
         tasks: {
+          orderBy: { createdAt: 'desc' },
+          take: 10,
           include: {
             task_assignees: true,
           },
@@ -176,8 +178,15 @@ export class TaskAutomationService {
 
         if (emailsToProcess.length === 0) continue;
 
+        const relevantEmails = this.filterRelevantEmails(emailsToProcess);
+
+        if (relevantEmails.length === 0) {
+          this.logger.log(`Operación ${operation.id}: No hay emails con acciones potenciales`);
+          continue;
+        }
+
         const { newTasks, updatedTasks } = await this.analyzeEmailsAndGenerateTasks(
-          emailsToProcess,
+          relevantEmails,
           operation,
         );
 
@@ -191,85 +200,91 @@ export class TaskAutomationService {
     return { created: tasksCreated, updated: tasksUpdated };
   }
 
+  private filterRelevantEmails(emails: any[]): any[] {
+    const actionKeywords = [
+      'favor', 'necesito', 'requiero', 'urgente', 'confirmar', 'enviar', 'solicitar',
+      'cotizar', 'comprar', 'revisar', 'verificar', 'autorizar', 'aprobar', 'pagar',
+      'entregar', 'recibir', 'coordinar', 'agendar', 'programar', 'pendiente',
+      'falta', 'debe', 'tienen que', 'hay que', 'please', 'need', 'urgent', 'asap',
+      'confirm', 'send', 'request', 'quote', 'buy', 'check', 'verify', 'approve',
+      'deliver', 'receive', 'schedule', 'pending', 'missing', 'must', 'should'
+    ];
+
+    const irrelevantPatterns = [
+      /^re:.*gracias/i,
+      /^fwd:/i,
+      /newsletter/i,
+      /unsubscribe/i,
+      /notification/i,
+      /^out of office/i,
+      /^automatic reply/i,
+      /^respuesta automática/i,
+    ];
+
+    return emails.filter(email => {
+      const subjectAndBody = `${email.subject} ${email.body}`.toLowerCase();
+      
+      if (irrelevantPatterns.some(pattern => pattern.test(email.subject))) {
+        return false;
+      }
+
+      const hasActionKeyword = actionKeywords.some(keyword => 
+        subjectAndBody.includes(keyword.toLowerCase())
+      );
+
+      const hasQuestionMark = subjectAndBody.includes('?');
+      const hasAttachments = email.hasAttachments;
+
+      return hasActionKeyword || hasQuestionMark || hasAttachments;
+    });
+  }
+
   private async analyzeEmailsAndGenerateTasks(emails: any[], operation: any) {
     let newTasks = 0;
     let updatedTasks = 0;
 
-    const emailContents = emails.map((email) => ({
-      id: email.id,
-      subject: email.subject,
-      from: email.from,
-      date: email.date,
-      body: email.body.substring(0, 3000),
-      hasAttachments: email.hasAttachments || false,
-      attachmentCount: email.attachmentsData ? (email.attachmentsData as any[]).length : 0,
-    }));
+    const emailContents = emails.slice(0, 3).map((email) => {
+      const cleanBody = email.body
+        .replace(/<[^>]*>/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .substring(0, 800);
+      
+      return {
+        id: email.id,
+        subject: email.subject,
+        from: email.from.split('<')[0].trim(),
+        date: new Date(email.date).toLocaleDateString('es-MX'),
+        body: cleanBody,
+        hasAttachments: email.hasAttachments || false,
+      };
+    });
 
-    const existingTasks = operation.tasks.map((task: any) => ({
-      title: task.title,
-      description: task.description,
-      status: task.status,
-      priority: task.priority,
-    }));
+    const existingTasks = operation.tasks
+      .slice(0, 5)
+      .map((task: any) => ({
+        title: task.title,
+        status: task.status,
+        priority: task.priority,
+      }));
 
-    const prompt = `Eres un asistente experto en gestión de operaciones logísticas y comerciales.
+    const prompt = `Analiza emails de operación logística "${operation.projectName}" (${operation.status}).
 
-OPERACIÓN:
-- Nombre: ${operation.projectName}
-- Tipo: ${operation.operationType || 'N/A'}
-- Estado: ${operation.status}
-- Tracking: ${operation.bookingTracking || 'N/A'}
-- MBL/AWB: ${operation.mbl_awb || 'N/A'}
-- HBL/AWB: ${operation.hbl_awb || 'N/A'}
+TAREAS ACTUALES (últimas 5):
+${existingTasks.length > 0 ? existingTasks.map(t => `• ${t.title} [${t.status}]`).join('\n') : 'Sin tareas'}
 
-TAREAS EXISTENTES:
-${existingTasks.length > 0 ? JSON.stringify(existingTasks, null, 2) : 'No hay tareas existentes'}
+EMAILS (últimos 3 días):
+${emailContents.map((e, i) => `${i + 1}. ${e.subject} - ${e.from} (${e.date})
+${e.body}${e.hasAttachments ? ' [Adjuntos]' : ''}`).join('\n\n')}
 
-EMAILS VINCULADOS (últimos 7 días):
-${emailContents.map((e, i) => `
-Email ${i + 1}:
-- Asunto: ${e.subject}
-- De: ${e.from}
-- Fecha: ${e.date}
-- Tiene adjuntos: ${e.hasAttachments ? `Sí (${e.attachmentCount})` : 'No'}
-- Contenido: ${e.body}
-`).join('\n---\n')}
+REGLAS:
+- Crea tareas SOLO si hay acciones claras y específicas
+- NO dupliques tareas existentes
+- Priority: High=urgente, Medium=importante, Low=normal
+- Actualiza status de tareas si el email lo indica
 
-INSTRUCCIONES:
-1. Analiza SOLO el texto del asunto y cuerpo de los emails para identificar acciones necesarias
-2. Si el email menciona adjuntos, infiere las acciones basándote en el contexto del asunto y cuerpo (NO tienes acceso al contenido de los archivos adjuntos)
-3. SOLO crea tareas si son necesarias y relevantes para la operación
-4. NO crees tareas duplicadas o similares a las existentes
-5. NO crees tareas genéricas o basura
-6. Prioriza según urgencia: High (urgente), Medium (importante), Low (normal)
-7. Sugiere también actualizar el status de tareas existentes si el email indica que se completaron
-
-Responde SOLO con un objeto JSON válido (sin markdown):
-{
-  "newTasks": [
-    {
-      "title": "Título conciso y claro",
-      "description": "Descripción detallada con contexto del email",
-      "priority": "High|Medium|Low",
-      "dueDate": "YYYY-MM-DD o null"
-    }
-  ],
-  "taskStatusUpdates": [
-    {
-      "taskTitle": "título exacto de tarea existente",
-      "newStatus": "To Do|In Progress|Completed",
-      "reason": "razón del cambio basada en el email"
-    }
-  ],
-  "reasoning": "Explicación breve de las decisiones tomadas"
-}
-
-Si NO hay tareas que crear o actualizar, responde:
-{
-  "newTasks": [],
-  "taskStatusUpdates": [],
-  "reasoning": "No se encontraron acciones necesarias en los emails analizados"
-}`;
+Responde JSON puro (sin markdown):
+{"newTasks":[{"title":"","description":"","priority":"High|Medium|Low","dueDate":"YYYY-MM-DD o null"}],"taskStatusUpdates":[{"taskTitle":"","newStatus":"To Do|In Progress|Completed","reason":""}],"reasoning":""}`;
 
     try {
       const result = await this.genAI.models.generateContent({
