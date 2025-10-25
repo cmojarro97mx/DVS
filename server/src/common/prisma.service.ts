@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -51,6 +52,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         this.isConnected = true;
         this.connectionAttempts = 0;
         this.logger.log('✓ Database connected successfully');
+        
+        await this.ensureAutomatedEmployee();
+        
         return;
       } catch (error) {
         this.isConnected = false;
@@ -85,6 +89,55 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       this.logger.log('Database disconnected');
     } catch (error) {
       this.logger.error('Error disconnecting from database:', error);
+    }
+  }
+
+  private async ensureAutomatedEmployee(): Promise<void> {
+    try {
+      const AUTOMATED_EMAIL = 'automatizado@nexxio.system';
+      const AUTOMATED_USER_ID = 'automated-system-user';
+      const AUTOMATED_EMPLOYEE_ID = 'automated-system-employee';
+
+      const existingUser = await this.users.findUnique({
+        where: { id: AUTOMATED_USER_ID },
+      });
+
+      if (!existingUser) {
+        this.logger.log('Creating automated system user and employee...');
+
+        const randomPassword = randomBytes(32).toString('hex');
+
+        await this.users.create({
+          data: {
+            id: AUTOMATED_USER_ID,
+            email: AUTOMATED_EMAIL,
+            password: randomPassword,
+            name: 'Automatizado',
+            role: 'system',
+            status: 'Active',
+            updatedAt: new Date(),
+          },
+        });
+
+        await this.employees.create({
+          data: {
+            id: AUTOMATED_EMPLOYEE_ID,
+            name: 'Automatizado',
+            email: AUTOMATED_EMAIL,
+            role: 'Sistema',
+            status: 'Active',
+            department: 'Sistema',
+            updatedAt: new Date(),
+            users: {
+              connect: { id: AUTOMATED_USER_ID },
+            },
+          },
+        });
+
+        this.logger.log('✓ Automated system user and employee created successfully');
+      }
+    } catch (error) {
+      this.logger.error('Error ensuring automated employee:', error);
     }
   }
 }
