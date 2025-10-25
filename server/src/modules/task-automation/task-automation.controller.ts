@@ -1,4 +1,4 @@
-import { Controller, Get, Post, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, UseGuards, Request, HttpException, HttpStatus } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { TaskAutomationService } from './task-automation.service';
 
@@ -17,7 +17,17 @@ export class TaskAutomationController {
 
   @Post('toggle')
   async toggle(@Request() req) {
-    return this.taskAutomationService.toggleAutomation(req.user.organizationId);
+    try {
+      return await this.taskAutomationService.toggleAutomation(req.user.organizationId);
+    } catch (error) {
+      if (error.message === 'NO_EMAIL_ACCOUNTS') {
+        throw new HttpException(
+          'Debes tener al menos una cuenta de correo vinculada para activar la automatización de tareas. Ve a la configuración de Email y vincula una cuenta primero.',
+          HttpStatus.BAD_REQUEST
+        );
+      }
+      throw error;
+    }
   }
 
   @Post('process-now')

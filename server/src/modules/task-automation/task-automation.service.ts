@@ -63,6 +63,21 @@ export class TaskAutomationService {
 
   async toggleAutomation(organizationId: string) {
     const automation = await this.getAutomation(organizationId);
+    const newEnabledState = automation ? !automation.enabled : true;
+
+    if (newEnabledState) {
+      const emailAccounts = await this.prisma.emailAccount.count({
+        where: {
+          user: {
+            organizationId: organizationId,
+          },
+        },
+      });
+
+      if (emailAccounts === 0) {
+        throw new Error('NO_EMAIL_ACCOUNTS');
+      }
+    }
 
     if (!automation) {
       return this.createOrUpdateAutomation(organizationId, true);
@@ -278,9 +293,11 @@ Si NO hay tareas que crear o actualizar, responde:
 }`;
 
     try {
-      const model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-      const result = await model.generateContent(prompt);
-      const responseText = result.response.text().trim();
+      const result = await this.genAI.models.generateContent({
+        model: 'gemini-2.0-flash-exp',
+        contents: prompt,
+      });
+      const responseText = result.text.trim();
       
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {

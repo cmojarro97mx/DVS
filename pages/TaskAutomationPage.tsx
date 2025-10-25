@@ -28,8 +28,10 @@ export const TaskAutomationPage: React.FC = () => {
     try {
       const updated = await taskAutomationService.toggle();
       setConfig(updated);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error toggling task automation:', error);
+      const message = error.response?.data?.message || error.message || 'Error al cambiar el estado de la automatización';
+      alert(message);
     }
   };
 
