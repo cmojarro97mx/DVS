@@ -6,7 +6,6 @@ import { taskAutomationService, TaskAutomationConfig } from '../src/services/tas
 export const TaskAutomationPage: React.FC = () => {
   const [config, setConfig] = useState<TaskAutomationConfig | null>(null);
   const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     loadConfig();
@@ -35,19 +34,6 @@ export const TaskAutomationPage: React.FC = () => {
     }
   };
 
-  const handleProcessNow = async () => {
-    try {
-      setProcessing(true);
-      await taskAutomationService.processNow();
-      await loadConfig();
-      alert('Procesamiento iniciado. Las tareas se crearán en los próximos minutos.');
-    } catch (error) {
-      console.error('Error processing now:', error);
-      alert('Error al iniciar el procesamiento');
-    } finally {
-      setProcessing(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -127,22 +113,6 @@ export const TaskAutomationPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="pt-4 border-t border-slate-200">
-          <button
-            onClick={handleProcessNow}
-            disabled={!config?.enabled || processing}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              config?.enabled && !processing
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-            }`}
-          >
-            {processing ? 'Procesando...' : 'Procesar Ahora'}
-          </button>
-          <p className="text-xs text-slate-500 mt-2">
-            Ejecuta el análisis de emails inmediatamente sin esperar al próximo ciclo automático
-          </p>
-        </div>
       </div>
 
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
