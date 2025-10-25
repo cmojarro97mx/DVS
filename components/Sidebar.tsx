@@ -301,7 +301,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <NavItem 
                             icon={CompanyIcon} 
                             label="Empresa" 
-                            isActive={['company-hub', 'company-profile', 'employees', 'clients', 'create-client', 'client-detail'].includes(activeView)} 
+                            isActive={['company-hub', 'company-profile', 'employees', 'clients', 'create-client', 'client-detail', 'knowledge-base', 'virtual-assistant'].includes(activeView)} 
                             onClick={() => setActiveView('company-hub')} 
                             isSidebarOpen={false} 
                         />
