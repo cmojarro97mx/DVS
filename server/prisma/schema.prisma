@@ -446,6 +446,7 @@ model organizations {
   file_folders       file_folders[]
   files              files[]
   invoices           invoices[]
+  knowledge_base     knowledge_base[]
   notes              notes[]
   notifications      notifications[]
   operations         operations[]
@@ -603,6 +604,7 @@ model users {
   employees             employees?
   events                events[]
   expenses              expenses[]
+  knowledge_base        knowledge_base[]
   notes                 notes[]
   notification_settings notification_settings?
   notifications         notifications[]
@@ -632,4 +634,29 @@ model virtual_assistants {
 enum TaskSource {
   user
   automation
+}
+
+model knowledge_base {
+  id             String        @id
+  organizationId String
+  userId         String?
+  category       String
+  title          String
+  content        String
+  keywords       String[]
+  contentHash    String
+  relevanceScore Float         @default(1.0)
+  usageCount     Int           @default(0)
+  lastUsedAt     DateTime?
+  source         String
+  sourceId       String?
+  metadata       Json?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime
+  organizations  organizations @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  users          users?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, contentHash])
+  @@index([organizationId, category])
+  @@index([organizationId, relevanceScore])
 }
