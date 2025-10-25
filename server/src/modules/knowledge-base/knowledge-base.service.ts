@@ -416,4 +416,115 @@ export class KnowledgeBaseService {
       return false;
     }
   }
+
+  async getAllEntries(organizationId: string): Promise<any[]> {
+    try {
+      return await this.prisma.knowledge_base.findMany({
+        where: { organizationId },
+        orderBy: [
+          { relevanceScore: 'desc' },
+          { updatedAt: 'desc' },
+        ],
+      });
+    } catch (error) {
+      this.logger.error(`Error obteniendo entradas: ${error.message}`);
+      return [];
+    }
+  }
+
+  async processOperationsForKnowledge(): Promise<void> {
+    try {
+      const recentOperations = await this.prisma.operations.findMany({
+        where: {
+          updatedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+        },
+        select: {
+          id: true,
+          organizationId: true,
+          operationType: true,
+          operationNumber: true,
+          incoterm: true,
+          originPort: true,
+          destinationPort: true,
+          carrier: true,
+          trackingNumber: true,
+          blNumber: true,
+          description: true,
+        },
+        take: 50,
+      });
+
+      for (const op of recentOperations) {
+        if (op.trackingNumber) {
+          await this.addKnowledge(op.organizationId, null, {
+            category: 'tracking_numbers',
+            title: `Tracking: ${op.trackingNumber}`,
+            content: op.trackingNumber,
+            keywords: [op.trackingNumber],
+            source: 'operation',
+            sourceId: op.id,
+          });
+        }
+
+        if (op.blNumber) {
+          await this.addKnowledge(op.organizationId, null, {
+            category: 'tracking_numbers',
+            title: `BL: ${op.blNumber}`,
+            content: op.blNumber,
+            keywords: [op.blNumber],
+            source: 'operation',
+            sourceId: op.id,
+          });
+        }
+
+        if (op.originPort) {
+          await this.addKnowledge(op.organizationId, null, {
+            category: 'ports',
+            title: `Puerto Origen: ${op.originPort}`,
+            content: op.originPort,
+            keywords: [op.originPort.split(',')[0].trim()],
+            source: 'operation',
+            sourceId: op.id,
+          });
+        }
+
+        if (op.destinationPort) {
+          await this.addKnowledge(op.organizationId, null, {
+            category: 'ports',
+            title: `Puerto Destino: ${op.destinationPort}`,
+            content: op.destinationPort,
+            keywords: [op.destinationPort.split(',')[0].trim()],
+            source: 'operation',
+            sourceId: op.id,
+          });
+        }
+
+        if (op.carrier) {
+          await this.addKnowledge(op.organizationId, null, {
+            category: 'carriers',
+            title: `Naviera: ${op.carrier}`,
+            content: op.carrier,
+            keywords: [op.carrier],
+            source: 'operation',
+            sourceId: op.id,
+          });
+        }
+
+        if (op.incoterm) {
+          await this.addKnowledge(op.organizationId, null, {
+            category: 'incoterms',
+            title: `Incoterm: ${op.incoterm}`,
+            content: op.incoterm,
+            keywords: [op.incoterm],
+            source: 'operation',
+            sourceId: op.id,
+          });
+        }
+      }
+
+      this.logger.log(`🤖 Procesamiento background: ${recentOperations.length} operaciones analizadas`);
+    } catch (error) {
+      this.logger.error(`Error en procesamiento background: ${error.message}`);
+    }
+  }
 }
