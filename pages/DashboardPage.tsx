@@ -38,6 +38,7 @@ import { employeesService } from '../src/services/employeesService';
 import { clientsService } from '../src/services/clientsService';
 import { notesService } from '../src/services/notesService';
 import { tasksService } from '../src/services/tasksService';
+import { operationsService } from '../src/services/operationsService';
 import { 
     initialProjects, 
     initialClients, 
