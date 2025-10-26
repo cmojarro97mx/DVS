@@ -15,6 +15,14 @@ Nexxio is an AI-driven logistics and CRM platform designed to optimize supply ch
     - Added async/await error handling with user-friendly error messages
     - Files now properly persist to Backblaze B2 storage with proper metadata (id, name, url, size, mimeType)
     - **Note**: Folders remain client-side only (not persisted to backend) for now
+-   **Operations Notes - Critical Fixes & Backblaze Integration**:
+    - **Fixed Note Filtering**: Changed from incorrect ID prefix matching `n.id.startsWith()` to proper `operationId` filtering in DashboardPage
+    - **Fixed Note Sorting**: Changed from non-existent `timestamp` field to `createdAt` field with proper date handling
+    - **Fixed Note Interface**: Updated TypeScript interface to include all database fields (`author`, `attachmentUrl`, `attachmentName`, etc.)
+    - **Backblaze File Upload Integration**: Notes with attachments now properly upload files to Backblaze B2 storage before creating the note
+    - **Loading States**: Added professional UX feedback with spinner and "Guardando..." text during file upload and note creation
+    - **Display Attachments**: Notes with attachments now display download links with proper file names and icons
+    - **Result**: Notes now display correctly, attachments persist to Backblaze, and users get clear feedback during the save process
 -   **Clients Module - Multi-Tenancy Security & UX Improvements**: 
     - Applied proper multi-tenancy pattern to clients controller/service using `@Request()` decorator and `organizationId` filtering on all operations (create, read, update, delete)
     - Enhanced CreateClientPage with professional UX feedback:
