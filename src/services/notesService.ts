@@ -2,14 +2,19 @@ import { apiService } from './api';
 
 export interface Note {
   id: string;
-  title: string;
+  title?: string;
   content: string;
+  author: string;
   category?: string;
   tags?: string[];
-  isPinned: boolean;
+  isPinned?: boolean;
   operationId?: string;
+  userId?: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
   createdAt?: string;
   updatedAt?: string;
+  organizationId?: string;
 }
 
 export interface CreateNoteData {
