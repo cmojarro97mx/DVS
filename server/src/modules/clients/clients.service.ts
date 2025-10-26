@@ -5,12 +5,16 @@ import { PrismaService } from '../../common/prisma.service';
 export class ClientsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll() {
-    return this.prisma.clients.findMany();
+  async findAll(organizationId: string) {
+    return this.prisma.clients.findMany({
+      where: { organizationId },
+    });
   }
 
-  async findOne(id: string) {
-    return this.prisma.clients.findUnique({ where: { id } });
+  async findOne(id: string, organizationId: string) {
+    return this.prisma.clients.findUnique({
+      where: { id, organizationId },
+    });
   }
 
   private mapClientData(data: any) {
@@ -55,16 +59,21 @@ export class ClientsService {
     return this.prisma.clients.create({ data: mappedData });
   }
 
-  async update(id: string, data: any) {
+  async update(id: string, data: any, organizationId: string) {
     const mappedData = this.mapClientData(data);
     delete mappedData.organization;
     if (data.organizationId !== undefined) {
       mappedData.organizationId = data.organizationId;
     }
-    return this.prisma.clients.update({ where: { id }, data: mappedData });
+    return this.prisma.clients.update({
+      where: { id, organizationId },
+      data: mappedData,
+    });
   }
 
-  async remove(id: string) {
-    return this.prisma.clients.delete({ where: { id } });
+  async remove(id: string, organizationId: string) {
+    return this.prisma.clients.delete({
+      where: { id, organizationId },
+    });
   }
 }

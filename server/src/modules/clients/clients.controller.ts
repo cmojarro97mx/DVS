@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, Request } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { ClientsService } from './clients.service';
 
@@ -8,27 +8,30 @@ export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {}
 
   @Get()
-  findAll() {
-    return this.clientsService.findAll();
+  findAll(@Request() req: any) {
+    return this.clientsService.findAll(req.user.organizationId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.clientsService.findOne(id);
+  findOne(@Param('id') id: string, @Request() req: any) {
+    return this.clientsService.findOne(id, req.user.organizationId);
   }
 
   @Post()
-  create(@Body() createData: any) {
-    return this.clientsService.create(createData);
+  create(@Body() createData: any, @Request() req: any) {
+    return this.clientsService.create({
+      ...createData,
+      organizationId: req.user.organizationId,
+    });
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() updateData: any) {
-    return this.clientsService.update(id, updateData);
+  update(@Param('id') id: string, @Body() updateData: any, @Request() req: any) {
+    return this.clientsService.update(id, updateData, req.user.organizationId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.clientsService.remove(id);
+  remove(@Param('id') id: string, @Request() req: any) {
+    return this.clientsService.remove(id, req.user.organizationId);
   }
 }
