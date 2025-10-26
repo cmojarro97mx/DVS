@@ -3,6 +3,11 @@
 ## Overview
 Nexxio is an AI-driven logistics and CRM platform designed to optimize supply chain management, customer relationships, and financial processes. It provides a comprehensive solution for businesses to streamline operations, enhance client interactions, and maintain financial oversight.
 
+## Recent Changes (October 26, 2025)
+-   **Quotations Module - Multi-Tenancy Security Fix**: Added missing `organizationId` field to quotations model in Prisma schema and updated controller/service to use proper multi-tenancy with `@Request()` decorator pattern
+-   **Professional UI Design Consistency**: Verified and maintained professional flat design patterns across Quotations, Invoices, Expenses, and Bank Accounts modules with consistent styling, clean layouts, and user-friendly interfaces
+-   **Database Migration**: Successfully applied Prisma schema changes to add organizationId field and bidirectional relation between quotations and organizations models
+
 ## User Preferences
 I prefer detailed explanations. Ask before making major changes. I want iterative development. I prefer simple language. I like functional programming. Do not make changes to the folder Z. Do not make changes to the file Y.
 
