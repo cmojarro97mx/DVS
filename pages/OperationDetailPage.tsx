@@ -157,12 +157,14 @@ const FileTypeIcon: React.FC<{ fileType: string, className?: string }> = ({ file
 const ProjectDocuments: React.FC<{
     documents: FileSystemItem[];
     onUpdateDocuments: (files: FileSystemItem[]) => void;
-}> = ({ documents, onUpdateDocuments }) => {
+    operationId: string;
+}> = ({ documents, onUpdateDocuments, operationId }) => {
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [isNewFolderModalOpen, setIsNewFolderModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<FileSystemItem | null>(null);
     const [renamingItemId, setRenamingItemId] = useState<string | null>(null);
     const [isDragOver, setIsDragOver] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const currentPath = useMemo(() => {
@@ -198,13 +200,32 @@ const ProjectDocuments: React.FC<{
         onUpdateDocuments([...documents, newFolder]);
     };
 
-    const handleUploadFiles = (files: FileList) => {
-        if (!files) return;
-        const newFiles: FileSystemItem[] = Array.from(files).map(file => ({
-            id: `file-${Date.now()}-${Math.random()}`, name: file.name, type: 'file', parentId: currentFolderId,
-            file: file, preview: URL.createObjectURL(file),
-        }));
-        onUpdateDocuments([...documents, ...newFiles]);
+    const handleUploadFiles = async (files: FileList) => {
+        if (!files || files.length === 0) return;
+        
+        setIsUploading(true);
+        try {
+            const uploadPromises = Array.from(files).map(async (file) => {
+                const uploadedDoc = await operationsService.uploadDocument(operationId, file);
+                return {
+                    id: uploadedDoc.id,
+                    name: uploadedDoc.name,
+                    type: 'file' as const,
+                    parentId: currentFolderId,
+                    url: uploadedDoc.url,
+                    size: uploadedDoc.size,
+                    mimeType: uploadedDoc.mimeType,
+                };
+            });
+            
+            const uploadedFiles = await Promise.all(uploadPromises);
+            onUpdateDocuments([...documents, ...uploadedFiles]);
+        } catch (error) {
+            console.error('Error uploading files:', error);
+            alert('Error al subir archivos. Por favor, intenta nuevamente.');
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     const handleDeleteItem = () => {
@@ -237,7 +258,15 @@ const ProjectDocuments: React.FC<{
     };
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 relative">
+            {isUploading && (
+                <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-50 rounded-xl">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-3"></div>
+                        <p className="text-sm font-medium text-gray-700">Subiendo archivos a Backblaze...</p>
+                    </div>
+                </div>
+            )}
             <div className="flex justify-between items-center mb-4">
                 <nav className="flex items-center text-sm font-medium text-gray-500">
                     {currentPath.map((part, index) => (
@@ -248,9 +277,12 @@ const ProjectDocuments: React.FC<{
                     ))}
                 </nav>
                 <div className="flex items-center gap-2">
-                    <button onClick={() => setIsNewFolderModalOpen(true)} className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200"><FolderPlusIcon className="w-4 h-4" /> New Folder</button>
-                    <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"><UploadCloudIcon className="w-4 h-4" /> Upload</button>
-                    <input type="file" multiple ref={fileInputRef} onChange={e => e.target.files && handleUploadFiles(e.target.files)} className="hidden" />
+                    <button onClick={() => setIsNewFolderModalOpen(true)} className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200" disabled={isUploading}><FolderPlusIcon className="w-4 h-4" /> New Folder</button>
+                    <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled={isUploading}>
+                        {isUploading ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : <UploadCloudIcon className="w-4 h-4" />}
+                        {isUploading ? 'Subiendo...' : 'Upload'}
+                    </button>
+                    <input type="file" multiple ref={fileInputRef} onChange={e => e.target.files && handleUploadFiles(e.target.files)} className="hidden" disabled={isUploading} />
                 </div>
             </div>
             <div className={`min-h-[300px] rounded-lg p-2 transition-colors ${isDragOver ? 'bg-blue-50 border-2 border-dashed border-blue-400' : ''}`} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
@@ -1442,7 +1474,7 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
               </div>
             </div>
           )}
-        {activeTab === 'documents' && <ProjectDocuments documents={documents} onUpdateDocuments={onUpdateDocuments} />}
+        {activeTab === 'documents' && <ProjectDocuments documents={documents} onUpdateDocuments={onUpdateDocuments} operationId={project.id} />}
         {activeTab === 'notes' && <ProjectNotes notes={notes} onAddNote={onAddNote} onUpdateNote={onUpdateNote} onDeleteNote={onDeleteNote} />}
         {activeTab === 'members' && <ProjectMembers projectAssignees={project.assignees} allTeamMembers={teamMembers} onUpdateAssignees={onUpdateAssignees} />}
         {activeTab === 'expenses' && <ExpensesManager 
