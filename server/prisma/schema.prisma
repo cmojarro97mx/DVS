@@ -17,7 +17,7 @@ model automations {
   actions        Json?
   conditions     Json?
   createdAt      DateTime      @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   organizationId String
   lastRunAt      DateTime?
   tasksCreated   Int           @default(0)
@@ -34,7 +34,7 @@ model bank_accounts {
   balance           Float               @default(0)
   organizationId    String?
   createdAt         DateTime            @default(now())
-  updatedAt         DateTime
+  updatedAt      DateTime @updatedAt
   organizations     organizations?      @relation(fields: [organizationId], references: [id])
   bank_transactions bank_transactions[]
   expenses          expenses[]
@@ -52,7 +52,7 @@ model bank_transactions {
   reconciled     Boolean       @default(false)
   reconciledWith String?
   createdAt      DateTime      @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   bank_accounts  bank_accounts @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
 }
 
@@ -73,7 +73,7 @@ model clients {
   billingEmail   String?
   organizationId String?
   createdAt      DateTime       @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   organizations  organizations? @relation(fields: [organizationId], references: [id])
   invoices       invoices[]
   operations     operations[]
@@ -90,7 +90,7 @@ model documents {
   parentId    String?
   operationId String?
   createdAt   DateTime    @default(now())
-  updatedAt   DateTime
+  updatedAt      DateTime @updatedAt
   operations  operations? @relation(fields: [operationId], references: [id], onDelete: Cascade)
 }
 
@@ -105,7 +105,7 @@ model email_accounts {
   refreshToken            String?
   tokenExpiry             DateTime?
   createdAt               DateTime         @default(now())
-  updatedAt               DateTime
+  updatedAt      DateTime @updatedAt
   lastCalendarSync        DateTime?
   lastEmailSync           DateTime?
   userId                  String
@@ -142,7 +142,7 @@ model email_messages {
   starred         Boolean        @default(false)
   messageId       String?
   createdAt       DateTime       @default(now())
-  updatedAt       DateTime
+  updatedAt      DateTime @updatedAt
   attachmentsData Json?
   attachmentsKey  String?
   gmailMessageId  String
@@ -177,7 +177,7 @@ model employees {
   department     String?
   salary         Float?
   createdAt      DateTime       @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   organizationId String?
   userId         String?        @unique
   organizations  organizations? @relation(fields: [organizationId], references: [id])
@@ -195,7 +195,7 @@ model events {
   color            String?
   allDay           Boolean         @default(false)
   createdAt        DateTime        @default(now())
-  updatedAt        DateTime
+  updatedAt      DateTime @updatedAt
   googleCalendarId String?
   googleEventId    String?
   organizationId   String?
@@ -231,7 +231,7 @@ model expenses {
   operationId     String?
   bankAccountId   String?
   createdAt       DateTime       @default(now())
-  updatedAt       DateTime
+  updatedAt      DateTime @updatedAt
   organizationId  String?
   bank_accounts   bank_accounts? @relation(fields: [bankAccountId], references: [id])
   operations      operations?    @relation(fields: [operationId], references: [id])
@@ -245,7 +245,7 @@ model file_folders {
   parentId       String?
   type           String        @default("folder")
   createdAt      DateTime      @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   organizationId String
   organizations  organizations @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   files          files[]
@@ -260,7 +260,7 @@ model files {
   folderId       String?
   preview        String?
   createdAt      DateTime      @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   organizationId String
   storageKey     String
   file_folders   file_folders? @relation(fields: [folderId], references: [id])
@@ -286,7 +286,7 @@ model invoices {
   bankAccountId  String?
   items          Json
   createdAt      DateTime       @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   organizationId String?
   reminderSent   Boolean?       @default(false)
   bank_accounts  bank_accounts? @relation(fields: [bankAccountId], references: [id])
@@ -307,7 +307,7 @@ model leads {
   notes          String?
   estimatedValue Float?
   createdAt      DateTime @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
 }
 
 model notes {
@@ -319,7 +319,7 @@ model notes {
   attachmentUrl  String?
   attachmentName String?
   createdAt      DateTime       @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   organizationId String?
   operations     operations?    @relation(fields: [operationId], references: [id], onDelete: Cascade)
   organizations  organizations? @relation(fields: [organizationId], references: [id])
@@ -338,7 +338,7 @@ model notification_settings {
   calendarEnabled   Boolean  @default(true)
   emailsEnabled     Boolean  @default(true)
   createdAt         DateTime @default(now())
-  updatedAt         DateTime
+  updatedAt      DateTime @updatedAt
   users             users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -409,7 +409,7 @@ model operations {
   organizationId      String?
   createdById         String?
   createdAt           DateTime              @default(now())
-  updatedAt           DateTime
+  updatedAt      DateTime @updatedAt
   commissionHistory   Json?
   documents           documents[]
   email_messages      email_messages[]
@@ -436,7 +436,7 @@ model organizations {
   logo               String?
   website            String?
   createdAt          DateTime             @default(now())
-  updatedAt          DateTime
+  updatedAt      DateTime @updatedAt
   automations        automations[]
   bank_accounts      bank_accounts[]
   clients            clients[]
@@ -470,7 +470,7 @@ model payments {
   operationId    String?
   bankAccountId  String?
   createdAt      DateTime       @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   organizationId String?
   bank_accounts  bank_accounts? @relation(fields: [bankAccountId], references: [id])
   invoices       invoices?      @relation(fields: [invoiceId], references: [id])
@@ -510,7 +510,7 @@ model quotations {
   termsConditions String?
   organizationId  String?
   createdAt       DateTime       @default(now())
-  updatedAt       DateTime
+  updatedAt      DateTime @updatedAt
   clients         clients?       @relation(fields: [clientId], references: [id])
   organizations   organizations? @relation(fields: [organizationId], references: [id])
 }
@@ -528,7 +528,7 @@ model reconciliation_sessions {
   reconciledAmount       Float    @default(0)
   reconciliationData     Json?
   createdAt              DateTime @default(now())
-  updatedAt              DateTime
+  updatedAt      DateTime @updatedAt
 }
 
 model refresh_tokens {
@@ -554,7 +554,7 @@ model suppliers {
   notes               String?
   organizationId      String?
   createdAt           DateTime              @default(now())
-  updatedAt           DateTime
+  updatedAt      DateTime @updatedAt
   operation_suppliers operation_suppliers[]
   organizations       organizations?        @relation(fields: [organizationId], references: [id])
 }
@@ -580,7 +580,7 @@ model tasks {
   operationId             String?
   organizationId          String?
   createdAt               DateTime         @default(now())
-  updatedAt               DateTime
+  updatedAt      DateTime @updatedAt
   overdueNotificationSent Boolean          @default(false)
   emailSourceId           String?
   createdBy               TaskSource       @default(user)
@@ -602,7 +602,7 @@ model users {
   avatar                String?
   organizationId        String?
   createdAt             DateTime               @default(now())
-  updatedAt             DateTime
+  updatedAt      DateTime @updatedAt
   email_accounts        email_accounts[]
   employees             employees?
   events                events[]
@@ -630,7 +630,7 @@ model virtual_assistants {
   lastUsedAt     DateTime?
   usageCount     Int           @default(0)
   createdAt      DateTime      @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   organizations  organizations @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
@@ -655,7 +655,7 @@ model knowledge_base {
   sourceId       String?
   metadata       Json?
   createdAt      DateTime      @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   organizations  organizations @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   users          users?        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
