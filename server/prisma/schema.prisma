@@ -451,6 +451,7 @@ model organizations {
   notifications      notifications[]
   operations         operations[]
   payments           payments[]
+  quotations         quotations[]
   suppliers          suppliers[]
   tasks              tasks[]
   users              users[]
@@ -491,25 +492,27 @@ model push_subscriptions {
 }
 
 model quotations {
-  id              String    @id @default(uuid())
-  quotationNumber String    @unique
-  quotationDate   DateTime  @default(now())
+  id              String         @id @default(uuid())
+  quotationNumber String         @unique
+  quotationDate   DateTime       @default(now())
   validUntil      DateTime?
   clientId        String?
   clientName      String?
   clientEmail     String?
   clientCompany   String?
-  status          String    @default("Draft")
-  currency        String    @default("USD")
+  status          String         @default("Draft")
+  currency        String         @default("USD")
   items           Json
   subtotal        Float
-  tax             Float     @default(0)
+  tax             Float          @default(0)
   total           Float
   notes           String?
   termsConditions String?
-  createdAt       DateTime  @default(now())
+  organizationId  String?
+  createdAt       DateTime       @default(now())
   updatedAt       DateTime
-  clients         clients?  @relation(fields: [clientId], references: [id])
+  clients         clients?       @relation(fields: [clientId], references: [id])
+  organizations   organizations? @relation(fields: [organizationId], references: [id])
 }
 
 model reconciliation_sessions {

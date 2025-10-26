@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, Request } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { QuotationsService } from './quotations.service';
 
@@ -8,27 +8,27 @@ export class QuotationsController {
   constructor(private readonly quotationsService: QuotationsService) {}
 
   @Get()
-  findAll() {
-    return this.quotationsService.findAll();
+  findAll(@Request() req) {
+    return this.quotationsService.findAll(req.user.organizationId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.quotationsService.findOne(id);
+  findOne(@Param('id') id: string, @Request() req) {
+    return this.quotationsService.findOne(id, req.user.organizationId);
   }
 
   @Post()
-  create(@Body() createData: any) {
-    return this.quotationsService.create(createData);
+  create(@Body() createData: any, @Request() req) {
+    return this.quotationsService.create(createData, req.user.organizationId);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() updateData: any) {
-    return this.quotationsService.update(id, updateData);
+  update(@Param('id') id: string, @Body() updateData: any, @Request() req) {
+    return this.quotationsService.update(id, updateData, req.user.organizationId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.quotationsService.remove(id);
+  remove(@Param('id') id: string, @Request() req) {
+    return this.quotationsService.remove(id, req.user.organizationId);
   }
 }
