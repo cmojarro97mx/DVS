@@ -8,7 +8,7 @@ datasource db {
 }
 
 model automations {
-  id             String        @id
+  id             String        @id @default(uuid())
   name           String
   description    String?
   type           String
@@ -26,7 +26,7 @@ model automations {
 }
 
 model bank_accounts {
-  id                String              @id
+  id                String              @id @default(uuid())
   accountName       String
   bankName          String
   accountNumber     String
@@ -43,7 +43,7 @@ model bank_accounts {
 }
 
 model bank_transactions {
-  id             String        @id
+  id             String        @id @default(uuid())
   date           DateTime
   description    String
   amount         Float
@@ -57,7 +57,7 @@ model bank_transactions {
 }
 
 model clients {
-  id             String         @id
+  id             String         @id @default(uuid())
   name           String
   contactPerson  String?
   email          String?
@@ -81,7 +81,7 @@ model clients {
 }
 
 model documents {
-  id          String      @id
+  id          String      @id @default(uuid())
   name        String
   type        String      @default("file")
   url         String?
@@ -95,7 +95,7 @@ model documents {
 }
 
 model email_accounts {
-  id                      String           @id
+  id                      String           @id @default(uuid())
   email                   String
   provider                String
   status                  String           @default("connected")
@@ -125,7 +125,7 @@ model email_accounts {
 }
 
 model email_messages {
-  id              String         @id
+  id              String         @id @default(uuid())
   threadId        String?
   accountId       String
   folder          String         @default("inbox")
@@ -167,7 +167,7 @@ model email_messages {
 }
 
 model employees {
-  id             String         @id
+  id             String         @id @default(uuid())
   name           String
   email          String         @unique
   role           String
@@ -185,7 +185,7 @@ model employees {
 }
 
 model events {
-  id               String          @id
+  id               String          @id @default(uuid())
   title            String
   description      String?
   startDate        DateTime
@@ -216,7 +216,7 @@ model events {
 }
 
 model expenses {
-  id              String         @id
+  id              String         @id @default(uuid())
   itemName        String
   currency        String         @default("USD")
   exchangeRate    Float          @default(1)
@@ -240,7 +240,7 @@ model expenses {
 }
 
 model file_folders {
-  id             String        @id
+  id             String        @id @default(uuid())
   name           String
   parentId       String?
   type           String        @default("folder")
@@ -252,7 +252,7 @@ model file_folders {
 }
 
 model files {
-  id             String        @id
+  id             String        @id @default(uuid())
   name           String
   url            String
   size           Int
@@ -268,7 +268,7 @@ model files {
 }
 
 model invoices {
-  id             String         @id
+  id             String         @id @default(uuid())
   invoiceNumber  String         @unique
   invoiceDate    DateTime
   dueDate        DateTime
@@ -297,7 +297,7 @@ model invoices {
 }
 
 model leads {
-  id             String   @id
+  id             String   @id @default(uuid())
   name           String
   email          String?
   phone          String?
@@ -311,7 +311,7 @@ model leads {
 }
 
 model notes {
-  id             String         @id
+  id             String         @id @default(uuid())
   content        String
   author         String
   operationId    String?
@@ -327,7 +327,7 @@ model notes {
 }
 
 model notification_settings {
-  id                String   @id
+  id                String   @id @default(uuid())
   userId            String   @unique
   pushEnabled       Boolean  @default(true)
   operationsEnabled Boolean  @default(true)
@@ -343,7 +343,7 @@ model notification_settings {
 }
 
 model notifications {
-  id             String         @id
+  id             String         @id @default(uuid())
   userId         String
   organizationId String?
   title          String
@@ -362,7 +362,7 @@ model notifications {
 }
 
 model operation_assignees {
-  id          String     @id
+  id          String     @id @default(uuid())
   operationId String
   userId      String
   createdAt   DateTime   @default(now())
@@ -373,7 +373,7 @@ model operation_assignees {
 }
 
 model operation_suppliers {
-  id          String     @id
+  id          String     @id @default(uuid())
   operationId String
   supplierId  String
   createdAt   DateTime   @default(now())
@@ -384,7 +384,7 @@ model operation_suppliers {
 }
 
 model operations {
-  id                  String                @id
+  id                  String                @id @default(uuid())
   projectName         String
   projectCategory     String?
   startDate           DateTime?
@@ -426,7 +426,7 @@ model operations {
 }
 
 model organizations {
-  id                 String               @id
+  id                 String               @id @default(uuid())
   name               String
   rfc                String?
   taxRegime          String?
@@ -458,7 +458,7 @@ model organizations {
 }
 
 model payments {
-  id             String         @id
+  id             String         @id @default(uuid())
   paymentDate    DateTime
   amount         Float
   currency       String         @default("USD")
@@ -478,7 +478,7 @@ model payments {
 }
 
 model push_subscriptions {
-  id         String   @id
+  id         String   @id @default(uuid())
   userId     String
   endpoint   String   @unique
   keys       Json
@@ -491,7 +491,7 @@ model push_subscriptions {
 }
 
 model quotations {
-  id              String    @id
+  id              String    @id @default(uuid())
   quotationNumber String    @unique
   quotationDate   DateTime  @default(now())
   validUntil      DateTime?
@@ -513,7 +513,7 @@ model quotations {
 }
 
 model reconciliation_sessions {
-  id                     String   @id
+  id                     String   @id @default(uuid())
   date                   DateTime @default(now())
   status                 String   @default("in_progress")
   reconciliationMonth    DateTime
@@ -529,7 +529,7 @@ model reconciliation_sessions {
 }
 
 model refresh_tokens {
-  id        String   @id
+  id        String   @id @default(uuid())
   token     String   @unique
   userId    String
   expiresAt DateTime
@@ -538,7 +538,7 @@ model refresh_tokens {
 }
 
 model suppliers {
-  id                  String                @id
+  id                  String                @id @default(uuid())
   name                String
   contactPerson       String?
   email               String?
@@ -557,7 +557,7 @@ model suppliers {
 }
 
 model task_assignees {
-  id        String   @id
+  id        String   @id @default(uuid())
   taskId    String
   userId    String
   createdAt DateTime @default(now())
@@ -568,7 +568,7 @@ model task_assignees {
 }
 
 model tasks {
-  id                      String           @id
+  id                      String           @id @default(uuid())
   title                   String
   description             String?
   priority                String           @default("Medium")
@@ -589,7 +589,7 @@ model tasks {
 }
 
 model users {
-  id                    String                 @id
+  id                    String                 @id @default(uuid())
   email                 String                 @unique
   password              String
   name                  String
@@ -617,7 +617,7 @@ model users {
 }
 
 model virtual_assistants {
-  id             String        @id
+  id             String        @id @default(uuid())
   token          String        @unique
   name           String        @default("Asistente Virtual")
   enabled        Boolean       @default(true)
@@ -637,7 +637,7 @@ enum TaskSource {
 }
 
 model knowledge_base {
-  id             String        @id
+  id             String        @id @default(uuid())
   organizationId String
   userId         String?
   category       String
