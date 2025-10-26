@@ -8,6 +8,13 @@ Nexxio is an AI-driven logistics and CRM platform designed to optimize supply ch
     1. Added `@updatedAt` decorator to all `updatedAt` fields in Prisma schema (32 models affected) - enables automatic timestamp management by Prisma
     2. Configured UUID auto-generation for all table `id` columns (32 tables) via `ALTER TABLE ... SET DEFAULT gen_random_uuid()::text` - eliminates "null value in column id" errors
     **Result**: All form submissions now work correctly across the entire platform
+-   **Operations Documents Upload - Backblaze Integration Fixed**: Resolved critical issue where documents in operations were only updating local state without actually uploading to Backblaze:
+    - Modified `ProjectDocuments` component to call `operationsService.uploadDocument()` API for each file
+    - Added professional UX feedback: full-screen loading overlay with spinner and "Subiendo archivos a Backblaze..." message
+    - Disabled upload buttons during upload to prevent duplicate submissions
+    - Added async/await error handling with user-friendly error messages
+    - Files now properly persist to Backblaze B2 storage with proper metadata (id, name, url, size, mimeType)
+    - **Note**: Folders remain client-side only (not persisted to backend) for now
 -   **Clients Module - Multi-Tenancy Security & UX Improvements**: 
     - Applied proper multi-tenancy pattern to clients controller/service using `@Request()` decorator and `organizationId` filtering on all operations (create, read, update, delete)
     - Enhanced CreateClientPage with professional UX feedback:
