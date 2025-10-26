@@ -8,6 +8,15 @@ Nexxio is an AI-driven logistics and CRM platform designed to optimize supply ch
     1. Added `@updatedAt` decorator to all `updatedAt` fields in Prisma schema (32 models affected) - enables automatic timestamp management by Prisma
     2. Configured UUID auto-generation for all table `id` columns (32 tables) via `ALTER TABLE ... SET DEFAULT gen_random_uuid()::text` - eliminates "null value in column id" errors
     **Result**: All form submissions now work correctly across the entire platform
+-   **Clients Module - Multi-Tenancy Security & UX Improvements**: 
+    - Applied proper multi-tenancy pattern to clients controller/service using `@Request()` decorator and `organizationId` filtering on all operations (create, read, update, delete)
+    - Enhanced CreateClientPage with professional UX feedback:
+        - Full-screen loading overlay with spinner and "Guardando cliente..." message
+        - Success banner with green checkmark: "¡Cliente creado exitosamente!"
+        - Improved error display with red banner and error icon
+        - Button states: Shows inline spinner during save, disables button to prevent duplicates, displays "Guardando..." → "¡Guardado!" text progression
+        - Added protection against multiple submissions with early return if already saving
+        - 1-second success message display before auto-closing form
 -   **Quotations Module - Multi-Tenancy Security Fix**: Added missing `organizationId` field to quotations model in Prisma schema and updated controller/service to use proper multi-tenancy with `@Request()` decorator pattern
 -   **Professional UI Design Consistency**: Verified and maintained professional flat design patterns across Quotations, Invoices, Expenses, and Bank Accounts modules with consistent styling, clean layouts, and user-friendly interfaces
 
