@@ -24,6 +24,8 @@ export interface CreateNoteData {
   tags?: string[];
   isPinned?: boolean;
   operationId?: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
 }
 
 export interface UpdateNoteData extends Partial<CreateNoteData> {}

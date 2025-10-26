@@ -344,6 +344,9 @@ const ProjectNotes: React.FC<{
                 setNewNoteContent('');
                 setAttachment(null);
                 if(fileInputRef.current) fileInputRef.current.value = "";
+            } catch (error) {
+                console.error('Error en handleAddClick:', error);
+                alert(`Error al guardar la nota: ${error instanceof Error ? error.message : 'Error desconocido'}`);
             } finally {
                 setIsSaving(false);
             }
