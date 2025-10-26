@@ -322,6 +322,7 @@ const ProjectNotes: React.FC<{
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [activeMenu, setActiveMenu] = useState<string | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -333,12 +334,19 @@ const ProjectNotes: React.FC<{
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const handleAddClick = () => {
+    const handleAddClick = async () => {
+        if (isSaving) return;
+        
         if (newNoteContent.trim() || attachment) {
-            onAddNote(newNoteContent, attachment || undefined);
-            setNewNoteContent('');
-            setAttachment(null);
-            if(fileInputRef.current) fileInputRef.current.value = "";
+            setIsSaving(true);
+            try {
+                await onAddNote(newNoteContent, attachment || undefined);
+                setNewNoteContent('');
+                setAttachment(null);
+                if(fileInputRef.current) fileInputRef.current.value = "";
+            } finally {
+                setIsSaving(false);
+            }
         }
     };
 
@@ -407,10 +415,11 @@ const ProjectNotes: React.FC<{
                             <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
                             <button 
                                 onClick={handleAddClick} 
-                                className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors flex items-center"
-                                disabled={!newNoteContent.trim() && !attachment}
+                                className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                                disabled={(!newNoteContent.trim() && !attachment) || isSaving}
                             >
-                                Add Note
+                                {isSaving && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+                                {isSaving ? 'Guardando...' : 'Add Note'}
                             </button>
                         </div>
                     </div>
@@ -463,17 +472,11 @@ const ProjectNotes: React.FC<{
                                     ) : (
                                         <div className="mt-2 text-sm text-gray-700 space-y-3">
                                             {note.content && <p className="whitespace-pre-wrap">{note.content}</p>}
-                                            {note.attachment && (
-                                                note.attachment.file.type.startsWith('image/') ? (
-                                                    <a href={note.attachment.preview} target="_blank" rel="noopener noreferrer" className="block w-full max-w-xs rounded-lg overflow-hidden border border-gray-200 hover:opacity-90 transition-opacity">
-                                                        <img src={note.attachment.preview} alt={note.attachment.file.name} className="w-full h-auto object-cover" />
-                                                    </a>
-                                                ) : (
-                                                    <a href={note.attachment.preview} target="_blank" rel="noopener noreferrer" className="inline-flex items-center py-2 px-3 bg-white border border-gray-200 rounded-md hover:bg-gray-100 transition-colors">
-                                                        <DocumentTextIcon className="w-5 h-5 mr-2 text-gray-500" />
-                                                        <span className="text-sm text-blue-600 font-medium">{note.attachment.file.name}</span>
-                                                    </a>
-                                                )
+                                            {note.attachmentUrl && note.attachmentName && (
+                                                <a href={note.attachmentUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center py-2 px-3 bg-white border border-gray-200 rounded-md hover:bg-gray-100 transition-colors">
+                                                    <DocumentTextIcon className="w-5 h-5 mr-2 text-gray-500" />
+                                                    <span className="text-sm text-blue-600 font-medium">{note.attachmentName}</span>
+                                                </a>
                                             )}
                                         </div>
                                     )}

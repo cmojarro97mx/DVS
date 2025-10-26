@@ -845,10 +845,21 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
             notes={projectNotes}
             onAddNote={async (content, file) => {
                 try {
+                    let attachmentUrl: string | undefined;
+                    let attachmentName: string | undefined;
+
+                    if (file) {
+                        const uploadedDoc = await operationsService.uploadDocument(selectedProject.id, file);
+                        attachmentUrl = uploadedDoc.url;
+                        attachmentName = uploadedDoc.name;
+                    }
+
                     const newNoteData = {
                         content,
                         operationId: selectedProject.id,
-                        title: content.substring(0, 50)
+                        title: content.substring(0, 50),
+                        ...(attachmentUrl && { attachmentUrl }),
+                        ...(attachmentName && { attachmentName })
                     };
                     const savedNote = await notesService.create(newNoteData);
                     setNotes(prev => [...prev, savedNote]);
