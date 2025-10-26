@@ -830,7 +830,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
       case 'detail-operation':
         if (selectedProject) {
           const projectClient = clients.find(c => c.id === selectedProject.clientId);
-          const projectNotes = notes.filter(n => n.id.startsWith(selectedProject.id));
+          const projectNotes = notes.filter(n => n.operationId === selectedProject.id);
           const projectExpenses = expenses.filter(e => e.operationId === selectedProject.id);
           const projectInvoices = invoices.filter(i => i.operationId === selectedProject.id);
           const projectPayments = payments.filter(p => p.operationId === selectedProject.id);

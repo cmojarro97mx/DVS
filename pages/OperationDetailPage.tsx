@@ -367,7 +367,11 @@ const ProjectNotes: React.FC<{
         setActiveMenu(null);
     }
 
-    const sortedNotes = [...notes].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const sortedNotes = [...notes].sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+    });
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -428,8 +432,8 @@ const ProjectNotes: React.FC<{
                                             <span className="font-medium text-gray-900">{note.author}</span> commented
                                         </div>
                                         <div className="flex items-center gap-x-4">
-                                            <time dateTime={note.timestamp} className="flex-none py-0.5 text-xs leading-5 text-gray-500">
-                                                {note.timestamp}
+                                            <time dateTime={note.createdAt} className="flex-none py-0.5 text-xs leading-5 text-gray-500">
+                                                {note.createdAt ? new Date(note.createdAt).toLocaleString() : ''}
                                             </time>
                                             <div className="relative">
                                                 <button onClick={() => setActiveMenu(activeMenu === note.id ? null : note.id)} className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-gray-200 rounded-full transition-colors">
