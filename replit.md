@@ -3,6 +3,26 @@
 ## Overview
 Nexxio is an AI-driven logistics and CRM platform designed to optimize supply chain management, customer relationships, and financial processes. It provides a comprehensive solution for businesses to streamline operations, enhance client interactions, and maintain financial oversight.
 
+## Recent Changes (October 27, 2025)
+-   **Smart Operation Creator - AI-Powered Operation Creation from Emails**: Implemented intelligent automation system that detects and creates operations from emails with patterns like reference numbers (e.g., "NAVI-121839"):
+    - **Database Schema**: Added `operation_linking_rules` table with configurable patterns, default assignees, and auto-creation settings; extended `operations` table with `needsAttention`, `autoCreated`, and `missingFields[]` fields
+    - **Backend Services**: 
+        - `OperationLinkingRulesService`: Full CRUD for managing linking rules with multi-tenancy
+        - `SmartOperationCreatorService`: AI-powered service using Google Gemini to analyze email content, extract operation details (client, origin, destination, dates), verify existing operations, and create new ones with intelligent data validation
+    - **Email Sync Integration**: Every new email is automatically analyzed in real-time; if a matching pattern is found and auto-creation is enabled, the system creates the operation and links the email
+    - **Frontend Configuration UI**: 
+        - New page `/operation-linking-rules` with rules management interface
+        - Subject pattern configuration, default employee assignment, enable/disable auto-creation toggle
+        - Full CRUD operations with professional UI following platform design patterns
+    - **Visual Indicators**: 
+        - "Auto-Created" badges on operations list for AI-generated operations
+        - "Needs Attention" badges for operations with incomplete data
+        - Alert banners in operation detail page showing specific missing fields
+        - Blue info banner for successfully auto-created operations with complete data
+    - **Data Quality**: AI validates extracted information; leaves fields empty if uncertain rather than guessing, marks operation as `needsAttention=true`
+    - **Smart Detection**: Checks for duplicate operations before creation to prevent duplicates
+    - **Navigation**: Added route and sidebar link for easy access to configuration
+
 ## Recent Changes (October 26, 2025)
 -   **CRITICAL DATABASE FIX - Form Saving Issue Resolved**: Fixed critical issue where all forms (tasks, quotations, invoices, etc.) failed to save data. Applied two essential corrections:
     1. Added `@updatedAt` decorator to all `updatedAt` fields in Prisma schema (32 models affected) - enables automatic timestamp management by Prisma
