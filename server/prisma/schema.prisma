@@ -152,9 +152,11 @@ model email_messages {
   inReplyTo       String?
   isReplied       Boolean        @default(false)
   labels          Json?
-  references      String?
-  operationId     String?
-  email_accounts  email_accounts @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  references         String?
+  operationId        String?
+  ocrProcessed       Boolean        @default(false)
+  lastOcrProcessedAt DateTime?
+  email_accounts     email_accounts @relation(fields: [accountId], references: [id], onDelete: Cascade)
   operations      operations?    @relation(fields: [operationId], references: [id])
   tasks           tasks[]
 
