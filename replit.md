@@ -4,15 +4,20 @@
 Nexxio is an AI-driven logistics and CRM platform designed to optimize supply chain management, customer relationships, and financial processes. It provides a comprehensive solution for businesses to streamline operations, enhance client interactions, and maintain financial oversight.
 
 ## Recent Changes (October 27, 2025)
--   **Smart Operation Creator - AI-Powered Operation Creation from Emails**: Implemented intelligent automation system that detects and creates operations from emails with patterns like reference numbers (e.g., "NAVI-121839"):
-    - **Database Schema**: Added `operation_linking_rules` table with configurable patterns, default assignees, and auto-creation settings; extended `operations` table with `needsAttention`, `autoCreated`, and `missingFields[]` fields
+-   **Smart Operation Creator - AI-Powered Operation Creation from Emails with Company Domain Filtering**: Implemented intelligent automation system that detects and creates operations from emails with patterns like reference numbers (e.g., "NAVI-121839"):
+    - **Database Schema**: Added `operation_linking_rules` table with configurable patterns, default assignees, `companyDomains` field, and auto-creation settings; extended `operations` table with `needsAttention`, `autoCreated`, and `missingFields[]` fields
     - **Backend Services**: 
-        - `OperationLinkingRulesService`: Full CRUD for managing linking rules with multi-tenancy
+        - `OperationLinkingRulesService`: Full CRUD for managing linking rules with multi-tenancy and company domain configuration
         - `SmartOperationCreatorService`: AI-powered service using Google Gemini to analyze email content, extract operation details (client, origin, destination, dates), verify existing operations, and create new ones with intelligent data validation
+    - **Company Domain Filtering**:
+        - **Email Validation**: System only processes emails that COME FROM configured company domains (e.g., @navicargologistics.com)
+        - **Client Extraction Protection**: Emails with company domains are excluded from client extraction (prevents employees from being created as clients)
+        - **Configurable Multi-Domain Support**: Each linking rule can have multiple company domains (comma-separated)
+        - **Clear UX Guidance**: UI provides clear explanations of how domain filtering works
     - **Email Sync Integration**: Every new email is automatically analyzed in real-time; if a matching pattern is found and auto-creation is enabled, the system creates the operation and links the email
     - **Frontend Configuration UI**: 
         - Accessible via Email & Calendario → Reglas de Vinculación
-        - Subject pattern configuration, default employee assignment, enable/disable auto-creation toggle
+        - Subject pattern configuration, company domains input field, default employee assignment, enable/disable auto-creation toggle
         - Full CRUD operations with professional UI following platform design patterns
     - **Visual Indicators**: 
         - "Auto-Created" badges on operations list for AI-generated operations
