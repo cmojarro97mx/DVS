@@ -521,10 +521,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
 
     const loadClients = async () => {
       try {
+        console.log('🔍 Loading clients...');
         const clientsData = await clientsService.getAll();
+        console.log('✅ Clients loaded:', clientsData.length, 'clients');
         setClients(clientsData as Client[]);
       } catch (error) {
-        console.error('Error loading clients:', error);
+        console.error('❌ Error loading clients:', error);
+        if (error instanceof Error) {
+          console.error('Error message:', error.message);
+          console.error('Error stack:', error.stack);
+        }
       }
     };
 
