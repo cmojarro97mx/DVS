@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Trash2, Search, RefreshCw, Database } from 'lucide-react';
+import api from '../../services/api';
 
 interface KnowledgeEntry {
   id: string;
@@ -22,8 +23,6 @@ interface Statistics {
   topEntries: { title: string; category: string; relevanceScore: number; usageCount: number }[];
 }
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
-
 export default function KnowledgeBasePage() {
   const [entries, setEntries] = useState<KnowledgeEntry[]>([]);
   const [statistics, setStatistics] = useState<Statistics | null>(null);
@@ -38,35 +37,16 @@ export default function KnowledgeBasePage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        console.error('No access token found - user may not be logged in');
-        setLoading(false);
-        return;
-      }
-      
-      const headers = { Authorization: `Bearer ${token}` };
-
-      const [entriesRes, statsRes] = await Promise.all([
-        fetch(`${API_URL}/knowledge-base/entries`, { headers }),
-        fetch(`${API_URL}/knowledge-base/statistics`, { headers }),
+      const [entriesData, statsData] = await Promise.all([
+        api.get<KnowledgeEntry[]>('/knowledge-base/entries'),
+        api.get<Statistics>('/knowledge-base/statistics'),
       ]);
 
-      if (!entriesRes.ok) {
-        console.error(`Failed to fetch entries: ${entriesRes.status} ${entriesRes.statusText}`);
-      } else {
-        const entriesData = await entriesRes.json();
-        console.log(`Loaded ${entriesData.length} knowledge base entries`);
-        setEntries(entriesData);
-      }
+      console.log(`Loaded ${entriesData.length} knowledge base entries`);
+      setEntries(entriesData);
       
-      if (!statsRes.ok) {
-        console.error(`Failed to fetch statistics: ${statsRes.status} ${statsRes.statusText}`);
-      } else {
-        const statsData = await statsRes.json();
-        console.log('Loaded statistics:', statsData);
-        setStatistics(statsData);
-      }
+      console.log('Loaded statistics:', statsData);
+      setStatistics(statsData);
     } catch (error) {
       console.error('Error loading knowledge base:', error);
     } finally {
@@ -78,15 +58,8 @@ export default function KnowledgeBasePage() {
     if (!confirm('¿Eliminar esta entrada de conocimiento?')) return;
 
     try {
-      const token = localStorage.getItem('access_token');
-      const res = await fetch(`${API_URL}/knowledge-base/entries/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        await loadData();
-      }
+      await api.delete(`/knowledge-base/entries/${id}`);
+      await loadData();
     } catch (error) {
       console.error('Error deleting entry:', error);
     }
