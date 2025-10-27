@@ -385,6 +385,24 @@ model operation_suppliers {
   @@unique([operationId, supplierId])
 }
 
+model operation_linking_rules {
+  id                   String         @id @default(uuid())
+  organizationId       String
+  name                 String
+  description          String?
+  subjectPattern       String
+  defaultAssignees     Json?
+  autoCreateOperations Boolean        @default(true)
+  autoCreateClients    Boolean        @default(true)
+  autoFillFields       Boolean        @default(true)
+  enabled              Boolean        @default(true)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  organizations        organizations  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
 model operations {
   id                  String                @id @default(uuid())
   projectName         String
@@ -410,6 +428,9 @@ model operations {
   clientId            String?
   organizationId      String?
   createdById         String?
+  needsAttention      Boolean               @default(false)
+  autoCreated         Boolean               @default(false)
+  missingFields       Json?
   createdAt           DateTime              @default(now())
   updatedAt      DateTime @updatedAt
   commissionHistory   Json?
@@ -428,36 +449,37 @@ model operations {
 }
 
 model organizations {
-  id                 String               @id @default(uuid())
-  name               String
-  rfc                String?
-  taxRegime          String?
-  address            String?
-  phone              String?
-  email              String?
-  logo               String?
-  website            String?
-  createdAt          DateTime             @default(now())
-  updatedAt      DateTime @updatedAt
-  automations        automations[]
-  bank_accounts      bank_accounts[]
-  clients            clients[]
-  employees          employees[]
-  events             events[]
-  expenses           expenses[]
-  file_folders       file_folders[]
-  files              files[]
-  invoices           invoices[]
-  knowledge_base     knowledge_base[]
-  notes              notes[]
-  notifications      notifications[]
-  operations         operations[]
-  payments           payments[]
-  quotations         quotations[]
-  suppliers          suppliers[]
-  tasks              tasks[]
-  users              users[]
-  virtual_assistants virtual_assistants[]
+  id                       String                     @id @default(uuid())
+  name                     String
+  rfc                      String?
+  taxRegime                String?
+  address                  String?
+  phone                    String?
+  email                    String?
+  logo                     String?
+  website                  String?
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime                   @updatedAt
+  automations              automations[]
+  bank_accounts            bank_accounts[]
+  clients                  clients[]
+  employees                employees[]
+  events                   events[]
+  expenses                 expenses[]
+  file_folders             file_folders[]
+  files                    files[]
+  invoices                 invoices[]
+  knowledge_base           knowledge_base[]
+  notes                    notes[]
+  notifications            notifications[]
+  operation_linking_rules  operation_linking_rules[]
+  operations               operations[]
+  payments                 payments[]
+  quotations               quotations[]
+  suppliers                suppliers[]
+  tasks                    tasks[]
+  users                    users[]
+  virtual_assistants       virtual_assistants[]
 }
 
 model payments {

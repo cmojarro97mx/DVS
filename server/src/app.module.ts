@@ -27,6 +27,7 @@ import { AutomationsModule } from './modules/automations/automations.module';
 import { VirtualAssistantModule } from './modules/virtual-assistant/virtual-assistant.module';
 import { TaskAutomationModule } from './modules/task-automation/task-automation.module';
 import { KnowledgeBaseModule } from './modules/knowledge-base/knowledge-base.module';
+import { OperationLinkingRulesModule } from './modules/operation-linking-rules/operation-linking-rules.module';
 import { PrismaModule } from './common/prisma.module';
 
 @Module({
@@ -62,6 +63,7 @@ import { PrismaModule } from './common/prisma.module';
     VirtualAssistantModule,
     TaskAutomationModule,
     KnowledgeBaseModule,
+    OperationLinkingRulesModule,
   ],
 })
 export class AppModule {}

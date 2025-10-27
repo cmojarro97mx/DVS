@@ -1,10 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { google } from 'googleapis';
 import { PrismaService } from '../../common/prisma.service';
 import { GoogleAuthService } from '../google-auth/google-auth.service';
 import { EmailStorageService } from '../email-storage/email-storage.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { SmartOperationCreatorService } from '../operation-linking-rules/smart-operation-creator.service';
 import { randomUUID } from 'crypto';
 
 @Injectable()
@@ -16,6 +17,8 @@ export class EmailSyncService {
     private googleAuthService: GoogleAuthService,
     private emailStorageService: EmailStorageService,
     private notificationsService: NotificationsService,
+    @Inject(forwardRef(() => SmartOperationCreatorService))
+    private smartOperationCreator: SmartOperationCreatorService,
   ) {}
 
   async syncEmailsForAccount(userId: string, accountId: string): Promise<{ synced: number; total: number }> {
@@ -168,6 +171,29 @@ export class EmailSyncService {
         updatedAt: new Date(),
       },
     });
+
+    const account = await this.prisma.email_accounts.findUnique({
+      where: { id: accountId },
+      select: { userId: true, users: { select: { organizationId: true } } },
+    });
+
+    if (account?.users?.organizationId) {
+      try {
+        await this.smartOperationCreator.processEmailForOperationCreation(
+          {
+            id: emailMessage.id,
+            subject: emailMessage.subject,
+            from: emailMessage.from,
+            bodyText: emailMessage.body,
+            snippet: emailMessage.snippet,
+            date: emailMessage.date,
+          },
+          account.users.organizationId,
+        );
+      } catch (error) {
+        this.logger.error('Error processing email for smart operation creation:', error.message);
+      }
+    }
 
     const emailDate = emailMessage.date ? new Date(emailMessage.date) : null;
     const now = new Date();
