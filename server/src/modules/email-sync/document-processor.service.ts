@@ -213,4 +213,71 @@ export class DocumentProcessorService {
     
     return false;
   }
+
+  async processEmailAttachmentsBatch(
+    emails: any[],
+    batchSize: number = 10,
+    maxConcurrency: number = 3
+  ): Promise<Map<string, Map<string, string>>> {
+    const results = new Map<string, Map<string, string>>();
+
+    if (!emails || emails.length === 0) {
+      return results;
+    }
+
+    this.logger.log(`📦 Processing ${emails.length} emails in batches (batch size: ${batchSize}, max concurrent: ${maxConcurrency})`);
+
+    for (let i = 0; i < emails.length; i += batchSize) {
+      const batch = emails.slice(i, i + batchSize);
+      this.logger.log(`Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(emails.length / batchSize)} (${batch.length} emails)`);
+
+      const batchPromises = batch.map(async (email) => {
+        try {
+          if (!email.attachmentsData) {
+            return { emailId: email.id, extractedTexts: new Map() };
+          }
+
+          const attachments = typeof email.attachmentsData === 'string'
+            ? JSON.parse(email.attachmentsData)
+            : email.attachmentsData;
+
+          const extractedTexts = await this.processEmailAttachments(attachments);
+          return { emailId: email.id, extractedTexts };
+        } catch (error) {
+          this.logger.error(`Error processing email ${email.id}: ${error.message}`);
+          return { emailId: email.id, extractedTexts: new Map() };
+        }
+      });
+
+      const batchResults = await this.limitConcurrency(batchPromises, maxConcurrency);
+      
+      for (const result of batchResults) {
+        results.set(result.emailId, result.extractedTexts);
+      }
+
+      await this.delay(500);
+    }
+
+    this.logger.log(`✅ Batch processing complete. Processed ${results.size} emails`);
+    return results;
+  }
+
+  private async limitConcurrency<T>(
+    promises: Promise<T>[],
+    maxConcurrency: number
+  ): Promise<T[]> {
+    const results: T[] = [];
+    
+    for (let i = 0; i < promises.length; i += maxConcurrency) {
+      const chunk = promises.slice(i, i + maxConcurrency);
+      const chunkResults = await Promise.all(chunk);
+      results.push(...chunkResults);
+    }
+    
+    return results;
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 }
