@@ -33,7 +33,7 @@ export default function OperationLinkingRulesPage() {
       setError(null);
       const [rulesData, employeesData] = await Promise.all([
         operationLinkingRulesService.getRules(),
-        employeesService.getEmployees(),
+        employeesService.getAll(),
       ]);
       setRules(rulesData);
       setEmployees(employeesData);
