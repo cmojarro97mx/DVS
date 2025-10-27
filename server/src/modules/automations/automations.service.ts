@@ -343,50 +343,68 @@ export class AutomationsService {
       return [];
     }
 
+    // Solo buscar emails que NO han sido procesados
     const emailsWithAttachments = await this.prisma.email_messages.findMany({
       where: {
         accountId: { in: accountIds },
         operationId: null,
         hasAttachments: true,
         attachmentsData: { not: null },
+        ocrProcessed: false, // Solo emails no procesados
       },
       select: {
         id: true,
         attachmentsData: true,
       },
-      take: 100,
+      take: 50, // Reducido de 100 a 50 para evitar sobrecarga
     });
 
     if (emailsWithAttachments.length === 0) {
       return [];
     }
 
+    this.logger.log(`🔍 Buscando en ${emailsWithAttachments.length} emails no procesados con adjuntos...`);
+
+    // Procesar emails por lotes
+    const batchResults = await this.documentProcessor.processEmailAttachmentsBatch(
+      emailsWithAttachments,
+      10, // Procesar 10 emails a la vez
+      3   // Máximo 3 procesos OCR simultáneos
+    );
+
     const matchedEmailIds: string[] = [];
 
-    for (const email of emailsWithAttachments) {
+    // Buscar patrones en los textos extraídos
+    for (const [emailId, extractedTexts] of batchResults.entries()) {
       try {
-        const attachments = email.attachmentsData as any[];
-        if (!attachments || attachments.length === 0) continue;
+        for (const [filename, text] of extractedTexts.entries()) {
+          const textLower = text.toLowerCase();
+          const foundMatch = searchPatterns.some(pattern => 
+            textLower.includes(pattern.toLowerCase())
+          );
 
-        for (const attachment of attachments) {
-          const extractedText = await this.documentProcessor.processAttachment(attachment);
-          
-          if (extractedText) {
-            const textLower = extractedText.toLowerCase();
-            const foundMatch = searchPatterns.some(pattern => 
-              textLower.includes(pattern.toLowerCase())
-            );
-
-            if (foundMatch) {
-              this.logger.log(`📎 Encontrada referencia en adjunto de email ${email.id}: ${attachment.filename}`);
-              matchedEmailIds.push(email.id);
-              break;
-            }
+          if (foundMatch) {
+            this.logger.log(`📎 Encontrada referencia en adjunto de email ${emailId}: ${filename}`);
+            matchedEmailIds.push(emailId);
+            break;
           }
         }
       } catch (error) {
-        this.logger.error(`Error procesando adjuntos del email ${email.id}:`, error.message);
+        this.logger.error(`Error buscando patrones en email ${emailId}:`, error.message);
       }
+    }
+
+    // Marcar emails como procesados
+    const emailIds = Array.from(batchResults.keys());
+    if (emailIds.length > 0) {
+      await this.prisma.email_messages.updateMany({
+        where: { id: { in: emailIds } },
+        data: {
+          ocrProcessed: true,
+          lastOcrProcessedAt: new Date(),
+        },
+      });
+      this.logger.log(`✅ Marcados ${emailIds.length} emails como procesados`);
     }
 
     return matchedEmailIds;
