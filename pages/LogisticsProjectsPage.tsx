@@ -172,12 +172,24 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
               </thead>
               <tbody className="bg-white divide-y divide-slate-200">
                 {filteredProjects.map((project) => (
-                  <tr key={project.id} onClick={() => onViewOperation(project.id)} className="hover:bg-slate-50 cursor-pointer group">
+                  <tr key={project.id} onClick={() => onViewOperation(project.id)} className={`hover:bg-slate-50 cursor-pointer group ${project.needsAttention ? 'bg-amber-50' : ''}`}>
                     <td className="px-6 py-4 align-middle">
                       <div className="flex items-center gap-4">
                         <ProjectAvatar projectName={project.projectName} />
-                        <div className="min-w-0">
-                          <p className="font-semibold text-sm text-slate-800 truncate" title={project.projectName}>{project.projectName}</p>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-sm text-slate-800 truncate" title={project.projectName}>{project.projectName}</p>
+                            {project.autoCreated && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 whitespace-nowrap">
+                                🤖 Auto
+                              </span>
+                            )}
+                            {project.needsAttention && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700 whitespace-nowrap">
+                                ⚠️ Atención
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs font-mono text-slate-500">{project.id}</p>
                         </div>
                       </div>

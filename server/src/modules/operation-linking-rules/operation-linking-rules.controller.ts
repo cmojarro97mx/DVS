@@ -10,7 +10,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { OperationLinkingRulesService } from './operation-linking-rules.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 
 @Controller('operation-linking-rules')
 @UseGuards(JwtAuthGuard)
