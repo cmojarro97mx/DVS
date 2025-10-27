@@ -53,6 +53,7 @@ import { PhotoIcon } from '../components/icons/PhotoIcon';
 import { DocumentCsvIcon } from '../components/icons/DocumentCsvIcon';
 import { WarehouseIcon } from '../components/icons/WarehouseIcon';
 import { LinkIcon } from '../components/icons/LinkIcon';
+import { ClockIcon } from '../components/icons/ClockIcon';
 
 type ActiveTab = 'overview' | 'tasks' | 'documents' | 'notes' | 'members' | 'expenses' | 'invoices' | 'payments' | 'commissions' | 'emails';
 
@@ -319,14 +320,41 @@ const ProjectNotes: React.FC<{
     const [newNoteContent, setNewNoteContent] = useState('');
     const [editingNote, setEditingNote] = useState<{ id: string; content: string } | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setSelectedFile(e.target.files[0]);
+        }
+    };
+
+    const handleRemoveFile = () => {
+        setSelectedFile(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    const getFileIcon = (fileType: string) => {
+        if (fileType.startsWith('image/')) return PhotoIcon;
+        if (fileType === 'application/pdf') return DocumentPdfIcon;
+        if (fileType.includes('spreadsheet') || fileType.includes('csv')) return DocumentCsvIcon;
+        if (fileType.startsWith('application/vnd.openxmlformats-officedocument') || fileType === 'application/msword') return DocumentTextIcon;
+        return FileIcon;
+    };
 
     const handleAddClick = async () => {
         if (isSaving || !newNoteContent.trim()) return;
         
         setIsSaving(true);
         try {
-            await onAddNote(newNoteContent);
+            await onAddNote(newNoteContent, selectedFile || undefined);
             setNewNoteContent('');
+            setSelectedFile(null);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
         } catch (error) {
             console.error('Error saving note:', error);
             alert(`Error al guardar la nota: ${error instanceof Error ? error.message : 'Error desconocido'}`);
@@ -373,6 +401,21 @@ const ProjectNotes: React.FC<{
         return colors[index];
     };
 
+    const formatRelativeTime = (date: Date) => {
+        const now = new Date();
+        const diffInMs = now.getTime() - date.getTime();
+        const diffInMinutes = Math.floor(diffInMs / 60000);
+        const diffInHours = Math.floor(diffInMs / 3600000);
+        const diffInDays = Math.floor(diffInMs / 86400000);
+
+        if (diffInMinutes < 1) return 'Justo ahora';
+        if (diffInMinutes < 60) return `Hace ${diffInMinutes} min`;
+        if (diffInHours < 24) return `Hace ${diffInHours}h`;
+        if (diffInDays < 7) return `Hace ${diffInDays}d`;
+        
+        return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
+
     return (
         <div className="space-y-6">
             {/* Header with Stats */}
@@ -415,6 +458,39 @@ const ProjectNotes: React.FC<{
                         className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm bg-white text-gray-900 placeholder-gray-400 transition-all shadow-sm"
                         rows={5}
                     />
+                    
+                    {/* File Attachment Section */}
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                        <div className="flex items-center gap-3">
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                onChange={handleFileSelect}
+                                className="hidden"
+                                id="note-file-input"
+                            />
+                            <label
+                                htmlFor="note-file-input"
+                                className="cursor-pointer px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors flex items-center gap-2"
+                            >
+                                <PaperClipIcon className="w-4 h-4" />
+                                Adjuntar archivo
+                            </label>
+                            {selectedFile && (
+                                <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                                    {React.createElement(getFileIcon(selectedFile.type), { className: "w-5 h-5 text-blue-600" })}
+                                    <span className="text-sm text-gray-700 max-w-xs truncate">{selectedFile.name}</span>
+                                    <button
+                                        onClick={handleRemoveFile}
+                                        className="ml-2 text-red-500 hover:text-red-700 transition-colors"
+                                    >
+                                        <XIcon className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
                         <p className="text-xs text-gray-500">
                             <span className="font-medium">Tip:</span> Las notas se ordenan automáticamente por fecha
@@ -441,16 +517,24 @@ const ProjectNotes: React.FC<{
             </div>
 
             {/* Notes Timeline */}
-            <div className="space-y-4">
-                {sortedNotes.length > 0 ? (
-                    <>
-                        <div className="flex items-center gap-2 px-2">
-                            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
-                            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Historial de Notas</span>
-                            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
-                        </div>
-                        {sortedNotes.map((note) => (
-                            <div key={note.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200">
+            {sortedNotes.length > 0 ? (
+                <div className="space-y-1 relative">
+                    <div className="flex items-center gap-2 px-2 mb-4">
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
+                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Historial de Notas</span>
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
+                    </div>
+                    
+                    {/* Timeline line */}
+                    <div className="absolute left-8 top-20 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 via-indigo-200 to-transparent"></div>
+                    
+                    {sortedNotes.map((note, index) => (
+                        <div key={note.id} className="relative pl-20 pb-8">
+                            {/* Timeline node */}
+                            <div className={`absolute left-6 top-6 w-5 h-5 rounded-full border-4 ${getAvatarColor(note.author)} border-white shadow-lg z-10`}></div>
+                            
+                            {/* Note card */}
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200">
                                 {editingNote?.id === note.id ? (
                                     <div className="p-6">
                                         <div className="mb-4">
@@ -483,25 +567,18 @@ const ProjectNotes: React.FC<{
                                     </div>
                                 ) : (
                                     <>
-                                        <div className="bg-gradient-to-r from-gray-50 to-slate-50 px-6 py-4 border-b border-gray-200">
+                                        <div className="bg-gradient-to-r from-gray-50 to-slate-50 px-5 py-3.5 border-b border-gray-200">
                                             <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-4">
-                                                    <div className={`w-11 h-11 ${getAvatarColor(note.author)} rounded-lg flex items-center justify-center shadow-sm`}>
-                                                        <span className="text-white font-bold text-sm">{getInitials(note.author)}</span>
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-9 h-9 ${getAvatarColor(note.author)} rounded-lg flex items-center justify-center shadow-sm`}>
+                                                        <span className="text-white font-bold text-xs">{getInitials(note.author)}</span>
                                                     </div>
                                                     <div>
                                                         <p className="text-sm font-bold text-gray-900">{note.author}</p>
                                                         <div className="flex items-center gap-2 mt-0.5">
                                                             <ClockIcon className="w-3.5 h-3.5 text-gray-400" />
-                                                            <time className="text-xs text-gray-600 font-medium">
-                                                                {note.createdAt ? new Date(note.createdAt).toLocaleString('es-ES', {
-                                                                    weekday: 'short',
-                                                                    day: '2-digit',
-                                                                    month: 'short',
-                                                                    year: 'numeric',
-                                                                    hour: '2-digit',
-                                                                    minute: '2-digit'
-                                                                }) : ''}
+                                                            <time className="text-xs text-gray-600">
+                                                                {note.createdAt ? formatRelativeTime(new Date(note.createdAt)) : ''}
                                                             </time>
                                                         </div>
                                                     </div>
@@ -509,14 +586,14 @@ const ProjectNotes: React.FC<{
                                                 <div className="flex items-center gap-1">
                                                     <button
                                                         onClick={() => setEditingNote({ id: note.id, content: note.content })}
-                                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                                                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
                                                         title="Editar nota"
                                                     >
                                                         <PencilIcon className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDeleteClick(note.id)}
-                                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                                                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
                                                         title="Eliminar nota"
                                                     >
                                                         <TrashIcon className="w-4 h-4" />
@@ -524,26 +601,42 @@ const ProjectNotes: React.FC<{
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="px-6 py-5">
+                                        <div className="px-5 py-4">
                                             <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{note.content}</p>
+                                            
+                                            {/* Attachment display */}
+                                            {note.attachmentUrl && note.attachmentName && (
+                                                <div className="mt-4 pt-4 border-t border-gray-100">
+                                                    <a
+                                                        href={note.attachmentUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all group"
+                                                    >
+                                                        <PaperClipIcon className="w-4 h-4 text-gray-500 group-hover:text-blue-600" />
+                                                        <span className="text-sm text-gray-700 group-hover:text-blue-600 font-medium">{note.attachmentName}</span>
+                                                        <DownloadIcon className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-600" />
+                                                    </a>
+                                                </div>
+                                            )}
                                         </div>
                                     </>
                                 )}
                             </div>
-                        ))}
-                    </>
-                ) : (
-                    <div className="text-center py-20 px-6 bg-white border-2 border-dashed border-gray-300 rounded-xl">
-                        <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                            <NotesIcon className="w-8 h-8 text-gray-400" />
                         </div>
-                        <h4 className="text-lg font-bold text-gray-900 mb-2">No hay notas registradas</h4>
-                        <p className="text-sm text-gray-500 max-w-md mx-auto">
-                            Comienza a documentar el progreso de esta operación agregando tu primera nota usando el formulario superior.
-                        </p>
+                    ))}
+                </div>
+            ) : (
+                <div className="text-center py-20 px-6 bg-white border-2 border-dashed border-gray-300 rounded-xl">
+                    <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <NotesIcon className="w-8 h-8 text-gray-400" />
                     </div>
-                )}
-            </div>
+                    <h4 className="text-lg font-bold text-gray-900 mb-2">No hay notas registradas</h4>
+                    <p className="text-sm text-gray-500 max-w-md mx-auto">
+                        Comienza a documentar el progreso de esta operación agregando tu primera nota usando el formulario superior.
+                    </p>
+                </div>
+            )}
         </div>
     );
 };
