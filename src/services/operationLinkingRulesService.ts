@@ -5,6 +5,7 @@ export interface OperationLinkingRule {
   organizationId: string;
   subjectPattern: string;
   defaultAssigneeIds: string[];
+  companyDomains?: string[];
   autoCreate: boolean;
   enabled: boolean;
   createdAt: Date;
@@ -14,6 +15,7 @@ export interface OperationLinkingRule {
 export interface CreateOperationLinkingRuleDto {
   subjectPattern: string;
   defaultAssigneeIds: string[];
+  companyDomains?: string[];
   autoCreate: boolean;
   enabled: boolean;
 }
@@ -21,6 +23,7 @@ export interface CreateOperationLinkingRuleDto {
 export interface UpdateOperationLinkingRuleDto {
   subjectPattern?: string;
   defaultAssigneeIds?: string[];
+  companyDomains?: string[];
   autoCreate?: boolean;
   enabled?: boolean;
 }

@@ -18,11 +18,13 @@ export default function OperationLinkingRulesPage() {
   const [formData, setFormData] = useState<CreateOperationLinkingRuleDto>({
     subjectPattern: '',
     defaultAssigneeIds: [],
+    companyDomains: [],
     autoCreate: true,
     enabled: true,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [companyDomainInput, setCompanyDomainInput] = useState<string>('');
 
   useEffect(() => {
     loadData();
@@ -49,9 +51,11 @@ export default function OperationLinkingRulesPage() {
     setFormData({
       subjectPattern: '',
       defaultAssigneeIds: [],
+      companyDomains: [],
       autoCreate: true,
       enabled: true,
     });
+    setCompanyDomainInput('');
     setEditingRule(null);
     setShowCreateModal(true);
   };
@@ -60,9 +64,11 @@ export default function OperationLinkingRulesPage() {
     setFormData({
       subjectPattern: rule.subjectPattern,
       defaultAssigneeIds: rule.defaultAssigneeIds,
+      companyDomains: rule.companyDomains || [],
       autoCreate: rule.autoCreate,
       enabled: rule.enabled,
     });
+    setCompanyDomainInput((rule.companyDomains || []).join(', '));
     setEditingRule(rule);
     setShowCreateModal(true);
   };
@@ -127,6 +133,15 @@ export default function OperationLinkingRulesPage() {
           : [...prev.defaultAssigneeIds, employeeId],
       };
     });
+  };
+
+  const handleCompanyDomainChange = (value: string) => {
+    setCompanyDomainInput(value);
+    const domains = value
+      .split(',')
+      .map(d => d.trim())
+      .filter(d => d.length > 0);
+    setFormData({ ...formData, companyDomains: domains });
   };
 
   if (loading) {
@@ -278,6 +293,22 @@ export default function OperationLinkingRulesPage() {
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Los emails con este patrón en el asunto se procesarán automáticamente
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Dominios de empresa
+                  </label>
+                  <input
+                    type="text"
+                    value={companyDomainInput}
+                    onChange={(e) => handleCompanyDomainChange(e.target.value)}
+                    placeholder="Ej: @navicargologistics.com, @navicargo.mx"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Solo se procesarán emails que VENGAN DE estos dominios. Los emails con estos dominios NO se extraerán como clientes (son empleados internos). Separa múltiples dominios con comas.
                   </p>
                 </div>
 
