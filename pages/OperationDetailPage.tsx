@@ -318,65 +318,35 @@ const ProjectNotes: React.FC<{
 }> = ({ notes, onAddNote, onUpdateNote, onDeleteNote }) => {
     const [newNoteContent, setNewNoteContent] = useState('');
     const [editingNote, setEditingNote] = useState<{ id: string; content: string } | null>(null);
-    const [attachment, setAttachment] = useState<File | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const [activeMenu, setActiveMenu] = useState<string | null>(null);
-    const menuRef = useRef<HTMLDivElement>(null);
     const [isSaving, setIsSaving] = useState(false);
 
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-                setActiveMenu(null);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
     const handleAddClick = async () => {
-        if (isSaving) return;
+        if (isSaving || !newNoteContent.trim()) return;
         
-        if (newNoteContent.trim() || attachment) {
-            setIsSaving(true);
-            try {
-                await onAddNote(newNoteContent, attachment || undefined);
-                setNewNoteContent('');
-                setAttachment(null);
-                if(fileInputRef.current) fileInputRef.current.value = "";
-            } catch (error) {
-                console.error('Error en handleAddClick:', error);
-                alert(`Error al guardar la nota: ${error instanceof Error ? error.message : 'Error desconocido'}`);
-            } finally {
-                setIsSaving(false);
-            }
-        }
-    };
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setAttachment(e.target.files[0]);
+        setIsSaving(true);
+        try {
+            await onAddNote(newNoteContent);
+            setNewNoteContent('');
+        } catch (error) {
+            console.error('Error saving note:', error);
+            alert(`Error al guardar la nota: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+        } finally {
+            setIsSaving(false);
         }
     };
 
     const handleSaveEdit = () => {
-      if (editingNote && editingNote.content.trim()) {
-        onUpdateNote(editingNote.id, editingNote.content);
-        setEditingNote(null);
-      }
+        if (editingNote && editingNote.content.trim()) {
+            onUpdateNote(editingNote.id, editingNote.content);
+            setEditingNote(null);
+        }
     };
 
     const handleDeleteClick = (noteId: string) => {
-      if(window.confirm('Are you sure you want to delete this note?')) {
-        onDeleteNote(noteId);
-      }
-      setActiveMenu(null);
+        if(window.confirm('¿Estás seguro de que deseas eliminar esta nota?')) {
+            onDeleteNote(noteId);
+        }
     };
-
-    const startEditing = (note: Note) => {
-        setEditingNote({ id: note.id, content: note.content });
-        setActiveMenu(null);
-    }
 
     const sortedNotes = [...notes].sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -385,115 +355,115 @@ const ProjectNotes: React.FC<{
     });
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-1">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-24">
-                     <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                        <PencilIcon className="w-5 h-5 mr-3 text-blue-600" />
-                        Add New Note
-                    </h3>
-                    <div className="space-y-3">
-                        <textarea
-                            value={newNoteContent}
-                            onChange={(e) => setNewNoteContent(e.target.value)}
-                            placeholder="Write an update, attach a document, or share relevant information..."
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm bg-white text-gray-900 placeholder-gray-500 transition-shadow focus:shadow-sm"
-                            rows={6}
-                        />
-                        {attachment && (
-                            <div className="px-3 py-2 flex items-center justify-between bg-blue-50 rounded-lg text-sm border border-blue-200">
-                                <div className="flex items-center min-w-0">
-                                    <DocumentTextIcon className="w-5 h-5 mr-2 text-blue-600 flex-shrink-0" />
-                                    <span className="text-gray-800 font-medium truncate">{attachment.name}</span>
-                                </div>
-                                <button onClick={() => { setAttachment(null); if(fileInputRef.current) fileInputRef.current.value = ""; }} className="text-gray-500 hover:text-red-600 ml-2 p-1 rounded-full hover:bg-red-100">
-                                    <XIcon className="w-4 h-4" />
-                                </button>
-                            </div>
-                        )}
-                        <div className="flex justify-between items-center pt-2">
-                            <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-gray-200/60 transition-colors" aria-label="Attach file">
-                                <PaperClipIcon className="w-5 h-5" />
-                            </button>
-                            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-                            <button 
-                                onClick={handleAddClick} 
-                                className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-                                disabled={(!newNoteContent.trim() && !attachment) || isSaving}
-                            >
-                                {isSaving && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
-                                {isSaving ? 'Guardando...' : 'Add Note'}
-                            </button>
+        <div className="max-w-4xl mx-auto space-y-4">
+            {/* Add Note Card */}
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="p-4 border-b border-gray-100">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                            <PencilIcon className="w-4 h-4 text-white" />
                         </div>
+                        <h3 className="text-sm font-semibold text-gray-800">Nueva Nota</h3>
+                    </div>
+                </div>
+                <div className="p-4">
+                    <textarea
+                        value={newNoteContent}
+                        onChange={(e) => setNewNoteContent(e.target.value)}
+                        placeholder="Escribe una actualización o comparte información relevante..."
+                        className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm bg-white text-gray-900 placeholder-gray-400 transition-all"
+                        rows={4}
+                    />
+                    <div className="flex justify-end mt-3">
+                        <button 
+                            onClick={handleAddClick} 
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                            disabled={!newNoteContent.trim() || isSaving}
+                        >
+                            {isSaving && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+                            {isSaving ? 'Guardando...' : 'Agregar Nota'}
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <div className="lg:col-span-2">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h3 className="text-lg font-bold text-gray-800 mb-6">Operation History</h3>
-                    <ul className="space-y-6">
-                        {sortedNotes.length > 0 ? sortedNotes.map((note) => (
-                            <li key={note.id} className="flex gap-x-3">
-                                <div className="relative flex-none w-10 h-10 flex items-center justify-center bg-gray-100 rounded-full ring-8 ring-white">
-                                    <UserCircleIcon className="w-6 h-6 text-gray-400" />
+            {/* Notes List */}
+            <div className="space-y-3">
+                {sortedNotes.length > 0 ? sortedNotes.map((note) => (
+                    <div key={note.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-gray-300 transition-colors">
+                        {editingNote?.id === note.id ? (
+                            <div className="p-4">
+                                <textarea 
+                                    value={editingNote.content} 
+                                    onChange={(e) => setEditingNote({ ...editingNote, content: e.target.value })} 
+                                    className="w-full p-3 border border-gray-200 bg-white text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm resize-none" 
+                                    rows={4}
+                                />
+                                <div className="flex justify-end gap-2 mt-3">
+                                    <button 
+                                        onClick={() => setEditingNote(null)} 
+                                        className="px-4 py-1.5 text-sm font-medium border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button 
+                                        onClick={handleSaveEdit} 
+                                        className="px-4 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                    >
+                                        Guardar
+                                    </button>
                                 </div>
-                                <div className="flex-auto rounded-md p-3 ring-1 ring-inset ring-gray-200 bg-gray-50/50">
-                                    <div className="flex justify-between gap-x-4">
-                                        <div className="py-0.5 text-xs leading-5 text-gray-500">
-                                            <span className="font-medium text-gray-900">{note.author}</span> commented
+                            </div>
+                        ) : (
+                            <>
+                                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                            <UserCircleIcon className="w-5 h-5 text-gray-500" />
                                         </div>
-                                        <div className="flex items-center gap-x-4">
-                                            <time dateTime={note.createdAt} className="flex-none py-0.5 text-xs leading-5 text-gray-500">
-                                                {note.createdAt ? new Date(note.createdAt).toLocaleString() : ''}
+                                        <div>
+                                            <p className="text-sm font-semibold text-gray-900">{note.author}</p>
+                                            <time className="text-xs text-gray-500">
+                                                {note.createdAt ? new Date(note.createdAt).toLocaleString('es-ES', {
+                                                    day: '2-digit',
+                                                    month: 'short',
+                                                    year: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                }) : ''}
                                             </time>
-                                            <div className="relative">
-                                                <button onClick={() => setActiveMenu(activeMenu === note.id ? null : note.id)} className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-gray-200 rounded-full transition-colors">
-                                                    <MoreVerticalIcon className="w-4 h-4" />
-                                                </button>
-                                                {activeMenu === note.id && (
-                                                    <div ref={menuRef} className="absolute right-0 mt-1 w-36 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200">
-                                                        <button onClick={() => startEditing(note)} className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                            <PencilIcon className="w-4 h-4 mr-2" /> Edit
-                                                        </button>
-                                                        <button onClick={() => handleDeleteClick(note.id)} className="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                                                            <TrashIcon className="w-4 h-4 mr-2" /> Delete
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
                                         </div>
                                     </div>
-                                    {editingNote?.id === note.id ? (
-                                        <div className="mt-2">
-                                            <textarea value={editingNote.content} onChange={(e) => setEditingNote({ ...editingNote, content: e.target.value })} className="w-full p-2 border bg-white text-gray-900 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" rows={3}/>
-                                            <div className="flex justify-end space-x-2 mt-2">
-                                                <button onClick={() => setEditingNote(null)} className="px-3 py-1 text-xs font-medium border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100">Cancel</button>
-                                                <button onClick={handleSaveEdit} className="px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700">Save</button>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="mt-2 text-sm text-gray-700 space-y-3">
-                                            {note.content && <p className="whitespace-pre-wrap">{note.content}</p>}
-                                            {note.attachmentUrl && note.attachmentName && (
-                                                <a href={note.attachmentUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center py-2 px-3 bg-white border border-gray-200 rounded-md hover:bg-gray-100 transition-colors">
-                                                    <DocumentTextIcon className="w-5 h-5 mr-2 text-gray-500" />
-                                                    <span className="text-sm text-blue-600 font-medium">{note.attachmentName}</span>
-                                                </a>
-                                            )}
-                                        </div>
-                                    )}
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={() => setEditingNote({ id: note.id, content: note.content })}
+                                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                            title="Editar nota"
+                                        >
+                                            <PencilIcon className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteClick(note.id)}
+                                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                            title="Eliminar nota"
+                                        >
+                                            <TrashIcon className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
-                            </li>
-                        )) : (
-                            <div className="text-center text-gray-500 text-sm py-16 flex flex-col items-center border-2 border-dashed border-gray-200 rounded-lg">
-                                <NotesIcon className="w-12 h-12 text-gray-300 mb-4" />
-                                <h4 className="font-semibold text-gray-700">No notes for this operation.</h4>
-                                <p>Use the form on the left to add the first note.</p>
-                            </div>
+                                <div className="p-4">
+                                    <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{note.content}</p>
+                                </div>
+                            </>
                         )}
-                    </ul>
-                </div>
+                    </div>
+                )) : (
+                    <div className="text-center py-16 px-6 bg-white border-2 border-dashed border-gray-200 rounded-lg">
+                        <NotesIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                        <h4 className="font-semibold text-gray-700 mb-1">No hay notas para esta operación</h4>
+                        <p className="text-sm text-gray-500">Usa el formulario de arriba para agregar la primera nota.</p>
+                    </div>
+                )}
             </div>
         </div>
     );
