@@ -67,6 +67,14 @@ export class OperationsService {
     try {
       const { assignees, ...operationData } = data;
 
+      console.log('🔍 [CREATE OPERATION] Received data:', {
+        hasAssignees: !!assignees,
+        assigneesArray: assignees,
+        assigneesLength: assignees?.length || 0,
+        organizationId,
+        creatorUserId: userId
+      });
+
       const cleanData = this.cleanOperationData(operationData);
 
       const operation = await this.prisma.operations.create({
@@ -77,36 +85,48 @@ export class OperationsService {
         },
       });
 
+      console.log('✅ Operation created with ID:', operation.id);
+
     if (assignees && assignees.length > 0) {
-      for (const userId of assignees) {
+      console.log(`👥 Processing ${assignees.length} assignees for operation ${operation.id}`);
+      
+      for (const assigneeUserId of assignees) {
+        console.log(`  - Checking user: ${assigneeUserId}`);
         const userExists = await this.prisma.users.findUnique({
-          where: { id: userId },
+          where: { id: assigneeUserId },
         });
 
         if (userExists) {
-          await this.prisma.operation_assignees.create({
+          console.log(`  ✅ User ${userExists.name} (${assigneeUserId}) found, creating assignment`);
+          
+          const assignment = await this.prisma.operation_assignees.create({
             data: {
               id: randomUUID(),
               operations: { connect: { id: operation.id } },
-              users: { connect: { id: userId } },
+              users: { connect: { id: assigneeUserId } },
             },
           });
+          
+          console.log(`  ✅ Assignment created:`, assignment.id);
 
-          await this.notificationsService.sendNotificationToUser(userId, {
+          await this.notificationsService.sendNotificationToUser(assigneeUserId, {
             title: 'Nueva operación asignada',
             body: `Se te ha asignado una nueva operación`,
             url: `/operations/${operation.id}`,
             data: { type: 'operation_assigned', operationId: operation.id },
           });
         } else {
-          console.warn(`User with ID ${userId} not found, skipping assignment`);
+          console.warn(`  ❌ User with ID ${assigneeUserId} not found, skipping assignment`);
         }
       }
+      console.log(`✅ Finished processing assignees for operation ${operation.id}`);
+    } else {
+      console.log('ℹ️ No assignees provided for this operation');
     }
 
     return this.findOne(operation.id, organizationId);
     } catch (error) {
-      console.error('Error creating operation:', error);
+      console.error('❌ Error creating operation:', error);
       throw error;
     }
   }
