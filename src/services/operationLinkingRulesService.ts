@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_URL = '/api/operation-linking-rules';
+import { apiService } from './api';
 
 export interface OperationLinkingRule {
   id: string;
@@ -29,27 +27,23 @@ export interface UpdateOperationLinkingRuleDto {
 
 class OperationLinkingRulesService {
   async getRules(): Promise<OperationLinkingRule[]> {
-    const response = await axios.get(API_URL);
-    return response.data;
+    return apiService.get<OperationLinkingRule[]>('/operation-linking-rules');
   }
 
   async getRule(id: string): Promise<OperationLinkingRule> {
-    const response = await axios.get(`${API_URL}/${id}`);
-    return response.data;
+    return apiService.get<OperationLinkingRule>(`/operation-linking-rules/${id}`);
   }
 
   async createRule(data: CreateOperationLinkingRuleDto): Promise<OperationLinkingRule> {
-    const response = await axios.post(API_URL, data);
-    return response.data;
+    return apiService.post<OperationLinkingRule>('/operation-linking-rules', data);
   }
 
   async updateRule(id: string, data: UpdateOperationLinkingRuleDto): Promise<OperationLinkingRule> {
-    const response = await axios.patch(`${API_URL}/${id}`, data);
-    return response.data;
+    return apiService.put<OperationLinkingRule>(`/operation-linking-rules/${id}`, data);
   }
 
   async deleteRule(id: string): Promise<void> {
-    await axios.delete(`${API_URL}/${id}`);
+    return apiService.delete<void>(`/operation-linking-rules/${id}`);
   }
 }
 
