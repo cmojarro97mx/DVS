@@ -90,33 +90,37 @@ export class OperationsService {
     if (assignees && assignees.length > 0) {
       console.log(`👥 Processing ${assignees.length} assignees for operation ${operation.id}`);
       
-      for (const assigneeUserId of assignees) {
-        console.log(`  - Checking user: ${assigneeUserId}`);
-        const userExists = await this.prisma.users.findUnique({
-          where: { id: assigneeUserId },
+      for (const assigneeId of assignees) {
+        console.log(`  - Checking assignee: ${assigneeId}`);
+        
+        const employee = await this.prisma.employees.findUnique({
+          where: { id: assigneeId },
+          select: { id: true, name: true, userId: true }
         });
 
-        if (userExists) {
-          console.log(`  ✅ User ${userExists.name} (${assigneeUserId}) found, creating assignment`);
+        if (employee && employee.userId) {
+          console.log(`  ✅ Employee ${employee.name} (${assigneeId}) found with user ID ${employee.userId}, creating assignment`);
           
           const assignment = await this.prisma.operation_assignees.create({
             data: {
               id: randomUUID(),
               operations: { connect: { id: operation.id } },
-              users: { connect: { id: assigneeUserId } },
+              users: { connect: { id: employee.userId } },
             },
           });
           
           console.log(`  ✅ Assignment created:`, assignment.id);
 
-          await this.notificationsService.sendNotificationToUser(assigneeUserId, {
+          await this.notificationsService.sendNotificationToUser(employee.userId, {
             title: 'Nueva operación asignada',
             body: `Se te ha asignado una nueva operación`,
             url: `/operations/${operation.id}`,
             data: { type: 'operation_assigned', operationId: operation.id },
           });
+        } else if (employee && !employee.userId) {
+          console.warn(`  ⚠️ Employee ${employee.name} (${assigneeId}) has no associated user account`);
         } else {
-          console.warn(`  ❌ User with ID ${assigneeUserId} not found, skipping assignment`);
+          console.warn(`  ❌ Employee with ID ${assigneeId} not found`);
         }
       }
       console.log(`✅ Finished processing assignees for operation ${operation.id}`);
