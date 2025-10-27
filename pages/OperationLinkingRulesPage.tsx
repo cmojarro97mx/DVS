@@ -68,7 +68,7 @@ export default function OperationLinkingRulesPage() {
       autoCreate: rule.autoCreate,
       enabled: rule.enabled,
     });
-    setCompanyDomainInput((rule.companyDomains || []).join(', '));
+    setCompanyDomainInput('');
     setEditingRule(rule);
     setShowCreateModal(true);
   };
@@ -135,13 +135,35 @@ export default function OperationLinkingRulesPage() {
     });
   };
 
-  const handleCompanyDomainChange = (value: string) => {
-    setCompanyDomainInput(value);
-    const domains = value
-      .split(',')
-      .map(d => d.trim())
-      .filter(d => d.length > 0);
-    setFormData({ ...formData, companyDomains: domains });
+  const addCompanyDomain = () => {
+    const trimmed = companyDomainInput.trim();
+    if (!trimmed) return;
+    
+    if (formData.companyDomains?.includes(trimmed)) {
+      setError('Este dominio ya está agregado');
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+    
+    setFormData({
+      ...formData,
+      companyDomains: [...(formData.companyDomains || []), trimmed],
+    });
+    setCompanyDomainInput('');
+  };
+
+  const removeCompanyDomain = (domain: string) => {
+    setFormData({
+      ...formData,
+      companyDomains: formData.companyDomains?.filter(d => d !== domain) || [],
+    });
+  };
+
+  const handleDomainKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addCompanyDomain();
+    }
   };
 
   if (loading) {
@@ -221,6 +243,22 @@ export default function OperationLinkingRulesPage() {
                     )}
                   </div>
                   
+                  {rule.companyDomains && rule.companyDomains.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-xs text-gray-500 mb-1">Dominios de empresa:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {rule.companyDomains.map((domain) => (
+                          <span
+                            key={domain}
+                            className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs"
+                          >
+                            {domain}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {rule.defaultAssigneeIds.length > 0 && (
                     <div className="mt-2">
                       <p className="text-xs text-gray-500 mb-1">Asignados por defecto:</p>
@@ -300,15 +338,50 @@ export default function OperationLinkingRulesPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Dominios de empresa
                   </label>
-                  <input
-                    type="text"
-                    value={companyDomainInput}
-                    onChange={(e) => handleCompanyDomainChange(e.target.value)}
-                    placeholder="Ej: @navicargologistics.com, @navicargo.mx"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Solo se procesarán emails que VENGAN DE estos dominios. Los emails con estos dominios NO se extraerán como clientes (son empleados internos). Separa múltiples dominios con comas.
+                  
+                  {/* Lista de dominios agregados */}
+                  {formData.companyDomains && formData.companyDomains.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      {formData.companyDomains.map((domain) => (
+                        <div
+                          key={domain}
+                          className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full text-sm"
+                        >
+                          <span>{domain}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeCompanyDomain(domain)}
+                            className="hover:bg-blue-200 rounded-full p-0.5"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Input para agregar nuevo dominio */}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={companyDomainInput}
+                      onChange={(e) => setCompanyDomainInput(e.target.value)}
+                      onKeyPress={handleDomainKeyPress}
+                      placeholder="Ej: @navicargologistics.com o usuario@empresa.com"
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <button
+                      type="button"
+                      onClick={addCompanyDomain}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Agregar
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Agrega dominios completos (ej: @empresa.com) o usuarios específicos (ej: usuario@empresa.com). 
+                    Solo se procesarán emails que VENGAN DE estos dominios y NO se extraerán como clientes.
                   </p>
                 </div>
 

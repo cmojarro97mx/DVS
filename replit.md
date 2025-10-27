@@ -9,11 +9,14 @@ Nexxio is an AI-driven logistics and CRM platform designed to optimize supply ch
     - **Backend Services**: 
         - `OperationLinkingRulesService`: Full CRUD for managing linking rules with multi-tenancy and company domain configuration
         - `SmartOperationCreatorService`: AI-powered service using Google Gemini to analyze email content, extract operation details (client, origin, destination, dates), verify existing operations, and create new ones with intelligent data validation
-    - **Company Domain Filtering**:
+    - **Company Domain Filtering (Chip/Tag UI)**:
         - **Email Validation**: System only processes emails that COME FROM configured company domains (e.g., @navicargologistics.com)
         - **Client Extraction Protection**: Emails with company domains are excluded from client extraction (prevents employees from being created as clients)
-        - **Configurable Multi-Domain Support**: Each linking rule can have multiple company domains (comma-separated)
+        - **Visual Tag Interface**: Domains/users displayed as removable chips/badges (similar to Gmail recipients)
+        - **Flexible Input**: Supports full domains (@company.com) or specific users (user@company.com)
+        - **Add/Remove Items**: Each domain can be added individually and removed with X button
         - **Clear UX Guidance**: UI provides clear explanations of how domain filtering works
+        - **Duplicate Prevention**: System prevents adding the same domain twice
     - **Email Sync Integration**: Every new email is automatically analyzed in real-time; if a matching pattern is found and auto-creation is enabled, the system creates the operation and links the email
     - **Frontend Configuration UI**: 
         - Accessible via Email & Calendario → Reglas de Vinculación
