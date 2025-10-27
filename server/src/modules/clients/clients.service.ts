@@ -46,7 +46,7 @@ export class ClientsService {
     }
     
     if (data.organizationId !== undefined) {
-      mappedData.organization = {
+      mappedData.organizations = {
         connect: { id: data.organizationId }
       };
     }
