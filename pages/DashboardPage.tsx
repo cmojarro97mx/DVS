@@ -34,6 +34,7 @@ import AutomationPage from './AutomationPage'; // Automation Page
 import VirtualAssistantConfigPage from '../src/pages/VirtualAssistant/VirtualAssistantConfigPage'; // Virtual Assistant Config Page
 import TaskAutomationPage from './TaskAutomationPage'; // Task Automation Page
 import KnowledgeBasePage from '../src/pages/KnowledgeBase/KnowledgeBasePage'; // Knowledge Base Page
+import OperationLinkingRulesPage from './OperationLinkingRulesPage'; // Operation Linking Rules Page
 import { employeesService } from '../src/services/employeesService';
 import { clientsService } from '../src/services/clientsService';
 import { notesService } from '../src/services/notesService';
@@ -431,7 +432,8 @@ export type View =
   | 'notifications-settings'
   | 'automations'
   | 'virtual-assistant'
-  | 'task-automation';
+  | 'task-automation'
+  | 'operation-linking-rules';
 
 const viewTitles: Record<View, string> = {
   dashboard: 'Dashboard',
@@ -465,7 +467,8 @@ const viewTitles: Record<View, string> = {
   'email-hub': 'Email & Calendario',
   'virtual-assistant': 'Asistente Virtual',
   'notifications-settings': 'Configuración de Notificaciones',
-  'task-automation': 'Task Automatizados'
+  'task-automation': 'Task Automatizados',
+  'operation-linking-rules': 'Reglas de Vinculación'
 };
 
 
@@ -1106,6 +1109,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
         return <VirtualAssistantConfigPage />;
       case 'task-automation':
         return <TaskAutomationPage />;
+      case 'operation-linking-rules':
+        return <OperationLinkingRulesPage />;
       case 'knowledge-base':
         return <KnowledgeBasePage />;
       default:

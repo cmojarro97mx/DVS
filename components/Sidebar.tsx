@@ -295,6 +295,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             onClick={() => setActiveView('email-hub')} 
                             isSidebarOpen={false} 
                         />
+                        <NavItem 
+                            icon={LinkIcon} 
+                            label="Reglas de Vinculación" 
+                            isActive={activeView === 'operation-linking-rules'} 
+                            onClick={() => setActiveView('operation-linking-rules')} 
+                            isSidebarOpen={false} 
+                        />
                     </NavSection>
 
                     <NavSection title="Administración" isSidebarOpen={false}>
