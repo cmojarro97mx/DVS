@@ -958,8 +958,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
             }}
             onUpdateColumns={setColumns}
             teamMembers={teamMembers}
-            onUpdateAssignees={(newAssignees) => {
-                setProjects(projects.map(p => p.id === selectedProject.id ? {...p, assignees: newAssignees} : p))
+            onUpdateAssignees={async (newAssigneeIds) => {
+                try {
+                    console.log('🔄 Updating assignees for operation:', selectedProject.id, newAssigneeIds);
+                    await operationsService.update(selectedProject.id, { assignees: newAssigneeIds });
+                    setProjects(projects.map(p => p.id === selectedProject.id ? {...p, assignees: newAssigneeIds} : p));
+                    console.log('✅ Assignees updated successfully');
+                } catch (error) {
+                    console.error('❌ Error updating assignees:', error);
+                    alert('Error al actualizar los miembros asignados');
+                }
             }}
              onUpdateCommissionHistory={(updatedHistory) => {
                 setProjects(projects.map(p => p.id === selectedProject.id ? {...p, commissionHistory: updatedHistory} : p))

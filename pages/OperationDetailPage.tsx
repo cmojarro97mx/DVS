@@ -417,51 +417,40 @@ const ProjectNotes: React.FC<{
     };
 
     return (
-        <div className="space-y-6">
-            {/* Header with Stats */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 p-6">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-white rounded-lg shadow-sm">
-                            <NotesIcon className="w-6 h-6 text-blue-600" />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-gray-900">Notas de la Operación</h3>
-                            <p className="text-sm text-gray-600 mt-0.5">
-                                {notes.length === 0 ? 'No hay notas registradas' : 
-                                 notes.length === 1 ? '1 nota registrada' : 
-                                 `${notes.length} notas registradas`}
-                            </p>
-                        </div>
+        <div className="space-y-4">
+            {/* Header with Stats - Compacto */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100 px-4 py-3">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                        <NotesIcon className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-bold text-gray-900">Notas</h3>
+                        <p className="text-xs text-gray-600">
+                            {notes.length === 0 ? 'Sin notas' : `${notes.length} ${notes.length === 1 ? 'nota' : 'notas'}`}
+                        </p>
                     </div>
                 </div>
             </div>
 
-            {/* Add Note Card */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-gray-50 to-slate-50 px-6 py-4 border-b border-gray-200">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
-                            <PencilIcon className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                            <h3 className="text-base font-bold text-gray-900">Agregar Nueva Nota</h3>
-                            <p className="text-xs text-gray-500">Comparte actualizaciones e información relevante</p>
-                        </div>
-                    </div>
+            {/* Add Note Card - Compacto */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="bg-gray-50 px-4 py-2.5 border-b border-gray-200 flex items-center gap-2">
+                    <PencilIcon className="w-4 h-4 text-blue-600" />
+                    <h3 className="text-sm font-semibold text-gray-900">Nueva Nota</h3>
                 </div>
-                <div className="p-6">
+                <div className="p-4">
                     <textarea
                         value={newNoteContent}
                         onChange={(e) => setNewNoteContent(e.target.value)}
-                        placeholder="Escribe tu nota aquí... Puedes incluir detalles importantes, actualizaciones de estado, o cualquier información relevante para el equipo."
-                        className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm bg-white text-gray-900 placeholder-gray-400 transition-all shadow-sm"
-                        rows={5}
+                        placeholder="Escribe tu nota aquí..."
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm bg-white text-gray-900 placeholder-gray-400 transition-all"
+                        rows={3}
                     />
                     
                     {/* File Attachment Section */}
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                        <div className="flex items-center gap-3">
+                    <div className="mt-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
                             <input
                                 ref={fileInputRef}
                                 type="file"
@@ -471,44 +460,38 @@ const ProjectNotes: React.FC<{
                             />
                             <label
                                 htmlFor="note-file-input"
-                                className="cursor-pointer px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors flex items-center gap-2"
+                                className="cursor-pointer px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-xs font-medium hover:bg-gray-200 transition-colors flex items-center gap-1.5"
                             >
-                                <PaperClipIcon className="w-4 h-4" />
-                                Adjuntar archivo
+                                <PaperClipIcon className="w-3.5 h-3.5" />
+                                Archivo
                             </label>
                             {selectedFile && (
-                                <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-                                    {React.createElement(getFileIcon(selectedFile.type), { className: "w-5 h-5 text-blue-600" })}
-                                    <span className="text-sm text-gray-700 max-w-xs truncate">{selectedFile.name}</span>
+                                <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 border border-blue-200 rounded-md">
+                                    {React.createElement(getFileIcon(selectedFile.type), { className: "w-4 h-4 text-blue-600" })}
+                                    <span className="text-xs text-gray-700 max-w-[150px] truncate">{selectedFile.name}</span>
                                     <button
                                         onClick={handleRemoveFile}
-                                        className="ml-2 text-red-500 hover:text-red-700 transition-colors"
+                                        className="text-red-500 hover:text-red-700 transition-colors"
                                     >
-                                        <XIcon className="w-4 h-4" />
+                                        <XIcon className="w-3 h-3" />
                                     </button>
                                 </div>
                             )}
                         </div>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-                        <p className="text-xs text-gray-500">
-                            <span className="font-medium">Tip:</span> Las notas se ordenan automáticamente por fecha
-                        </p>
                         <button 
                             onClick={handleAddClick} 
-                            className="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-sm hover:shadow-md"
+                            className="px-4 py-1.5 bg-blue-600 text-white rounded-md text-xs font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
                             disabled={!newNoteContent.trim() || isSaving}
                         >
                             {isSaving ? (
                                 <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
                                     <span>Guardando...</span>
                                 </>
                             ) : (
                                 <>
-                                    <PencilIcon className="w-4 h-4" />
-                                    <span>Publicar Nota</span>
+                                    <PencilIcon className="w-3.5 h-3.5" />
+                                    <span>Publicar</span>
                                 </>
                             )}
                         </button>
@@ -648,8 +631,9 @@ const ProjectMembers: React.FC<{
 }> = ({ projectAssignees, allTeamMembers, onUpdateAssignees }) => {
   const [memberToAdd, setMemberToAdd] = useState('');
 
+  // projectAssignees now contains employee IDs
   const availableMembers = allTeamMembers.filter(
-    member => !projectAssignees.includes(member.name)
+    member => !projectAssignees.includes(member.id)
   );
 
   const handleAddMember = () => {
@@ -660,26 +644,36 @@ const ProjectMembers: React.FC<{
     }
   };
 
-  const handleRemoveMember = (memberName: string) => {
-    if (window.confirm(`Are you sure you want to remove ${memberName} from this operation?`)) {
-      const newAssignees = projectAssignees.filter(name => name !== memberName);
+  const handleRemoveMember = (memberId: string) => {
+    const memberToRemove = allTeamMembers.find(m => m.id === memberId);
+    const memberName = memberToRemove?.name || 'this member';
+    
+    if (window.confirm(`¿Estás seguro de que deseas eliminar ${memberName} de esta operación?`)) {
+      const newAssignees = projectAssignees.filter(id => id !== memberId);
       onUpdateAssignees(newAssignees);
     }
+  };
+
+  // Get member names for display
+  const getAssignedMembers = () => {
+    return projectAssignees
+      .map(assigneeId => allTeamMembers.find(m => m.id === assigneeId))
+      .filter(m => m !== undefined);
   };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-bold text-gray-800">Assigned Members</h3>
+        <h3 className="text-lg font-bold text-gray-800">Miembros Asignados</h3>
         <div className="flex items-center gap-2">
           <select
             value={memberToAdd}
             onChange={(e) => setMemberToAdd(e.target.value)}
             className="block w-48 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            <option value="" disabled>Select member...</option>
+            <option value="" disabled>Seleccionar miembro...</option>
             {availableMembers.map(member => (
-              <option key={member.id} value={member.name}>{member.name}</option>
+              <option key={member.id} value={member.id}>{member.name}</option>
             ))}
           </select>
           <button
@@ -687,29 +681,29 @@ const ProjectMembers: React.FC<{
             disabled={!memberToAdd}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            Add
+            Agregar
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {projectAssignees.map(assigneeName => (
-          <div key={assigneeName} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+        {getAssignedMembers().map(member => (
+          <div key={member!.id} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
             <div className="flex items-center">
               <UserCircleIcon className="w-8 h-8 text-gray-400 mr-3" />
-              <span className="text-sm font-medium text-gray-800">{assigneeName}</span>
+              <span className="text-sm font-medium text-gray-800">{member!.name}</span>
             </div>
             <button
-              onClick={() => handleRemoveMember(assigneeName)}
+              onClick={() => handleRemoveMember(member!.id)}
               className="text-gray-400 hover:text-red-600"
-              title={`Remove ${assigneeName}`}
+              title={`Eliminar ${member!.name}`}
             >
               <TrashIcon className="w-5 h-5" />
             </button>
           </div>
         ))}
         {projectAssignees.length === 0 && (
-          <p className="col-span-full text-center text-gray-500 text-sm py-8">No members assigned to this operation.</p>
+          <p className="col-span-full text-center text-gray-500 text-sm py-8">No hay miembros asignados a esta operación.</p>
         )}
       </div>
     </div>

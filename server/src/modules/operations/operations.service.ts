@@ -175,27 +175,49 @@ export class OperationsService {
     });
 
     if (assignees !== undefined) {
-      const oldAssigneeIds = existing.operation_assignees.map(a => a.userId);
-      const newAssigneeIds = assignees;
+      console.log(`🔄 [UPDATE ASSIGNEES] Processing ${assignees.length} assignees for operation ${id}`);
       
+      const oldAssigneeIds = existing.operation_assignees.map(a => a.userId);
+      
+      // Delete all existing assignments
       await this.prisma.operation_assignees.deleteMany({
         where: { operationId: id },
       });
 
       if (assignees.length > 0) {
-        await Promise.all(
-          assignees.map((assigneeName: string) =>
-            this.prisma.operation_assignees.create({
+        const newUserIds = [];
+        
+        // Process each assignee (expecting employee IDs)
+        for (const assigneeId of assignees) {
+          console.log(`  - Processing assignee: ${assigneeId}`);
+          
+          // Look up employee to get their userId
+          const employee = await this.prisma.employees.findUnique({
+            where: { id: assigneeId },
+            select: { id: true, name: true, userId: true }
+          });
+
+          if (employee && employee.userId) {
+            console.log(`  ✅ Employee ${employee.name} found with user ID ${employee.userId}, creating assignment`);
+            
+            await this.prisma.operation_assignees.create({
               data: {
                 id: randomUUID(),
                 operations: { connect: { id: id } },
-                users: { connect: { id: assigneeName } },
+                users: { connect: { id: employee.userId } },
               },
-            }),
-          ),
-        );
+            });
+            
+            newUserIds.push(employee.userId);
+          } else if (employee && !employee.userId) {
+            console.warn(`  ⚠️ Employee ${employee.name} (${assigneeId}) has no associated user account`);
+          } else {
+            console.warn(`  ❌ Employee with ID ${assigneeId} not found`);
+          }
+        }
 
-        const addedAssignees = newAssigneeIds.filter(id => !oldAssigneeIds.includes(id));
+        // Send notifications to newly added assignees
+        const addedAssignees = newUserIds.filter(userId => !oldAssigneeIds.includes(userId));
         for (const userId of addedAssignees) {
           await this.notificationsService.sendNotificationToUser(userId, {
             title: 'Nueva operación asignada',
@@ -204,8 +226,13 @@ export class OperationsService {
             data: { type: 'operation_assigned', operationId: operation.id },
           });
         }
+        
+        console.log(`✅ Finished processing ${newUserIds.length} assignees for operation ${id}`);
+      } else {
+        console.log('ℹ️ No assignees provided, all assignments removed');
       }
 
+      // Send update notification to all assignees if operation data changed
       const allAssigneeIds = assignees.length > 0 ? assignees : oldAssigneeIds;
       if (allAssigneeIds.length > 0 && Object.keys(cleanData).length > 0) {
         await this.notificationsService.sendNotificationToUsers(allAssigneeIds, {
