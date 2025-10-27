@@ -525,9 +525,14 @@ const CreateOperationPage: React.FC<CreateOperationPageProps> = ({ setActiveView
                                             </FormField>
                                             
                                             <FormField label="Assigned To" id="assignees" required className="md:col-span-2" error={errors.assignees}>
-                                                <Select name="assignees" value={formData.assignees} onChange={handleChange} required hasError={!!errors.assignees} multiple>
-                                                    {teamMembers.map(member => <option key={member.id} value={member.id}>{member.name}</option>)}
+                                                <Select name="assignees" value={formData.assignees} onChange={handleChange} required hasError={!!errors.assignees} multiple size={5}>
+                                                    {teamMembers.length === 0 ? (
+                                                        <option value="" disabled>No employees available - Please create employees first</option>
+                                                    ) : (
+                                                        teamMembers.map(member => <option key={member.id} value={member.id}>{member.name}</option>)
+                                                    )}
                                                 </Select>
+                                                {teamMembers.length > 0 && <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple employees</p>}
                                             </FormField>
                                         </>)}
                                         
