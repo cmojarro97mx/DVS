@@ -291,15 +291,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <NavItem 
                             icon={MailIcon} 
                             label="Email & Calendario" 
-                            isActive={['email-hub', 'integrations', 'email-analysis', 'ai-operation-creator', 'automations'].includes(activeView)} 
+                            isActive={['email-hub', 'integrations', 'email-analysis', 'operation-linking-rules', 'task-automation'].includes(activeView)} 
                             onClick={() => setActiveView('email-hub')} 
-                            isSidebarOpen={false} 
-                        />
-                        <NavItem 
-                            icon={LinkIcon} 
-                            label="Reglas de Vinculación" 
-                            isActive={activeView === 'operation-linking-rules'} 
-                            onClick={() => setActiveView('operation-linking-rules')} 
                             isSidebarOpen={false} 
                         />
                     </NavSection>

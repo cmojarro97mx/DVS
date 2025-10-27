@@ -11,7 +11,7 @@ Nexxio is an AI-driven logistics and CRM platform designed to optimize supply ch
         - `SmartOperationCreatorService`: AI-powered service using Google Gemini to analyze email content, extract operation details (client, origin, destination, dates), verify existing operations, and create new ones with intelligent data validation
     - **Email Sync Integration**: Every new email is automatically analyzed in real-time; if a matching pattern is found and auto-creation is enabled, the system creates the operation and links the email
     - **Frontend Configuration UI**: 
-        - New page `/operation-linking-rules` with rules management interface
+        - Accessible via Email & Calendario → Reglas de Vinculación
         - Subject pattern configuration, default employee assignment, enable/disable auto-creation toggle
         - Full CRUD operations with professional UI following platform design patterns
     - **Visual Indicators**: 
@@ -21,7 +21,7 @@ Nexxio is an AI-driven logistics and CRM platform designed to optimize supply ch
         - Blue info banner for successfully auto-created operations with complete data
     - **Data Quality**: AI validates extracted information; leaves fields empty if uncertain rather than guessing, marks operation as `needsAttention=true`
     - **Smart Detection**: Checks for duplicate operations before creation to prevent duplicates
-    - **Navigation**: Added route and sidebar link for easy access to configuration
+    - **Navigation**: Replaced old "Creador Inteligente" module; consolidated functionality into unified "Reglas de Vinculación" accessible from Email & Calendario hub
 
 ## Recent Changes (October 26, 2025)
 -   **CRITICAL DATABASE FIX - Form Saving Issue Resolved**: Fixed critical issue where all forms (tasks, quotations, invoices, etc.) failed to save data. Applied two essential corrections:

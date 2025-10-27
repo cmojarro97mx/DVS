@@ -74,15 +74,9 @@ const EmailHubPage: React.FC<EmailHubPageProps> = ({ setActiveView }) => {
                 <EmailSection title="Automatización">
                     <HubCard
                         title="Reglas de Vinculación"
-                        description="Configura reglas para vincular correos con operaciones automáticamente."
+                        description="Crea y vincula operaciones automáticamente desde correos electrónicos con IA."
                         icon={CpuChipIcon}
-                        onClick={() => setActiveView('automations')}
-                    />
-                    <HubCard
-                        title="Creador Inteligente"
-                        description="Crea y actualiza operaciones automáticamente desde correos electrónicos."
-                        icon={CpuChipIcon}
-                        onClick={() => setActiveView('ai-operation-creator')}
+                        onClick={() => setActiveView('operation-linking-rules')}
                     />
                     <HubCard
                         title="Task Automatizados"
