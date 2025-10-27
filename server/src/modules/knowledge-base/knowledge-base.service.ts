@@ -419,13 +419,16 @@ export class KnowledgeBaseService {
 
   async getAllEntries(organizationId: string): Promise<any[]> {
     try {
-      return await this.prisma.knowledge_base.findMany({
+      this.logger.log(`📚 Buscando entradas de conocimiento para organizationId: ${organizationId}`);
+      const entries = await this.prisma.knowledge_base.findMany({
         where: { organizationId },
         orderBy: [
           { relevanceScore: 'desc' },
           { updatedAt: 'desc' },
         ],
       });
+      this.logger.log(`📚 Encontradas ${entries.length} entradas de conocimiento`);
+      return entries;
     } catch (error) {
       this.logger.error(`Error obteniendo entradas: ${error.message}`);
       return [];
