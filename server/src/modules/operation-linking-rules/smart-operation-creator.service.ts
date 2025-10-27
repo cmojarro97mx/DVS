@@ -36,8 +36,16 @@ export class SmartOperationCreatorService {
       }
 
       const subject = emailMessage.subject || '';
+      const emailFrom = emailMessage.from || '';
 
       for (const rule of rules) {
+        if (!this.isEmailFromCompanyDomain(emailFrom, rule.companyDomains)) {
+          this.logger.debug(
+            `Email from "${emailFrom}" is not from configured company domains, skipping rule "${rule.name}"`,
+          );
+          continue;
+        }
+
         const match = this.matchSubjectPattern(subject, rule.subjectPattern);
 
         if (match) {
@@ -131,6 +139,7 @@ export class SmartOperationCreatorService {
     const extractedData = await this.extractOperationDataWithAI(
       emailMessage,
       operationName,
+      rule.companyDomains,
     );
 
     const clientId = await this.findOrCreateClient(
@@ -138,6 +147,7 @@ export class SmartOperationCreatorService {
       extractedData.clientEmail,
       organizationId,
       rule.autoCreateClients,
+      rule.companyDomains,
     );
 
     const missingFields = this.identifyMissingFields(extractedData);
@@ -187,10 +197,10 @@ export class SmartOperationCreatorService {
     return operation;
   }
 
-  private async extractOperationDataWithAI(emailMessage: any, operationName: string) {
+  private async extractOperationDataWithAI(emailMessage: any, operationName: string, companyDomains?: any) {
     if (!this.genAI) {
       this.logger.warn('Gemini AI not configured, using basic extraction');
-      return this.basicExtraction(emailMessage, operationName);
+      return this.basicExtraction(emailMessage, operationName, companyDomains);
     }
 
     try {
@@ -198,16 +208,20 @@ export class SmartOperationCreatorService {
 
       const emailBody = this.stripHtml(emailMessage.bodyText || emailMessage.snippet || '').substring(0, 2000);
       const subject = emailMessage.subject || '';
+      
+      const domainInstructions = companyDomains && Array.isArray(companyDomains) && companyDomains.length > 0
+        ? `\n\nIMPORTANTE: NO extraigas como cliente emails que terminen en estos dominios (son empleados internos): ${companyDomains.join(', ')}`
+        : '';
 
       const prompt = `Analiza el siguiente correo electrónico y extrae información para crear una operación logística.
 
 Asunto: ${subject}
-Cuerpo: ${emailBody}
+Cuerpo: ${emailBody}${domainInstructions}
 
 Extrae la siguiente información en formato JSON (si no encuentras algún dato, usa null):
 {
   "clientName": "nombre del cliente o empresa",
-  "clientEmail": "email del cliente",
+  "clientEmail": "email del cliente (NO incluir emails internos de la empresa)",
   "projectCategory": "categoría del proyecto",
   "operationType": "tipo de operación (Import/Export/Domestic)",
   "shippingMode": "modo de envío (Air/Sea/Land)",
@@ -230,6 +244,12 @@ Responde SOLO con el JSON, sin explicaciones adicionales.`;
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const extracted = JSON.parse(jsonMatch[0]);
+        
+        if (extracted.clientEmail && this.isCompanyDomainEmail(extracted.clientEmail, companyDomains)) {
+          this.logger.log(`🚫 Removed company domain email from client: ${extracted.clientEmail}`);
+          extracted.clientEmail = null;
+        }
+        
         this.logger.log('✅ AI extraction successful');
         return extracted;
       }
@@ -237,19 +257,25 @@ Responde SOLO con el JSON, sin explicaciones adicionales.`;
       throw new Error('No valid JSON found in AI response');
     } catch (error) {
       this.logger.warn('AI extraction failed, using basic extraction:', error.message);
-      return this.basicExtraction(emailMessage, operationName);
+      return this.basicExtraction(emailMessage, operationName, companyDomains);
     }
   }
 
-  private basicExtraction(emailMessage: any, operationName: string) {
+  private basicExtraction(emailMessage: any, operationName: string, companyDomains?: any) {
     const body = this.stripHtml(emailMessage.bodyText || emailMessage.snippet || '');
     const from = emailMessage.from || '';
 
     const emailMatch = from.match(/<([^>]+)>/);
-    const clientEmail = emailMatch ? emailMatch[1] : from;
+    let clientEmail = emailMatch ? emailMatch[1] : from;
 
     const nameMatch = from.match(/^([^<]+)</);
-    const clientName = nameMatch ? nameMatch[1].trim() : 'Cliente Desconocido';
+    let clientName = nameMatch ? nameMatch[1].trim() : 'Cliente Desconocido';
+
+    if (this.isCompanyDomainEmail(clientEmail, companyDomains)) {
+      this.logger.log(`🚫 Email "${clientEmail}" is from company domain, not using as client`);
+      clientEmail = null;
+      clientName = null;
+    }
 
     return {
       clientName,
@@ -278,8 +304,14 @@ Responde SOLO con el JSON, sin explicaciones adicionales.`;
     clientEmail: string | null,
     organizationId: string,
     autoCreate: boolean,
+    companyDomains?: any,
   ): Promise<string | null> {
     if (!clientName && !clientEmail) {
+      return null;
+    }
+
+    if (clientEmail && this.isCompanyDomainEmail(clientEmail, companyDomains)) {
+      this.logger.log(`🚫 Skipping client creation for company domain email: ${clientEmail}`);
       return null;
     }
 
@@ -389,5 +421,30 @@ Responde SOLO con el JSON, sin explicaciones adicionales.`;
         },
       });
     }
+  }
+
+  private isEmailFromCompanyDomain(emailFrom: string, companyDomains?: any): boolean {
+    if (!companyDomains || !Array.isArray(companyDomains) || companyDomains.length === 0) {
+      return true;
+    }
+
+    const emailMatch = emailFrom.match(/<([^>]+)>/);
+    const email = emailMatch ? emailMatch[1] : emailFrom;
+
+    return companyDomains.some(domain => {
+      const normalizedDomain = domain.startsWith('@') ? domain : '@' + domain;
+      return email.toLowerCase().endsWith(normalizedDomain.toLowerCase());
+    });
+  }
+
+  private isCompanyDomainEmail(email: string | null, companyDomains?: any): boolean {
+    if (!email || !companyDomains || !Array.isArray(companyDomains) || companyDomains.length === 0) {
+      return false;
+    }
+
+    return companyDomains.some(domain => {
+      const normalizedDomain = domain.startsWith('@') ? domain : '@' + domain;
+      return email.toLowerCase().endsWith(normalizedDomain.toLowerCase());
+    });
   }
 }
