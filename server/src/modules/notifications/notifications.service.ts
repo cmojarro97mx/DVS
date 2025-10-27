@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
-import * as webPush from 'web-push';
 import { randomUUID } from 'crypto';
 
 export interface NotificationPayload {
@@ -16,16 +15,7 @@ export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
 
   constructor(private readonly prisma: PrismaService) {
-    const publicKey = process.env.VAPID_PUBLIC_KEY;
-    const privateKey = process.env.VAPID_PRIVATE_KEY;
-    const mailto = process.env.VAPID_MAILTO || 'mailto:admin@nexxio.com';
-
-    if (publicKey && privateKey) {
-      webPush.setVapidDetails(mailto, publicKey, privateKey);
-      this.logger.log('Web Push configured successfully');
-    } else {
-      this.logger.warn('VAPID keys not configured, web push notifications will not work');
-    }
+    this.logger.log('Notifications service initialized - Internal notifications only');
   }
 
   async sendNotificationToUser(userId: string, notification: NotificationPayload): Promise<void> {
@@ -54,66 +44,7 @@ export class NotificationsService {
         },
       });
 
-      const userSettings = await this.prisma.notification_settings.findUnique({
-        where: { userId },
-      });
-
-      if (userSettings && !userSettings.pushEnabled) {
-        this.logger.debug(`Push notifications disabled for user ${userId}`);
-        return;
-      }
-
-      const subscriptions = await this.prisma.push_subscriptions.findMany({
-        where: { userId },
-      });
-
-      if (subscriptions.length === 0) {
-        this.logger.debug(`No push subscriptions found for user ${userId}`);
-        return;
-      }
-
-      const payload = JSON.stringify({
-        title: notification.title,
-        body: notification.body,
-        icon: notification.icon || '/logo.png',
-        url: null,
-        data: notification.data,
-      });
-
-      const results = await Promise.allSettled(
-        subscriptions.map(async (sub) => {
-          try {
-            await webPush.sendNotification(
-              {
-                endpoint: sub.endpoint,
-                keys: sub.keys as any,
-              },
-              payload,
-            );
-
-            await this.prisma.push_subscriptions.update({
-              where: { id: sub.id },
-              data: { lastUsedAt: new Date() },
-            });
-
-            this.logger.log(`Push notification sent to subscription ${sub.id}`);
-          } catch (error) {
-            if (error.statusCode === 410) {
-              this.logger.warn(`Subscription expired, removing: ${sub.id}`);
-              await this.prisma.push_subscriptions.delete({
-                where: { id: sub.id },
-              });
-            } else {
-              this.logger.error(`Failed to send push notification to subscription ${sub.id}`, error);
-            }
-          }
-        }),
-      );
-
-      const successful = results.filter((r) => r.status === 'fulfilled').length;
-      this.logger.log(
-        `Notification sent to user ${userId}: ${notification.title} (${successful}/${subscriptions.length} subscriptions)`,
-      );
+      this.logger.log(`Notification created for user ${userId}: ${notification.title}`);
     } catch (error) {
       this.logger.error(`Failed to send notification to user ${userId}`, error);
     }
@@ -148,7 +79,6 @@ export class NotificationsService {
           id: randomUUID(),
           updatedAt: new Date(),
           users: { connect: { id: userId } },
-          pushEnabled: true,
           operationsEnabled: true,
           tasksEnabled: true,
           paymentsEnabled: true,
@@ -218,63 +148,5 @@ export class NotificationsService {
         userId,
       },
     });
-  }
-
-  async subscribeToPush(userId: string, subscription: any, userAgent?: string) {
-    try {
-      const existing = await this.prisma.push_subscriptions.findUnique({
-        where: { endpoint: subscription.endpoint },
-      });
-
-      if (existing) {
-        return this.prisma.push_subscriptions.update({
-          where: { endpoint: subscription.endpoint },
-          data: {
-            keys: subscription.keys,
-            userAgent,
-            lastUsedAt: new Date(),
-          },
-        });
-      }
-
-      return this.prisma.push_subscriptions.create({
-        data: {
-          id: randomUUID(),
-          users: { connect: { id: userId } },
-          endpoint: subscription.endpoint,
-          keys: subscription.keys,
-          userAgent,
-        },
-      });
-    } catch (error) {
-      this.logger.error('Failed to save push subscription', error);
-      throw error;
-    }
-  }
-
-  async unsubscribeFromPush(userId: string, endpoint: string) {
-    return this.prisma.push_subscriptions.deleteMany({
-      where: {
-        userId,
-        endpoint,
-      },
-    });
-  }
-
-  async getUserSubscriptions(userId: string) {
-    return this.prisma.push_subscriptions.findMany({
-      where: { userId },
-      select: {
-        id: true,
-        endpoint: true,
-        userAgent: true,
-        createdAt: true,
-        lastUsedAt: true,
-      },
-    });
-  }
-
-  getVapidPublicKey(): string {
-    return process.env.VAPID_PUBLIC_KEY || '';
   }
 }
