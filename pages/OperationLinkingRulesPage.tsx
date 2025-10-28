@@ -16,6 +16,8 @@ export default function OperationLinkingRulesPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingRule, setEditingRule] = useState<OperationLinkingRule | null>(null);
   const [formData, setFormData] = useState<CreateOperationLinkingRuleDto>({
+    name: '',
+    description: '',
     subjectPattern: '',
     defaultAssigneeIds: [],
     companyDomains: [],
@@ -49,6 +51,8 @@ export default function OperationLinkingRulesPage() {
 
   const handleCreate = () => {
     setFormData({
+      name: '',
+      description: '',
       subjectPattern: '',
       defaultAssigneeIds: [],
       companyDomains: [],
@@ -62,6 +66,8 @@ export default function OperationLinkingRulesPage() {
 
   const handleEdit = (rule: OperationLinkingRule) => {
     setFormData({
+      name: rule.name,
+      description: rule.description || '',
       subjectPattern: rule.subjectPattern,
       defaultAssigneeIds: rule.defaultAssigneeIds,
       companyDomains: rule.companyDomains || [],
@@ -74,6 +80,11 @@ export default function OperationLinkingRulesPage() {
   };
 
   const handleSave = async () => {
+    if (!formData.name.trim()) {
+      setError('El nombre es obligatorio');
+      return;
+    }
+    
     if (!formData.subjectPattern.trim()) {
       setError('El patrón de asunto es obligatorio');
       return;
@@ -316,6 +327,36 @@ export default function OperationLinkingRulesPage() {
               </div>
 
               <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nombre de la regla *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    placeholder="Ej: Operaciones NAVI, Cotizaciones, Pedidos"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Descripción
+                  </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    placeholder="Descripción opcional de esta regla"
+                    rows={2}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Patrón de asunto *

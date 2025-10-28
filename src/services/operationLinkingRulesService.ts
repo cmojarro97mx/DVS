@@ -3,6 +3,8 @@ import { apiService } from './api';
 export interface OperationLinkingRule {
   id: string;
   organizationId: string;
+  name: string;
+  description?: string;
   subjectPattern: string;
   defaultAssigneeIds: string[];
   companyDomains?: string[];
@@ -13,6 +15,8 @@ export interface OperationLinkingRule {
 }
 
 export interface CreateOperationLinkingRuleDto {
+  name: string;
+  description?: string;
   subjectPattern: string;
   defaultAssigneeIds: string[];
   companyDomains?: string[];
@@ -21,6 +25,8 @@ export interface CreateOperationLinkingRuleDto {
 }
 
 export interface UpdateOperationLinkingRuleDto {
+  name?: string;
+  description?: string;
   subjectPattern?: string;
   defaultAssigneeIds?: string[];
   companyDomains?: string[];
