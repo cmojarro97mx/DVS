@@ -121,20 +121,10 @@ export class OperationLinkingRulesService {
       data: updateData,
     });
 
-    // Process historical emails if processFromDate is set and changed
-    // Convert both to Date objects for proper comparison
-    const newDate = processFromDate ? new Date(processFromDate).getTime() : null;
-    const oldDate = existing.processFromDate ? new Date(existing.processFromDate).getTime() : null;
-    
-    this.logger.log(`🔍 Comparing dates:`, {
-      newDate,
-      oldDate,
-      areEqual: newDate === oldDate,
-      willProcess: processFromDate && newDate !== oldDate,
-    });
-    
-    if (processFromDate && newDate !== oldDate) {
-      this.logger.log(`⏳ ProcessFromDate changed from ${existing.processFromDate} to ${processFromDate}, triggering historical processing`);
+    // Process historical emails if processFromDate is set and autoCreate is enabled
+    // Always process when saving to allow reprocessing after bug fixes or changes
+    if (processFromDate && autoCreate) {
+      this.logger.log(`⏳ Triggering historical processing from ${processFromDate} (autoCreate: ${autoCreate})`);
       // Run in background to avoid blocking the response
       setImmediate(() => {
         this.processHistoricalEmails(updated.id, organizationId).catch(error => {
@@ -142,7 +132,7 @@ export class OperationLinkingRulesService {
         });
       });
     } else {
-      this.logger.log(`⚠️ No historical processing needed. ProcessFromDate: ${processFromDate}, Changed: ${newDate !== oldDate}`);
+      this.logger.log(`⚠️ No historical processing. ProcessFromDate: ${processFromDate}, AutoCreate: ${autoCreate}`);
     }
 
     return updated;
