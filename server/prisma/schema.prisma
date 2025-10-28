@@ -81,17 +81,25 @@ model clients {
 }
 
 model documents {
-  id          String      @id @default(uuid())
-  name        String
-  type        String      @default("file")
-  url         String?
-  size        Int?
-  mimeType    String?
-  parentId    String?
-  operationId String?
-  createdAt   DateTime    @default(now())
-  updatedAt      DateTime @updatedAt
-  operations  operations? @relation(fields: [operationId], references: [id], onDelete: Cascade)
+  id                    String      @id @default(uuid())
+  name                  String
+  type                  String      @default("file") // "file" or "folder"
+  url                   String?
+  b2Key                 String?     // Backblaze B2 storage key
+  size                  Int?
+  mimeType              String?
+  parentId              String?     // For folder hierarchy
+  operationId           String?
+  emailMessageId        String?     // If extracted from email
+  autoClassified        Boolean     @default(false)
+  classifiedAs          String?     // "payment", "expense", "invoice", "image", "spam", "other"
+  classificationScore   Float?      // AI confidence score
+  metadata              Json?       // Additional metadata (OCR text, extracted data, etc.)
+  thumbnailUrl          String?     // For images/PDFs
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  uploadedBy            String?     // User who uploaded (manual or "auto")
+  operations            operations? @relation(fields: [operationId], references: [id], onDelete: Cascade)
 }
 
 model email_accounts {
@@ -482,8 +490,9 @@ model organizations {
   quotations               quotations[]
   suppliers                suppliers[]
   tasks                    tasks[]
-  users                    users[]
-  virtual_assistants       virtual_assistants[]
+  users                         users[]
+  virtual_assistants            virtual_assistants[]
+  document_automation_config    document_automation_config[]
 }
 
 model payments {
@@ -690,4 +699,21 @@ model knowledge_base {
   @@unique([organizationId, contentHash])
   @@index([organizationId, category])
   @@index([organizationId, relevanceScore])
+}
+
+model document_automation_config {
+  id                    String        @id @default(uuid())
+  organizationId        String
+  enabled               Boolean       @default(false)
+  autoExtractFromEmails Boolean       @default(true)
+  autoClassify          Boolean       @default(true)
+  autoOrganize          Boolean       @default(true)
+  targetFolderRules     Json?         // Rules for organizing by classification
+  excludeSpam           Boolean       @default(true)
+  minConfidenceScore    Float         @default(0.7)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  organizations         organizations @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId])
 }
