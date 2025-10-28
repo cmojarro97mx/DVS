@@ -73,7 +73,24 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
     }
   };
 
-  // Calculate statistics
+  // Filter projects first
+  const filteredProjects = useMemo(() => {
+    return projects.filter(project => {
+        const matchesStatus = statusFilter === 'All' || project.status === statusFilter;
+
+        const lowercasedQuery = searchQuery.toLowerCase().trim();
+        if (lowercasedQuery === '') {
+            return matchesStatus;
+        }
+
+        const matchesSearch = project.id.toLowerCase().includes(lowercasedQuery) ||
+                              project.projectName.toLowerCase().includes(lowercasedQuery);
+
+        return matchesStatus && matchesSearch;
+    });
+  }, [searchQuery, statusFilter, projects]);
+
+  // Calculate statistics based on filtered projects
   const statistics = useMemo(() => {
     const total = filteredProjects.length;
     const byStatus = filteredProjects.reduce((acc, p) => {
@@ -85,8 +102,8 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
       ? Math.round(filteredProjects.reduce((sum, p) => sum + p.progress, 0) / total)
       : 0;
     
-    const needsAttention = filteredProjects.filter(p => p.needsAttention).length;
-    const autoCreated = filteredProjects.filter(p => p.autoCreated).length;
+    const needsAttention = filteredProjects.filter((p: any) => p.needsAttention).length;
+    const autoCreated = filteredProjects.filter((p: any) => p.autoCreated).length;
     
     return {
       total,
@@ -115,22 +132,6 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
       setOperationToDelete(null);
     }
   };
-
-  const filteredProjects = useMemo(() => {
-    return projects.filter(project => {
-        const matchesStatus = statusFilter === 'All' || project.status === statusFilter;
-
-        const lowercasedQuery = searchQuery.toLowerCase().trim();
-        if (lowercasedQuery === '') {
-            return matchesStatus;
-        }
-
-        const matchesSearch = project.id.toLowerCase().includes(lowercasedQuery) ||
-                              project.projectName.toLowerCase().includes(lowercasedQuery);
-
-        return matchesStatus && matchesSearch;
-    });
-  }, [searchQuery, statusFilter, projects]);
 
   return (
     <div className="animate-fade-in space-y-6 h-full flex flex-col">

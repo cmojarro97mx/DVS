@@ -248,87 +248,92 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { label: 'Employees', view: 'employees' as View, icon: UsersIcon },
     ];
 
-    // Always keep sidebar collapsed
-    React.useEffect(() => {
-        setIsSidebarOpen(false);
-    }, []);
-
     return (
-        <aside className="fixed top-0 left-0 h-screen bg-white border-r border-slate-200 z-30 transition-all duration-300 w-20">
+        <aside className={`fixed top-0 left-0 h-screen bg-white border-r border-slate-200 z-30 transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
             <div className="flex flex-col h-full relative">
-                 <div className="flex-shrink-0 h-16 border-b border-slate-200 flex items-center justify-center relative group/logo">
-                    <button onClick={() => setActiveView('dashboard')} className="flex items-center justify-center w-full h-full" title="Dashboard">
+                 <div className="flex-shrink-0 h-16 border-b border-slate-200 flex items-center relative">
+                    <button onClick={() => setActiveView('dashboard')} className={`flex items-center h-full ${isSidebarOpen ? 'px-4' : 'justify-center w-full'}`} title="Dashboard">
                        <ShipNowIcon className="w-8 h-8 text-red-600 flex-shrink-0" />
+                       {isSidebarOpen && <span className="ml-3 font-bold text-gray-800">SHIPNOW</span>}
                     </button>
-                    <div className="absolute left-full ml-2 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-md whitespace-nowrap opacity-0 group-hover/logo:opacity-100 transition-opacity duration-200 pointer-events-none z-[9999] shadow-lg">
-                        SHIPNOW - Dashboard
-                    </div>
+                    {!isSidebarOpen && (
+                        <div className="absolute left-full ml-2 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-md whitespace-nowrap opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none z-[9999] shadow-lg">
+                            SHIPNOW - Dashboard
+                        </div>
+                    )}
+                    <button 
+                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                        className={`p-2 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-800 transition-colors ${isSidebarOpen ? 'ml-auto mr-2' : 'absolute bottom-4 left-1/2 -translate-x-1/2'}`}
+                        title={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+                    >
+                        <ChevronDoubleLeftIcon className={`w-5 h-5 transition-transform duration-300 ${isSidebarOpen ? '' : 'rotate-180'}`} />
+                    </button>
                 </div>
 
 
                 <nav className="flex-1 p-2 overflow-y-auto overflow-x-hidden sidebar-nav-scroll min-h-0">
-                    <NavSection title="Análisis" isSidebarOpen={false}>
+                    <NavSection title="Análisis" isSidebarOpen={isSidebarOpen}>
                          <NavItem 
                             icon={DashboardIcon} 
                             label="Dashboard" 
                             isActive={activeView === 'dashboard'} 
                             onClick={() => setActiveView('dashboard')} 
-                            isSidebarOpen={false} 
+                            isSidebarOpen={isSidebarOpen} 
                         />
                     </NavSection>
 
-                     <NavSection title="Gestión" isSidebarOpen={false}>
+                     <NavSection title="Gestión" isSidebarOpen={isSidebarOpen}>
                         <NavItem 
                             icon={TruckIcon} 
                             label="Operations" 
                             isActive={activeView === 'operations' || activeView === 'create-operation' || activeView === 'detail-operation'} 
                             onClick={() => setActiveView('operations')} 
-                            isSidebarOpen={false} 
+                            isSidebarOpen={isSidebarOpen} 
                         />
                     </NavSection>
 
-                    <NavSection title="Finanzas" isSidebarOpen={false}>
+                    <NavSection title="Finanzas" isSidebarOpen={isSidebarOpen}>
                         <NavItem 
                             icon={CurrencyDollarOutlineIcon} 
                             label="Finance" 
                             isActive={['finance-hub', 'quotations', 'all_invoices', 'all_payments', 'all_expenses', 'bank_accounts', 'bank-reconciliation', 'finance'].includes(activeView)} 
                             onClick={() => setActiveView('finance-hub')} 
-                            isSidebarOpen={false} 
+                            isSidebarOpen={isSidebarOpen} 
                         />
                     </NavSection>
 
-                    <NavSection title="Herramientas" isSidebarOpen={false}>
-                        <NavItem icon={CalendarIcon} label="Calendar" isActive={activeView === 'calendar'} onClick={() => setActiveView('calendar')} isSidebarOpen={false} />
-                        <NavItem icon={FolderOpenIcon} label="Gestor de Archivos" isActive={activeView === 'files'} onClick={() => setActiveView('files')} isSidebarOpen={false} />
+                    <NavSection title="Herramientas" isSidebarOpen={isSidebarOpen}>
+                        <NavItem icon={CalendarIcon} label="Calendar" isActive={activeView === 'calendar'} onClick={() => setActiveView('calendar')} isSidebarOpen={isSidebarOpen} />
+                        <NavItem icon={FolderOpenIcon} label="Gestor de Archivos" isActive={activeView === 'files'} onClick={() => setActiveView('files')} isSidebarOpen={isSidebarOpen} />
                         <NavItem 
                             icon={MailIcon} 
                             label="Email & Calendario" 
                             isActive={['email-hub', 'integrations', 'email-analysis', 'operation-linking-rules', 'task-automation'].includes(activeView)} 
                             onClick={() => setActiveView('email-hub')} 
-                            isSidebarOpen={false} 
+                            isSidebarOpen={isSidebarOpen} 
                         />
                     </NavSection>
 
-                    <NavSection title="Administración" isSidebarOpen={false}>
+                    <NavSection title="Administración" isSidebarOpen={isSidebarOpen}>
                         <NavItem 
                             icon={CompanyIcon} 
                             label="Empresa" 
                             isActive={['company-hub', 'company-profile', 'employees', 'clients', 'create-client', 'client-detail', 'knowledge-base', 'virtual-assistant'].includes(activeView)} 
                             onClick={() => setActiveView('company-hub')} 
-                            isSidebarOpen={false} 
+                            isSidebarOpen={isSidebarOpen} 
                         />
                         <NavItem 
                             icon={BellIcon} 
                             label="Notificaciones" 
                             isActive={activeView === 'notifications-settings'} 
                             onClick={() => setActiveView('notifications-settings')} 
-                            isSidebarOpen={false} 
+                            isSidebarOpen={isSidebarOpen} 
                         />
                     </NavSection>
                 </nav>
 
                 <div className="mt-auto border-t border-slate-200 flex-shrink-0">
-                     <UserMenu onLogout={onLogout} isSidebarOpen={false} />
+                     <UserMenu onLogout={onLogout} isSidebarOpen={isSidebarOpen} />
                 </div>
             </div>
             <style>{`
