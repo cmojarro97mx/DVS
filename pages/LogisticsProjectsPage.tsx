@@ -53,21 +53,13 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
       setIsLoading(true);
       setError('');
       const data = await operationsService.getAll();
-      const loadedProjects = data.map(op => ({
-        ...op,
-        // assignees is now an array of employee IDs, map them to names
-        assignees: (op.assignees || [])
-          .filter((id: string) => id && id !== 'Unknown')
-          .map((employeeId: string) => {
-            const member = teamMembers.find(m => m.id === employeeId);
-            return member?.name || 'Unknown';
-          })
-      }));
-      setProjects(loadedProjects);
+      
+      // Keep assignees as employee IDs - do NOT transform them here
+      setProjects(data);
 
-      // Pass loaded operations back to DashboardPage
+      // Pass loaded operations back to DashboardPage with original IDs
       if (onOperationsLoaded) {
-        onOperationsLoaded(loadedProjects);
+        onOperationsLoaded(data);
       }
     } catch (err) {
       setError('Failed to load operations');
@@ -208,17 +200,29 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
                     </td>
                     <td className="px-6 py-4 align-middle">
                       <div className="flex items-center -space-x-2">
-                        {project.assignees.slice(0, 3).map(assignee => (
-                           <div key={assignee} className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center text-xs font-bold text-slate-600 border-2 border-white ring-2 ring-slate-100" title={assignee}>
-                               {assignee.split(' ').map(n=>n[0]).join('')}
-                           </div>
-                        ))}
-                        {project.assignees.length > 3 && (
+                        {(project.assignees || [])
+                          .filter((id: string) => id && id !== 'Unknown')
+                          .slice(0, 3)
+                          .map((employeeId: string) => {
+                            const member = teamMembers.find(m => m.id === employeeId);
+                            const name = member?.name || 'Unknown';
+                            const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
+                            return (
+                              <div 
+                                key={employeeId} 
+                                className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-white ring-2 ring-slate-100" 
+                                title={name}
+                              >
+                                {initials}
+                              </div>
+                            );
+                          })}
+                        {(project.assignees || []).filter((id: string) => id && id !== 'Unknown').length > 3 && (
                            <div className="w-8 h-8 bg-slate-300 rounded-full flex items-center justify-center text-xs font-bold text-slate-700 border-2 border-white ring-2 ring-slate-100">
-                               +{project.assignees.length - 3}
+                               +{(project.assignees || []).filter((id: string) => id && id !== 'Unknown').length - 3}
                            </div>
                         )}
-                         {project.assignees.length === 0 && (
+                         {!(project.assignees || []).filter((id: string) => id && id !== 'Unknown').length && (
                            <div className="text-xs text-slate-400 italic">Unassigned</div>
                         )}
                       </div>
