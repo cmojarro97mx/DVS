@@ -85,41 +85,4 @@ export class OperationLinkingRulesController {
     const organizationId = req.user.organizationId;
     return this.linkingRulesService.processHistoricalEmails(id, organizationId);
   }
-
-  @Post('test/process-email/:emailId')
-  async testProcessEmail(@Param('emailId') emailId: string, @Request() req) {
-    const organizationId = req.user.organizationId;
-    
-    const email = await this.prisma.email_messages.findUnique({
-      where: { id: emailId },
-      include: { email_accounts: true },
-    });
-
-    if (!email) {
-      throw new Error('Email not found');
-    }
-
-    const result = await this.smartOperationCreator.processEmailForOperationCreation(
-      {
-        id: email.id,
-        subject: email.subject,
-        from: email.from,
-        bodyText: email.body,
-        snippet: email.snippet,
-        date: email.date,
-      },
-      organizationId,
-      email.accountId,
-    );
-
-    return {
-      success: true,
-      result,
-      email: {
-        id: email.id,
-        subject: email.subject,
-        from: email.from,
-      },
-    };
-  }
 }
