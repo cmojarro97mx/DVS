@@ -54,6 +54,7 @@ import { DocumentCsvIcon } from '../components/icons/DocumentCsvIcon';
 import { WarehouseIcon } from '../components/icons/WarehouseIcon';
 import { LinkIcon } from '../components/icons/LinkIcon';
 import { ClockIcon } from '../components/icons/ClockIcon';
+import { ExclamationCircleIcon } from '../components/icons/ExclamationCircleIcon';
 
 type ActiveTab = 'overview' | 'tasks' | 'documents' | 'notes' | 'members' | 'expenses' | 'invoices' | 'payments' | 'commissions' | 'emails';
 
@@ -203,7 +204,7 @@ const ProjectDocuments: React.FC<{
 
     const handleUploadFiles = async (files: FileList) => {
         if (!files || files.length === 0) return;
-        
+
         setIsUploading(true);
         try {
             const uploadPromises = Array.from(files).map(async (file) => {
@@ -218,7 +219,7 @@ const ProjectDocuments: React.FC<{
                     mimeType: uploadedDoc.mimeType,
                 };
             });
-            
+
             const uploadedFiles = await Promise.all(uploadPromises);
             onUpdateDocuments([...documents, ...uploadedFiles]);
         } catch (error) {
@@ -323,7 +324,7 @@ const ProjectNotes: React.FC<{
 
     const handleAddClick = async () => {
         if (isSaving || !newNoteContent.trim()) return;
-        
+
         setIsSaving(true);
         try {
             await onAddNote(newNoteContent);
@@ -385,7 +386,7 @@ const ProjectNotes: React.FC<{
         if (diffInMinutes < 60) return `Hace ${diffInMinutes} min`;
         if (diffInHours < 24) return `Hace ${diffInHours}h`;
         if (diffInDays < 7) return `Hace ${diffInDays}d`;
-        
+
         return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
     };
 
@@ -420,10 +421,10 @@ const ProjectNotes: React.FC<{
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm bg-white text-gray-900 placeholder-gray-400 transition-all"
                         rows={3}
                     />
-                    
+
                     <div className="mt-3 flex items-center justify-end">
-                        <button 
-                            onClick={handleAddClick} 
+                        <button
+                            onClick={handleAddClick}
                             className="px-4 py-1.5 bg-blue-600 text-white rounded-md text-xs font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
                             disabled={!newNoteContent.trim() || isSaving}
                         >
@@ -451,15 +452,15 @@ const ProjectNotes: React.FC<{
                         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Historial de Notas</span>
                         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
                     </div>
-                    
+
                     {/* Timeline line */}
                     <div className="absolute left-8 top-20 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 via-indigo-200 to-transparent"></div>
-                    
+
                     {sortedNotes.map((note, index) => (
                         <div key={note.id} className="relative pl-20 pb-8">
                             {/* Timeline node */}
                             <div className={`absolute left-6 top-6 w-5 h-5 rounded-full border-4 ${getAvatarColor(note.author)} border-white shadow-lg z-10`}></div>
-                            
+
                             {/* Note card */}
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200">
                                 {editingNote?.id === note.id ? (
@@ -468,23 +469,23 @@ const ProjectNotes: React.FC<{
                                             <label className="block text-sm font-semibold text-gray-700 mb-2">
                                                 Editando nota
                                             </label>
-                                            <textarea 
-                                                value={editingNote.content} 
-                                                onChange={(e) => setEditingNote({ ...editingNote, content: e.target.value })} 
-                                                className="w-full p-4 border border-gray-300 bg-white text-gray-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm resize-none shadow-sm" 
+                                            <textarea
+                                                value={editingNote.content}
+                                                onChange={(e) => setEditingNote({ ...editingNote, content: e.target.value })}
+                                                className="w-full p-4 border border-gray-300 bg-white text-gray-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm resize-none shadow-sm"
                                                 rows={5}
                                                 autoFocus
                                             />
                                         </div>
                                         <div className="flex justify-end gap-2">
-                                            <button 
-                                                onClick={() => setEditingNote(null)} 
+                                            <button
+                                                onClick={() => setEditingNote(null)}
                                                 className="px-5 py-2 text-sm font-semibold border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                                             >
                                                 Cancelar
                                             </button>
-                                            <button 
-                                                onClick={handleSaveEdit} 
+                                            <button
+                                                onClick={handleSaveEdit}
                                                 className="px-5 py-2 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2"
                                             >
                                                 <CheckCircleIcon className="w-4 h-4" />
@@ -601,13 +602,13 @@ const ProjectMembers: React.FC<{
     try {
       setIsLoading(true);
       console.log('➕ Agregando miembro:', memberToAdd);
-      
+
       const currentAssigneeIds = assignedMembers.map(m => m.id);
       const newAssignees = [...currentAssigneeIds, memberToAdd];
-      
+
       console.log('📤 Enviando assignees:', newAssignees);
       await onUpdateAssignees(newAssignees);
-      
+
       setMemberToAdd('');
       console.log('✅ Miembro agregado exitosamente');
     } catch (error) {
@@ -621,7 +622,7 @@ const ProjectMembers: React.FC<{
   const handleRemoveMember = async (memberId: string) => {
     const member = allTeamMembers.find(m => m.id === memberId);
     const memberName = member?.name || 'este miembro';
-    
+
     if (!window.confirm(`¿Estás seguro de que deseas eliminar a ${memberName} de esta operación?`)) {
       return;
     }
@@ -629,14 +630,14 @@ const ProjectMembers: React.FC<{
     try {
       setIsLoading(true);
       console.log('➖ Eliminando miembro:', memberId);
-      
+
       const newAssignees = assignedMembers
         .filter(m => m.id !== memberId)
         .map(m => m.id);
-      
+
       console.log('📤 Enviando assignees:', newAssignees);
       await onUpdateAssignees(newAssignees);
-      
+
       console.log('✅ Miembro eliminado exitosamente');
     } catch (error) {
       console.error('❌ Error al eliminar miembro:', error);
@@ -680,8 +681,8 @@ const ProjectMembers: React.FC<{
         {assignedMembers.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {assignedMembers.map(member => (
-              <div 
-                key={member.id} 
+              <div
+                key={member.id}
                 className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -809,95 +810,51 @@ const OperationHealth: React.FC<OperationHealthProps> = ({ project, tasks, docum
   };
 
   const health = calculateHealth();
+    const healthColor = health.score >= 80 ? 'text-green-600' : health.score >= 50 ? 'text-amber-600' : 'text-red-600';
+    const healthBg = health.score >= 80 ? 'from-green-50 to-emerald-50 border-green-200' : health.score >= 50 ? 'from-amber-50 to-yellow-50 border-amber-200' : 'from-red-50 to-rose-50 border-red-200';
+    const healthIcon = health.score >= 80 ? 'bg-green-100' : health.score >= 50 ? 'bg-amber-100' : 'bg-red-100';
+    const healthIconColor = health.score >= 80 ? 'text-green-600' : health.score >= 50 ? 'text-amber-600' : 'text-red-600';
 
-  const getHealthColor = (score: number) => {
-    if (score >= 80) return { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800', icon: 'text-green-600', bar: 'bg-green-500' };
-    if (score >= 60) return { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', icon: 'text-blue-600', bar: 'bg-blue-500' };
-    if (score >= 40) return { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-800', icon: 'text-yellow-600', bar: 'bg-yellow-500' };
-    return { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-800', icon: 'text-red-600', bar: 'bg-red-500' };
-  };
-
-  const healthColor = getHealthColor(health.score);
-
-  const getHealthLabel = (score: number) => {
-    if (score >= 80) return 'Excelente';
-    if (score >= 60) return 'Buena';
-    if (score >= 40) return 'Regular';
-    return 'Requiere Atención';
-  };
-
-  return (
-    <div className={`rounded-xl shadow-sm border ${healthColor.border} ${healthColor.bg} p-6`}>
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className={`p-3 rounded-lg bg-white border ${healthColor.border}`}>
-            <CpuChipIcon className={`w-6 h-6 ${healthColor.icon}`} />
+    return (
+      <div className={`bg-gradient-to-r ${healthBg} border rounded-lg p-3 shadow-sm`}>
+        <div className="flex items-center gap-3 mb-2">
+          <div className={`flex-shrink-0 w-8 h-8 ${healthIcon} rounded-lg flex items-center justify-center`}>
+            {health.score >= 80 ? (
+              <CheckCircleIcon className={`w-5 h-5 ${healthIconColor}`} />
+            ) : health.score >= 50 ? (
+              <ExclamationCircleIcon className={`w-5 h-5 ${healthIconColor}`} />
+            ) : (
+              <ExclamationTriangleIcon className={`w-5 h-5 ${healthIconColor}`} />
+            )}
           </div>
-          <div>
-            <h3 className={`text-lg font-bold ${healthColor.text}`}>
-              Salud de la Operación: {getHealthLabel(health.score)}
-            </h3>
-            <p className="text-sm text-gray-600">Análisis en tiempo real</p>
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-gray-800">Salud de la Operación</h3>
+          </div>
+          <div className={`text-2xl font-bold ${healthColor}`}>
+            {health.score}%
           </div>
         </div>
-        <div className="text-right">
-          <div className={`text-3xl font-bold ${healthColor.text}`}>{health.score}%</div>
-          <div className="text-xs text-gray-500">Score General</div>
-        </div>
-      </div>
 
-      <div className="mb-4">
-        <div className="flex justify-between text-xs text-gray-600 mb-1">
-          <span>Salud General</span>
-          <span>{health.score}%</span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-3">
-          <div className={`h-3 rounded-full ${healthColor.bar} transition-all duration-500`} style={{ width: `${health.score}%` }}></div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-4">
-        <div className="bg-white rounded-lg p-3 border border-gray-200">
-          <div className="text-xs text-gray-500 mb-1">Progreso</div>
-          <div className="text-lg font-bold text-gray-800">{Math.round(health.metrics.progress)}%</div>
-        </div>
-        <div className="bg-white rounded-lg p-3 border border-gray-200">
-          <div className="text-xs text-gray-500 mb-1">Tareas</div>
-          <div className="text-lg font-bold text-gray-800">{Math.round(health.metrics.tasks)}%</div>
-        </div>
-        <div className="bg-white rounded-lg p-3 border border-gray-200">
-          <div className="text-xs text-gray-500 mb-1">Fechas</div>
-          <div className="text-lg font-bold text-gray-800">{Math.round(health.metrics.dates)}%</div>
-        </div>
-        <div className="bg-white rounded-lg p-3 border border-gray-200">
-          <div className="text-xs text-gray-500 mb-1">Documentos</div>
-          <div className="text-lg font-bold text-gray-800">{Math.round(health.metrics.documents)}%</div>
-        </div>
-        <div className="bg-white rounded-lg p-3 border border-gray-200">
-          <div className="text-xs text-gray-500 mb-1">Pagos</div>
-          <div className="text-lg font-bold text-gray-800">{Math.round(health.metrics.payments)}%</div>
-        </div>
-      </div>
-
-      {health.issues.length > 0 && (
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
-          <div className="text-sm font-semibold text-gray-700 mb-2">Alertas y Recomendaciones:</div>
-          <div className="space-y-2">
-            {health.issues.map((issue, idx) => (
-              <div key={idx} className="flex items-start gap-2">
-                {issue.type === 'error' && <ExclamationTriangleIcon className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />}
-                {issue.type === 'warning' && <ExclamationTriangleIcon className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />}
-                {issue.type === 'success' && <CheckCircleIcon className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />}
-                <span className={`text-sm ${issue.type === 'error' ? 'text-red-700' : issue.type === 'warning' ? 'text-yellow-700' : 'text-green-700'}`}>
-                  {issue.message}
-                </span>
-              </div>
+        {health.issues.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {health.issues.map((issue, index) => (
+              <span key={index} className={`inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-md ${
+                issue.type === 'error' ? 'bg-red-100 text-red-700 border border-red-200' :
+                issue.type === 'warning' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                'bg-green-100 text-green-700 border border-green-200'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  issue.type === 'error' ? 'bg-red-500' :
+                  issue.type === 'warning' ? 'bg-amber-500' :
+                  'bg-green-500'
+                }`}></span>
+                {issue.message}
+              </span>
             ))}
           </div>
-        </div>
-      )}
-    </div>
-  );
+        )}
+      </div>
+    );
 };
 
 const FinancialSummary: React.FC<{
@@ -906,7 +863,7 @@ const FinancialSummary: React.FC<{
   expenses: Expense[];
   currency: Currency;
 }> = ({ invoices, payments, expenses, currency }) => {
-    const formatCurrency = (amount: number) => 
+    const formatCurrency = (amount: number) =>
         `${new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount)} ${currency}`;
 
     const { totalInvoiced, totalPaid, totalExpenses, balanceDue, profitability } = useMemo(() => {
@@ -1178,7 +1135,7 @@ const ShipmentJourney: React.FC<{ project: Project }> = ({ project }) => {
                 <div className="flex-grow flex items-center justify-center px-4">
                     <div className="w-full h-1 bg-slate-200 rounded-full relative">
                         <div className="absolute top-0 left-0 h-full bg-blue-500 rounded-full" style={{ width: `${project.progress}%`, transition: 'width 1s ease-in-out' }}></div>
-                        <div 
+                        <div
                             className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 p-1.5 bg-white rounded-full shadow-lg border-2 border-blue-500"
                             style={{ left: `${project.progress}%`, transition: 'left 1s ease-in-out' }}
                         >
@@ -1202,9 +1159,9 @@ const ShipmentJourney: React.FC<{ project: Project }> = ({ project }) => {
 };
 
 
-const OperationDetailPage: React.FC<OperationDetailPageProps> = ({ 
-  setActiveView, project, documents, onUpdateDocuments, 
-  notes, onAddNote, onUpdateNote, onDeleteNote, 
+const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
+  setActiveView, project, documents, onUpdateDocuments,
+  notes, onAddNote, onUpdateNote, onDeleteNote,
   expenses, onAddExpense, onUpdateExpense, onDeleteExpense,
   invoices, onAddInvoice, onUpdateInvoice, onDeleteInvoice,
   payments, onAddPayment, onUpdatePayment, onDeletePayment,
@@ -1280,7 +1237,7 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
     if (!emailSearchQuery.trim()) return relatedEmails;
 
     const query = emailSearchQuery.toLowerCase();
-    return relatedEmails.filter(email => 
+    return relatedEmails.filter(email =>
       email.subject?.toLowerCase().includes(query) ||
       email.fromName?.toLowerCase().includes(query) ||
       email.from?.toLowerCase().includes(query) ||
@@ -1336,13 +1293,13 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
 
   const renderOverview = () => (
     <div className="space-y-6">
-      <OperationHealth 
-        project={project} 
-        tasks={tasks} 
-        documents={documents} 
-        emails={emails} 
-        invoices={invoices} 
-        payments={payments} 
+      <OperationHealth
+        project={project}
+        tasks={tasks}
+        documents={documents}
+        emails={emails}
+        invoices={invoices}
+        payments={payments}
       />
       <FinancialSummary invoices={invoices} payments={payments} expenses={expenses} currency={project.currency} />
       <DetailCard title="Project Details" icon={ClipboardListIcon}>
@@ -1408,50 +1365,46 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
   return (
     <div className="animate-fade-in space-y-6">
       {project.needsAttention && (
-        <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg shadow-sm">
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+              <ExclamationTriangleIcon className="w-5 h-5 text-amber-600" />
             </div>
-            <div className="ml-3 flex-1">
-              <h3 className="text-sm font-medium text-amber-800">Operación requiere atención</h3>
-              <div className="mt-2 text-sm text-amber-700">
-                <p>Esta operación fue creada automáticamente y requiere revisión manual. Por favor verifica:</p>
-                {project.missingFields && project.missingFields.length > 0 && (
-                  <ul className="list-disc list-inside mt-2 space-y-1">
-                    {project.missingFields.map((field, index) => (
-                      <li key={index}>
-                        {field === 'clientId' && 'Cliente no identificado - asignar manualmente'}
-                        {field === 'assignees' && 'Sin empleados asignados - asignar equipo'}
-                        {field === 'category' && 'Categoría de operación por definir'}
-                        {field === 'deadline' && 'Fecha límite no establecida'}
-                        {field === 'origin' && 'Origen no especificado'}
-                        {field === 'destination' && 'Destino no especificado'}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-sm font-semibold text-amber-900">Requiere tu atención</h3>
+                <span className="px-2 py-0.5 bg-amber-200 text-amber-800 text-xs font-medium rounded-full">
+                  Creada automáticamente
+                </span>
               </div>
+              {project.missingFields && project.missingFields.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {project.missingFields.map((field, index) => (
+                    <span key={index} className="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-amber-200 text-amber-700 text-xs rounded-md">
+                      <span className="w-1 h-1 bg-amber-500 rounded-full"></span>
+                      {field === 'clientId' && 'Cliente pendiente'}
+                      {field === 'operationType' && 'Tipo de operación'}
+                      {field === 'shippingMode' && 'Modo de envío'}
+                      {field === 'pickupAddress' && 'Dirección origen'}
+                      {field === 'deliveryAddress' && 'Dirección destino'}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
 
       {project.autoCreated && !project.needsAttention && (
-        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg shadow-sm">
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+              <CpuChipIcon className="w-5 h-5 text-blue-600" />
             </div>
-            <div className="ml-3">
-              <p className="text-sm text-blue-700">
-                🤖 Esta operación fue creada automáticamente a partir de un correo electrónico.
-              </p>
-            </div>
+            <p className="text-sm text-blue-800 font-medium">
+              Operación creada automáticamente desde correo electrónico
+            </p>
           </div>
         </div>
       )}
@@ -1472,7 +1425,7 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
                 </button>
                 {isMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 border border-gray-200">
-                    <button 
+                    <button
                       onClick={() => {
                         setIsMenuOpen(false);
                         alert('Funcionalidad de edición en desarrollo');
@@ -1481,7 +1434,7 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
                     >
                         <PencilIcon className="w-4 h-4 text-gray-500"/> Editar Operación
                     </button>
-                    <button 
+                    <button
                       onClick={() => {
                         setIsMenuOpen(false);
                         setShowDeleteConfirm(true);
@@ -1553,10 +1506,10 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
 
       <div className="mt-6">
         {activeTab === 'overview' && renderOverview()}
-        {activeTab === 'tasks' && <TaskManager 
+        {activeTab === 'tasks' && <TaskManager
                                       operationId={project.id}
-                                      teamMembers={teamMembers} 
-                                      operationAssignees={project.assignees} 
+                                      teamMembers={teamMembers}
+                                      operationAssignees={project.assignees}
                                       tasks={operationTasks}
                                       columns={columns}
                                       columnOrder={columnOrder}
@@ -1586,7 +1539,7 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
                     />
                   </div>
                 </div>
-                
+
                 <div className="divide-y divide-gray-100 max-h-[400px] overflow-y-auto">
                   {loadingEmails ? (
                     // Skeleton loader
@@ -1613,8 +1566,8 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
                   ) : relatedEmails.length > 0 ? (
                     filteredRelatedEmails.length > 0 ? (
                       filteredRelatedEmails.map(email => (
-                        <div 
-                          key={email.id} 
+                        <div
+                          key={email.id}
                           onClick={() => handleViewEmail(email)}
                           className="p-3 hover:bg-gray-50 transition-colors cursor-pointer group"
                         >
@@ -1678,7 +1631,7 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
         {activeTab === 'documents' && <ProjectDocuments documents={documents} onUpdateDocuments={onUpdateDocuments} operationId={project.id} />}
         {activeTab === 'notes' && <ProjectNotes notes={notes} onAddNote={onAddNote} onUpdateNote={onUpdateNote} onDeleteNote={onDeleteNote} />}
         {activeTab === 'members' && <ProjectMembers projectAssignees={project.assignees} allTeamMembers={teamMembers} onUpdateAssignees={onUpdateAssignees} />}
-        {activeTab === 'expenses' && <ExpensesManager 
+        {activeTab === 'expenses' && <ExpensesManager
                                         expenses={expenses}
                                         onAddExpense={onAddExpense}
                                         onUpdateExpense={onUpdateExpense}
@@ -1687,7 +1640,7 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
                                         operationId={project.id}
                                         bankAccounts={bankAccounts}
                                     />}
-        {activeTab === 'invoices' && <InvoicesManager 
+        {activeTab === 'invoices' && <InvoicesManager
                                         project={project}
                                         operationId={project.id}
                                         invoices={invoices}
@@ -1710,7 +1663,7 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
                                         onDeletePayment={onDeletePayment}
                                         bankAccounts={bankAccounts}
                                      />}
-        {activeTab === 'commissions' && <CommissionsManager 
+        {activeTab === 'commissions' && <CommissionsManager
             project={project}
             invoices={invoices}
             payments={payments}
