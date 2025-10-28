@@ -46,6 +46,12 @@ export class OperationLinkingRulesService {
   async create(data: any, organizationId: string) {
     const { defaultAssigneeIds, emailAccountIds, autoCreate, processFromDate, ...rest } = data;
     
+    this.logger.log(`📝 Creating rule with data:`, {
+      processFromDate,
+      autoCreate,
+      hasEmailAccounts: emailAccountIds?.length > 0,
+    });
+    
     const rule = await this.prisma.operation_linking_rules.create({
       data: {
         ...rest,
@@ -59,12 +65,15 @@ export class OperationLinkingRulesService {
 
     // Process historical emails if processFromDate is set
     if (processFromDate) {
+      this.logger.log(`⏳ Scheduling historical email processing for rule ${rule.id} from ${processFromDate}`);
       // Run in background to avoid blocking the response
       setImmediate(() => {
         this.processHistoricalEmails(rule.id, organizationId).catch(error => {
           this.logger.error(`Error processing historical emails for rule ${rule.id}:`, error);
         });
       });
+    } else {
+      this.logger.log(`⚠️ No processFromDate provided, skipping historical processing`);
     }
 
     return rule;
