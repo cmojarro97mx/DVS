@@ -55,6 +55,7 @@ import { WarehouseIcon } from '../components/icons/WarehouseIcon';
 import { LinkIcon } from '../components/icons/LinkIcon';
 import { ClockIcon } from '../components/icons/ClockIcon';
 import { ExclamationCircleIcon } from '../components/icons/ExclamationCircleIcon';
+import DocumentManager from '../src/components/DocumentManager';
 
 type ActiveTab = 'overview' | 'tasks' | 'documents' | 'notes' | 'members' | 'expenses' | 'invoices' | 'payments' | 'commissions' | 'emails';
 
@@ -1628,7 +1629,7 @@ const OperationDetailPage: React.FC<OperationDetailPageProps> = ({
               </div>
             </div>
           )}
-        {activeTab === 'documents' && <ProjectDocuments documents={documents} onUpdateDocuments={onUpdateDocuments} operationId={project.id} />}
+        {activeTab === 'documents' && <DocumentManager operationId={project.id} />}
         {activeTab === 'notes' && <ProjectNotes notes={notes} onAddNote={onAddNote} onUpdateNote={onUpdateNote} onDeleteNote={onDeleteNote} />}
         {activeTab === 'members' && <ProjectMembers projectAssignees={project.assignees} allTeamMembers={teamMembers} onUpdateAssignees={onUpdateAssignees} />}
         {activeTab === 'expenses' && <ExpensesManager

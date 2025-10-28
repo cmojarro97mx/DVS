@@ -10,6 +10,7 @@ import { CheckCircleIcon } from '../components/icons/CheckCircleIcon';
 import { XIcon } from '../components/icons/XIcon';
 import { CreateRuleLinkingModal, RuleFormData } from '../components/CreateRuleLinkingModal';
 import { EditRuleLinkingModal } from '../components/EditRuleLinkingModal';
+import DocumentAutomationConfig from '../src/components/DocumentAutomationConfig';
 
 interface AutomationPageProps {
   setActiveView: (view: View) => void;
@@ -115,6 +116,10 @@ const AutomationPage: React.FC<AutomationPageProps> = ({ setActiveView }) => {
               Nueva Automatización
             </button>
           </div>
+        </div>
+
+        <div className="mb-8">
+          <DocumentAutomationConfig organizationId={localStorage.getItem('organizationId') || ''} />
         </div>
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
