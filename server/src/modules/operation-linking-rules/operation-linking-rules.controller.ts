@@ -10,6 +10,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { OperationLinkingRulesService } from './operation-linking-rules.service';
+import { SmartOperationCreatorService } from './smart-operation-creator.service';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { PrismaService } from '../../common/prisma.service';
 
@@ -18,6 +19,7 @@ import { PrismaService } from '../../common/prisma.service';
 export class OperationLinkingRulesController {
   constructor(
     private readonly linkingRulesService: OperationLinkingRulesService,
+    private readonly smartOperationCreator: SmartOperationCreatorService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -76,5 +78,42 @@ export class OperationLinkingRulesController {
   async toggle(@Param('id') id: string, @Request() req) {
     const organizationId = req.user.organizationId;
     return this.linkingRulesService.toggleRule(id, organizationId);
+  }
+
+  @Post('test/process-email/:emailId')
+  async testProcessEmail(@Param('emailId') emailId: string, @Request() req) {
+    const organizationId = req.user.organizationId;
+    
+    const email = await this.prisma.email_messages.findUnique({
+      where: { id: emailId },
+      include: { email_accounts: true },
+    });
+
+    if (!email) {
+      throw new Error('Email not found');
+    }
+
+    const result = await this.smartOperationCreator.processEmailForOperationCreation(
+      {
+        id: email.id,
+        subject: email.subject,
+        from: email.from,
+        bodyText: email.body,
+        snippet: email.snippet,
+        date: email.date,
+      },
+      organizationId,
+      email.accountId,
+    );
+
+    return {
+      success: true,
+      result,
+      email: {
+        id: email.id,
+        subject: email.subject,
+        from: email.from,
+      },
+    };
   }
 }

@@ -53,13 +53,8 @@ export class SmartOperationCreatorService {
           }
         }
 
-        if (!this.isEmailFromCompanyDomain(emailFrom, rule.companyDomains)) {
-          this.logger.debug(
-            `Email from "${emailFrom}" is not from configured company domains, skipping rule "${rule.name}"`,
-          );
-          continue;
-        }
-
+        // NUEVA LÓGICA: Procesar CUALQUIER email que coincida con el patrón
+        // Los dominios de empresa se usan DESPUÉS para identificar empleados vs clientes
         const match = this.matchSubjectPattern(subject, rule.subjectPattern);
 
         if (match) {
