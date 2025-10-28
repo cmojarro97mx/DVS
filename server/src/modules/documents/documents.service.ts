@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 import { BackblazeService } from '../../common/backblaze.service';
+import { AIClassifierService } from './ai-classifier.service';
 
 @Injectable()
 export class DocumentsService {
   constructor(
     private prisma: PrismaService,
     private backblaze: BackblazeService,
+    private aiClassifier: AIClassifierService,
   ) {}
 
   async createFolder(operationId: string, name: string, parentId?: string) {
@@ -45,9 +47,11 @@ export class DocumentsService {
     file: Express.Multer.File,
     folderId?: string,
     emailMessageId?: string,
+    autoClassify: boolean = true,
   ) {
     const operation = await this.prisma.operations.findUnique({
       where: { id: operationId },
+      include: { organizations: true },
     });
 
     if (!operation) {
@@ -80,6 +84,15 @@ export class DocumentsService {
         uploadedBy: emailMessageId ? 'auto' : 'manual',
       },
     });
+
+    if (autoClassify && operation.organizationId) {
+      const config = await this.aiClassifier.getAutomationConfig(operation.organizationId);
+      if (config.enabled && config.autoClassify) {
+        this.aiClassifier.classifyAndUpdateDocument(document.id).catch((err) => {
+          console.error('Error auto-classifying document:', err);
+        });
+      }
+    }
 
     return document;
   }

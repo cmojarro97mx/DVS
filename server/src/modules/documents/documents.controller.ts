@@ -13,10 +13,14 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { DocumentsService } from './documents.service';
+import { AIClassifierService } from './ai-classifier.service';
 
 @Controller('documents')
 export class DocumentsController {
-  constructor(private documentsService: DocumentsService) {}
+  constructor(
+    private documentsService: DocumentsService,
+    private aiClassifier: AIClassifierService,
+  ) {}
 
   @Post('folders')
   async createFolder(@Body() body: { operationId: string; name: string; parentId?: string }) {
@@ -85,5 +89,30 @@ export class DocumentsController {
     @Body() body: { operationId: string; newName: string },
   ) {
     return this.documentsService.renameDocument(id, body.operationId, body.newName);
+  }
+
+  @Post(':id/classify')
+  async classifyDocument(@Param('id') id: string) {
+    await this.aiClassifier.classifyAndUpdateDocument(id);
+    return { success: true };
+  }
+
+  @Post('operation/:operationId/batch-classify')
+  async batchClassify(@Param('operationId') operationId: string) {
+    await this.aiClassifier.batchClassifyDocuments(operationId);
+    return { success: true };
+  }
+
+  @Get('automation/config/:organizationId')
+  async getAutomationConfig(@Param('organizationId') organizationId: string) {
+    return this.aiClassifier.getAutomationConfig(organizationId);
+  }
+
+  @Post('automation/config/:organizationId')
+  async updateAutomationConfig(
+    @Param('organizationId') organizationId: string,
+    @Body() body: any,
+  ) {
+    return this.aiClassifier.updateAutomationConfig(organizationId, body);
   }
 }
