@@ -8,10 +8,17 @@ export class EmployeesService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(organizationId: string) {
-    return this.prisma.employees.findMany({
+    const employees = await this.prisma.employees.findMany({
       where: { organizationId },
       orderBy: { createdAt: 'desc' },
     });
+    
+    console.log(`📋 [EMPLOYEES] Found ${employees.length} employees for organization ${organizationId}`);
+    employees.forEach(emp => {
+      console.log(`  - Employee: ${emp.name} (ID: ${emp.id}, userId: ${emp.userId || 'NO USER ID'})`);
+    });
+    
+    return employees;
   }
 
   async findOne(id: string, organizationId: string) {

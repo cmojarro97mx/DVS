@@ -40,16 +40,25 @@ export class OperationsService {
     return Promise.all(
       operations.map(async (operation) => {
         const assignees = [];
+        console.log(`🔍 [FIND_ALL] Processing operation ${operation.id}, has ${operation.operation_assignees.length} assignees`);
+        
         for (const assignee of operation.operation_assignees) {
           // Find employee by userId
           const employee = await this.prisma.employees.findFirst({
             where: { userId: assignee.userId, organizationId },
-            select: { id: true },
+            select: { id: true, name: true },
           });
+          
           if (employee) {
+            console.log(`  ✅ Found employee ${employee.name} (ID: ${employee.id}) for userId: ${assignee.userId}`);
             assignees.push(employee.id);
+          } else {
+            console.warn(`  ⚠️ No employee found for userId: ${assignee.userId} in operation ${operation.id}`);
           }
         }
+        
+        console.log(`  📊 Final assignees for operation ${operation.id}:`, assignees);
+        
         return {
           ...operation,
           assignees,
