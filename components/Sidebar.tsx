@@ -92,7 +92,7 @@ const CollapsibleNavItem: React.FC<{
             setIsOpen(!isOpen);
         }
     };
-    
+
     return (
          <li className="relative group/collapsible">
             <button
@@ -203,7 +203,7 @@ const UserMenu: React.FC<{ onLogout: () => void, isSidebarOpen: boolean }> = ({ 
             </div>
         );
     }
-    
+
     return (
         <div ref={menuRef} className="relative w-full p-2">
             <button onClick={() => setIsOpen(!isOpen)} className="flex items-center w-full group p-2 rounded-lg hover:bg-gray-100">
@@ -242,7 +242,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     setIsSidebarOpen,
     onLogout,
 }) => {
-    
+
     const companySubItems = [
         { label: 'Company Profile', view: 'company-profile' as View, icon: CompanyIcon },
         { label: 'Employees', view: 'employees' as View, icon: UsersIcon },
@@ -268,13 +268,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                 <nav className="flex-1 p-2 overflow-y-auto overflow-x-hidden sidebar-nav-scroll min-h-0">
                     <NavSection title="Análisis" isSidebarOpen={false}>
-                         <NavItem icon={DashboardIcon} label="Dashboard" isActive={activeView === 'dashboard'} onClick={() => setActiveView('dashboard')} isSidebarOpen={false} />
+                         <NavItem 
+                            icon={DashboardIcon} 
+                            label="Dashboard" 
+                            isActive={activeView === 'dashboard'} 
+                            onClick={() => setActiveView('dashboard')} 
+                            isSidebarOpen={false} 
+                        />
                     </NavSection>
 
                      <NavSection title="Gestión" isSidebarOpen={false}>
-                        <NavItem icon={TruckIcon} label="Operations" isActive={['operations', 'create-operation', 'detail-operation'].includes(activeView)} onClick={() => setActiveView('operations')} isSidebarOpen={false} />
+                        <NavItem 
+                            icon={TruckIcon} 
+                            label="Operations" 
+                            isActive={activeView === 'operations' || activeView === 'create-operation' || activeView === 'detail-operation'} 
+                            onClick={() => setActiveView('operations')} 
+                            isSidebarOpen={false} 
+                        />
                     </NavSection>
-                    
+
                     <NavSection title="Finanzas" isSidebarOpen={false}>
                         <NavItem 
                             icon={CurrencyDollarOutlineIcon} 
