@@ -32,9 +32,10 @@ interface LogisticsProjectsPageProps {
   onViewOperation: (projectId: string) => void;
   projects?: Project[];
   onOperationsLoaded?: (projects: Project[]) => void;
+  teamMembers: { id: string; name: string; email: string; role: string; phone?: string }[];
 }
 
-const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActiveView, onViewOperation, onOperationsLoaded }) => {
+const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActiveView, onViewOperation, onOperationsLoaded, teamMembers }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -54,7 +55,13 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
       const data = await operationsService.getAll();
       const loadedProjects = data.map(op => ({
         ...op,
-        assignees: (op.assignees || []).map((a: any) => a.user?.name || 'Unknown')
+        // assignees is now an array of employee IDs, map them to names
+        assignees: (op.assignees || [])
+          .filter((id: string) => id && id !== 'Unknown')
+          .map((employeeId: string) => {
+            const member = teamMembers.find(m => m.id === employeeId);
+            return member?.name || 'Unknown';
+          })
       }));
       setProjects(loadedProjects);
 
