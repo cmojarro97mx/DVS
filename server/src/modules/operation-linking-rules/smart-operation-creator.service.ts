@@ -267,6 +267,25 @@ export class SmartOperationCreatorService {
 
       const emailBody = this.stripHtml(emailMessage.bodyText || emailMessage.snippet || '').substring(0, 2000);
       const subject = emailMessage.subject || '';
+
+      // 🔍 Analizar la cadena de correos para detectar al cliente real
+      let threadContext = '';
+      if (organizationId && emailMessage.id) {
+        const threadParticipants = await this.analyzeEmailThread(
+          subject,
+          operationName,
+          organizationId,
+          companyDomains,
+        );
+        
+        if (threadParticipants.mostActiveClient) {
+          threadContext = `\n\n📧 CONTEXTO DE LA CADENA DE CORREOS:
+El cliente más activo en esta conversación es: ${threadParticipants.mostActiveClient.name} (${threadParticipants.mostActiveClient.email})
+Participaciones: ${threadParticipants.mostActiveClient.count} emails en el thread
+IMPORTANTE: Este es muy probablemente el cliente real, usa esta información.`;
+          this.logger.log(`🔍 Thread analysis: Cliente activo detectado - ${threadParticipants.mostActiveClient.email}`);
+        }
+      }
       
       const domainInstructions = companyDomains && Array.isArray(companyDomains) && companyDomains.length > 0
         ? `\n\nIMPORTANTE: NO extraigas como cliente emails que terminen en estos dominios (son empleados internos): ${companyDomains.join(', ')}`
@@ -297,12 +316,18 @@ export class SmartOperationCreatorService {
       const prompt = `Analiza el siguiente correo electrónico y extrae información para crear una operación logística.
 
 Asunto: ${subject}
-Cuerpo: ${emailBody}${domainInstructions}${knowledgeContext}
+Cuerpo: ${emailBody}${domainInstructions}${threadContext}${knowledgeContext}
+
+IMPORTANTE - NO CONFUNDIR SERVICIOS CON CLIENTES:
+- NO extraigas como cliente servicios automáticos como: facturama, facturapi, SAT, notificaciones, no-reply, noreply, donotreply, automated, system, alerts
+- NO extraigas como cliente plataformas de envío/courier
+- El CLIENTE es la empresa/persona que solicita el servicio logístico, NO el sistema que envía el email
+- Si el email es de un servicio automático pero menciona a un cliente real en el cuerpo, extrae el cliente real del cuerpo
 
 Extrae la siguiente información en formato JSON (si no encuentras algún dato, usa null):
 {
-  "clientName": "nombre del cliente o empresa",
-  "clientEmail": "email del cliente (NO incluir emails internos de la empresa)",
+  "clientName": "nombre del cliente o empresa REAL que solicita el servicio (NO servicios automáticos)",
+  "clientEmail": "email del cliente REAL (NO emails de notificaciones automáticas ni internos)",
   "projectCategory": "categoría del proyecto",
   "operationType": "tipo de operación (Import/Export/Domestic)",
   "shippingMode": "modo de envío (Air/Sea/Land)",
@@ -326,9 +351,21 @@ Responde SOLO con el JSON, sin explicaciones adicionales.`;
       if (jsonMatch) {
         const extracted = JSON.parse(jsonMatch[0]);
         
+        // Filtrar emails de dominios internos
         if (extracted.clientEmail && this.isCompanyDomainEmail(extracted.clientEmail, companyDomains)) {
           this.logger.log(`🚫 Removed company domain email from client: ${extracted.clientEmail}`);
           extracted.clientEmail = null;
+        }
+
+        // Filtrar servicios automáticos y notificaciones
+        if (extracted.clientEmail && this.isAutomatedServiceEmail(extracted.clientEmail)) {
+          this.logger.log(`🚫 Removed automated service email from client: ${extracted.clientEmail}`);
+          extracted.clientEmail = null;
+        }
+
+        if (extracted.clientName && this.isAutomatedServiceName(extracted.clientName)) {
+          this.logger.log(`🚫 Removed automated service name from client: ${extracted.clientName}`);
+          extracted.clientName = null;
         }
         
         this.logger.log('✅ AI extraction successful');
@@ -356,6 +393,86 @@ Responde SOLO con el JSON, sin explicaciones adicionales.`;
 
     const unique = [...new Set(words)];
     return unique.slice(0, 10);
+  }
+
+  private async analyzeEmailThread(
+    subject: string,
+    operationName: string,
+    organizationId: string,
+    companyDomains?: any,
+  ): Promise<{ mostActiveClient: { email: string; name: string; count: number } | null }> {
+    try {
+      // Limpiar subject de RE:, FW:, etc.
+      const cleanSubject = subject
+        .replace(/^(re|fw|fwd|res|rv):\s*/i, '')
+        .trim();
+
+      // Buscar emails relacionados por subject o que contengan el operationName
+      const relatedEmails = await this.prisma.email_messages.findMany({
+        where: {
+          email_accounts: {
+            users: {
+              organizationId,
+            },
+          },
+          OR: [
+            { subject: { contains: cleanSubject, mode: 'insensitive' } },
+            { subject: { contains: operationName, mode: 'insensitive' } },
+          ],
+        },
+        select: {
+          from: true,
+          subject: true,
+        },
+        orderBy: {
+          date: 'asc',
+        },
+        take: 50, // Limitar a últimos 50 emails del thread
+      });
+
+      if (relatedEmails.length === 0) {
+        return { mostActiveClient: null };
+      }
+
+      // Contar participaciones por email
+      const participantCounts = new Map<string, { email: string; name: string; count: number }>();
+
+      for (const email of relatedEmails) {
+        const emailMatch = email.from.match(/<([^>]+)>/);
+        const emailAddress = emailMatch ? emailMatch[1] : email.from;
+        const nameMatch = email.from.match(/^([^<]+)</);
+        const name = nameMatch ? nameMatch[1].trim() : emailAddress;
+
+        // Filtrar empleados internos, servicios automáticos
+        if (this.isCompanyDomainEmail(emailAddress, companyDomains)) continue;
+        if (this.isAutomatedServiceEmail(emailAddress)) continue;
+        if (this.isAutomatedServiceName(name)) continue;
+
+        const existing = participantCounts.get(emailAddress);
+        if (existing) {
+          existing.count++;
+        } else {
+          participantCounts.set(emailAddress, {
+            email: emailAddress,
+            name: name,
+            count: 1,
+          });
+        }
+      }
+
+      // Encontrar el cliente más activo
+      let mostActive: { email: string; name: string; count: number } | null = null;
+      for (const participant of participantCounts.values()) {
+        if (!mostActive || participant.count > mostActive.count) {
+          mostActive = participant;
+        }
+      }
+
+      return { mostActiveClient: mostActive };
+    } catch (error) {
+      this.logger.warn('Error analyzing email thread:', error.message);
+      return { mostActiveClient: null };
+    }
   }
 
   private basicExtraction(emailMessage: any, operationName: string, companyDomains?: any) {
@@ -543,6 +660,35 @@ Responde SOLO con el JSON, sin explicaciones adicionales.`;
       const normalizedDomain = domain.startsWith('@') ? domain : '@' + domain;
       return email.toLowerCase().endsWith(normalizedDomain.toLowerCase());
     });
+  }
+
+  private isAutomatedServiceEmail(email: string | null): boolean {
+    if (!email) return false;
+
+    const automatedPatterns = [
+      'noreply', 'no-reply', 'donotreply', 'do-not-reply',
+      'automated', 'automatic', 'system', 'notification',
+      'notificacion', 'alert', 'alerts', 'facturama',
+      'facturapi', 'sat.gob.mx', 'bot@', 'robot@',
+      'mailer@', 'daemon@', 'postmaster@', 'bounce@'
+    ];
+
+    const emailLower = email.toLowerCase();
+    return automatedPatterns.some(pattern => emailLower.includes(pattern));
+  }
+
+  private isAutomatedServiceName(name: string | null): boolean {
+    if (!name) return false;
+
+    const automatedServiceNames = [
+      'facturama', 'facturapi', 'sat', 'sistema',
+      'notification', 'notificación', 'automated',
+      'automatic', 'no reply', 'noreply', 'system',
+      'alert', 'mailer', 'daemon', 'postmaster'
+    ];
+
+    const nameLower = name.toLowerCase();
+    return automatedServiceNames.some(service => nameLower.includes(service));
   }
 
   private async contributeToKnowledgeBase(
