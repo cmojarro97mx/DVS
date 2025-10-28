@@ -386,21 +386,23 @@ model operation_suppliers {
 }
 
 model operation_linking_rules {
-  id                   String         @id @default(uuid())
-  organizationId       String
-  name                 String
-  description          String?
-  subjectPattern       String
-  defaultAssignees     Json?
-  companyDomains       Json?
-  emailAccountIds      Json?
-  autoCreateOperations Boolean        @default(true)
-  autoCreateClients    Boolean        @default(true)
-  autoFillFields       Boolean        @default(true)
-  enabled              Boolean        @default(true)
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
-  organizations        organizations  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id                      String         @id @default(uuid())
+  organizationId          String
+  name                    String
+  description             String?
+  subjectPattern          String
+  defaultAssignees        Json?
+  companyDomains          Json?
+  emailAccountIds         Json?
+  autoCreateOperations    Boolean        @default(true)
+  autoCreateClients       Boolean        @default(true)
+  autoFillFields          Boolean        @default(true)
+  enabled                 Boolean        @default(true)
+  processFromDate         DateTime?
+  lastHistoricalProcessed DateTime?
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+  organizations           organizations  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
 }
