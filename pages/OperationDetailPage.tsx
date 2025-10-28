@@ -630,47 +630,92 @@ const ProjectMembers: React.FC<{
   onUpdateAssignees: (newAssignees: string[]) => void;
 }> = ({ projectAssignees, allTeamMembers, onUpdateAssignees }) => {
   const [memberToAdd, setMemberToAdd] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  // projectAssignees now contains employee IDs
-  // Filter out invalid assignees first
-  const validAssignees = projectAssignees.filter(id => 
-    id && id !== 'Unknown' && allTeamMembers.some(m => m.id === id)
-  );
-  
-  const availableMembers = allTeamMembers.filter(
-    member => !validAssignees.includes(member.id)
-  );
+  // Log para debugging
+  console.log('👥 ProjectMembers rendered:', {
+    projectAssignees,
+    allTeamMembers: allTeamMembers.length,
+    teamMemberIds: allTeamMembers.map(m => m.id)
+  });
 
-  const handleAddMember = () => {
-    if (memberToAdd && !projectAssignees.includes(memberToAdd)) {
-      // Filter out invalid IDs like "Unknown"
-      const validAssignees = projectAssignees.filter(id => 
-        id && id !== 'Unknown' && allTeamMembers.some(m => m.id === id)
-      );
-      const newAssignees = [...validAssignees, memberToAdd];
-      onUpdateAssignees(newAssignees);
+  // Obtener miembros asignados válidos
+  const assignedMembers = React.useMemo(() => {
+    if (!projectAssignees || !Array.isArray(projectAssignees)) {
+      console.log('⚠️ projectAssignees no es array válido:', projectAssignees);
+      return [];
+    }
+
+    const members = projectAssignees
+      .filter(id => id && typeof id === 'string' && id !== 'Unknown')
+      .map(employeeId => {
+        const member = allTeamMembers.find(m => m.id === employeeId);
+        if (!member) {
+          console.log(`⚠️ No se encontró miembro para ID: ${employeeId}`);
+        }
+        return member;
+      })
+      .filter(Boolean) as TeamMember[];
+
+    console.log('✅ Miembros asignados encontrados:', members);
+    return members;
+  }, [projectAssignees, allTeamMembers]);
+
+  // Obtener miembros disponibles (no asignados)
+  const availableMembers = React.useMemo(() => {
+    const assignedIds = assignedMembers.map(m => m.id);
+    return allTeamMembers.filter(m => !assignedIds.includes(m.id));
+  }, [assignedMembers, allTeamMembers]);
+
+  const handleAddMember = async () => {
+    if (!memberToAdd) return;
+
+    try {
+      setIsLoading(true);
+      console.log('➕ Agregando miembro:', memberToAdd);
+      
+      const currentAssigneeIds = assignedMembers.map(m => m.id);
+      const newAssignees = [...currentAssigneeIds, memberToAdd];
+      
+      console.log('📤 Enviando assignees:', newAssignees);
+      await onUpdateAssignees(newAssignees);
+      
       setMemberToAdd('');
+      console.log('✅ Miembro agregado exitosamente');
+    } catch (error) {
+      console.error('❌ Error al agregar miembro:', error);
+      alert('Error al agregar miembro. Por favor intenta nuevamente.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleRemoveMember = (memberId: string) => {
-    const memberToRemove = allTeamMembers.find(m => m.id === memberId);
-    const memberName = memberToRemove?.name || 'this member';
+  const handleRemoveMember = async (memberId: string) => {
+    const member = allTeamMembers.find(m => m.id === memberId);
+    const memberName = member?.name || 'este miembro';
     
-    if (window.confirm(`¿Estás seguro de que deseas eliminar ${memberName} de esta operación?`)) {
-      // Filter out invalid IDs like "Unknown"
-      const newAssignees = projectAssignees.filter(id => 
-        id !== memberId && id && id !== 'Unknown' && allTeamMembers.some(m => m.id === id)
-      );
-      onUpdateAssignees(newAssignees);
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar a ${memberName} de esta operación?`)) {
+      return;
     }
-  };
 
-  // Get member names for display
-  const getAssignedMembers = () => {
-    return validAssignees
-      .map(assigneeId => allTeamMembers.find(m => m.id === assigneeId))
-      .filter(m => m !== undefined);
+    try {
+      setIsLoading(true);
+      console.log('➖ Eliminando miembro:', memberId);
+      
+      const newAssignees = assignedMembers
+        .filter(m => m.id !== memberId)
+        .map(m => m.id);
+      
+      console.log('📤 Enviando assignees:', newAssignees);
+      await onUpdateAssignees(newAssignees);
+      
+      console.log('✅ Miembro eliminado exitosamente');
+    } catch (error) {
+      console.error('❌ Error al eliminar miembro:', error);
+      alert('Error al eliminar miembro. Por favor intenta nuevamente.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -681,41 +726,62 @@ const ProjectMembers: React.FC<{
           <select
             value={memberToAdd}
             onChange={(e) => setMemberToAdd(e.target.value)}
-            className="block w-48 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            disabled={isLoading || availableMembers.length === 0}
+            className="block w-48 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
           >
-            <option value="" disabled>Seleccionar miembro...</option>
+            <option value="">
+              {availableMembers.length > 0 ? 'Seleccionar miembro...' : 'No hay miembros disponibles'}
+            </option>
             {availableMembers.map(member => (
-              <option key={member.id} value={member.id}>{member.name}</option>
+              <option key={member.id} value={member.id}>
+                {member.name} ({member.role})
+              </option>
             ))}
           </select>
           <button
             onClick={handleAddMember}
-            disabled={!memberToAdd}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            disabled={!memberToAdd || isLoading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
           >
-            Agregar
+            {isLoading ? 'Agregando...' : 'Agregar'}
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {getAssignedMembers().map(member => (
-          <div key={member!.id} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
-            <div className="flex items-center">
-              <UserCircleIcon className="w-8 h-8 text-gray-400 mr-3" />
-              <span className="text-sm font-medium text-gray-800">{member!.name}</span>
-            </div>
-            <button
-              onClick={() => handleRemoveMember(member!.id)}
-              className="text-gray-400 hover:text-red-600"
-              title={`Eliminar ${member!.name}`}
-            >
-              <TrashIcon className="w-5 h-5" />
-            </button>
+      <div className="space-y-3">
+        {assignedMembers.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {assignedMembers.map(member => (
+              <div 
+                key={member.id} 
+                className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
+                    {member.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900 truncate">{member.name}</p>
+                    <p className="text-xs text-gray-500 truncate">{member.role}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleRemoveMember(member.id)}
+                  disabled={isLoading}
+                  className="ml-2 text-gray-400 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                  title={`Eliminar a ${member.name}`}
+                >
+                  <TrashIcon className="w-5 h-5" />
+                </button>
+              </div>
+            ))}
           </div>
-        ))}
-        {validAssignees.length === 0 && (
-          <p className="col-span-full text-center text-gray-500 text-sm py-8">No hay miembros asignados a esta operación.</p>
+        ) : (
+          <div className="text-center py-12 px-6 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl">
+            <UserCircleIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+            <p className="text-sm font-medium text-gray-700 mb-1">No hay miembros asignados</p>
+            <p className="text-xs text-gray-500">Selecciona un miembro del equipo para asignarlo a esta operación</p>
+          </div>
         )}
       </div>
     </div>
