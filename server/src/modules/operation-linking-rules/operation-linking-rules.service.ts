@@ -91,6 +91,13 @@ export class OperationLinkingRulesService {
 
     const { defaultAssigneeIds, emailAccountIds, autoCreate, processFromDate, ...rest } = data;
     
+    this.logger.log(`✏️ Updating rule ${id} with data:`, {
+      processFromDate,
+      autoCreate,
+      hasEmailAccounts: emailAccountIds?.length > 0,
+      existingProcessFromDate: existing.processFromDate,
+    });
+    
     const updateData: any = { ...rest };
     
     if (defaultAssigneeIds !== undefined) {
@@ -119,14 +126,23 @@ export class OperationLinkingRulesService {
     const newDate = processFromDate ? new Date(processFromDate).getTime() : null;
     const oldDate = existing.processFromDate ? new Date(existing.processFromDate).getTime() : null;
     
+    this.logger.log(`🔍 Comparing dates:`, {
+      newDate,
+      oldDate,
+      areEqual: newDate === oldDate,
+      willProcess: processFromDate && newDate !== oldDate,
+    });
+    
     if (processFromDate && newDate !== oldDate) {
-      this.logger.log(`ProcessFromDate changed from ${existing.processFromDate} to ${processFromDate}, triggering historical processing`);
+      this.logger.log(`⏳ ProcessFromDate changed from ${existing.processFromDate} to ${processFromDate}, triggering historical processing`);
       // Run in background to avoid blocking the response
       setImmediate(() => {
         this.processHistoricalEmails(updated.id, organizationId).catch(error => {
           this.logger.error(`Error processing historical emails for rule ${updated.id}:`, error);
         });
       });
+    } else {
+      this.logger.log(`⚠️ No historical processing needed. ProcessFromDate: ${processFromDate}, Changed: ${newDate !== oldDate}`);
     }
 
     return updated;
