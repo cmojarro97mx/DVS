@@ -25,6 +25,7 @@ The frontend uses React with TypeScript and Tailwind CSS, bundled with Vite, foc
 -   **Virtual Assistant (Voice-Enabled AI)**: A voice-enabled AI assistant leveraging Google Gemini Flash API via NestJS WebSockets and Web Speech API for real-time, bidirectional voice interactions.
 -   **Operation Health Monitor**: Real-time, calculation-based scoring system analyzing progress, task completion, deadlines, documents, payments, and email activity, providing visual feedback and alerts.
 -   **Task Automation System with AI Knowledge Base**: AI-powered task automation leveraging Google Gemini Flash to analyze operation-linked emails, automatically creating and updating tasks. Includes a self-learning custom knowledge base per organization (max 100 entries) with smart update logic, relevance scoring, and significant token reduction optimizations (e.g., pre-filtering, limited context, concise prompts, email body truncation). Features an advanced duplicate prevention system for tasks and email processing.
+-   **Smart Operation Creator with Knowledge Base Integration**: AI-driven operation creation from emails with integrated Knowledge Base for enhanced precision and reduced token usage. System automatically extracts client information, routes, couriers, and tracking numbers while learning from past operations to improve future accuracy. Includes email account filtering and company domain validation.
 
 **System Design Choices:**
 -   **Modular Design**: Ensures maintainability and scalability.

@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 import { OperationLinkingRulesService } from './operation-linking-rules.service';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { ConfigService } from '@nestjs/config';
 import { NotificationsService } from '../notifications/notifications.service';
+import { KnowledgeBaseService } from '../knowledge-base/knowledge-base.service';
 import { randomUUID } from 'crypto';
 
 @Injectable()
@@ -16,6 +17,8 @@ export class SmartOperationCreatorService {
     private linkingRulesService: OperationLinkingRulesService,
     private configService: ConfigService,
     private notificationsService: NotificationsService,
+    @Inject(forwardRef(() => KnowledgeBaseService))
+    private knowledgeBase: KnowledgeBaseService,
   ) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (apiKey) {
@@ -151,6 +154,7 @@ export class SmartOperationCreatorService {
       emailMessage,
       operationName,
       rule.companyDomains,
+      organizationId,
     );
 
     const clientId = await this.findOrCreateClient(
@@ -203,12 +207,25 @@ export class SmartOperationCreatorService {
       await this.assignDefaultEmployees(operation.id, rule.defaultAssignees, organizationId);
     }
 
+    // 📚 Contribuir a la Knowledge Base con la información extraída
+    await this.contributeToKnowledgeBase(
+      organizationId,
+      emailMessage,
+      extractedData,
+      operation,
+    );
+
     await this.sendCreationNotification(operation, organizationId, needsAttention);
 
     return operation;
   }
 
-  private async extractOperationDataWithAI(emailMessage: any, operationName: string, companyDomains?: any) {
+  private async extractOperationDataWithAI(
+    emailMessage: any, 
+    operationName: string, 
+    companyDomains?: any,
+    organizationId?: string,
+  ) {
     if (!this.genAI) {
       this.logger.warn('Gemini AI not configured, using basic extraction');
       return this.basicExtraction(emailMessage, operationName, companyDomains);
@@ -224,10 +241,32 @@ export class SmartOperationCreatorService {
         ? `\n\nIMPORTANTE: NO extraigas como cliente emails que terminen en estos dominios (son empleados internos): ${companyDomains.join(', ')}`
         : '';
 
+      // 🧠 Obtener conocimiento relevante de la Knowledge Base
+      let knowledgeContext = '';
+      if (organizationId) {
+        try {
+          const keywords = this.extractKeywordsFromText(emailBody + ' ' + subject);
+          const relevantKnowledge = await this.knowledgeBase.getRelevantKnowledge(organizationId, {
+            keywords,
+            limit: 5,
+          });
+
+          if (relevantKnowledge && relevantKnowledge.length > 0) {
+            knowledgeContext = '\n\n📚 CONTEXTO DE LA EMPRESA (usa esta información para mejorar precisión):\n';
+            relevantKnowledge.forEach((entry: any) => {
+              knowledgeContext += `- [${entry.category}] ${entry.title}: ${entry.content}\n`;
+            });
+            this.logger.log(`🧠 Knowledge Base: ${relevantKnowledge.length} entradas relevantes encontradas`);
+          }
+        } catch (error) {
+          this.logger.warn('No se pudo obtener contexto de Knowledge Base:', error.message);
+        }
+      }
+
       const prompt = `Analiza el siguiente correo electrónico y extrae información para crear una operación logística.
 
 Asunto: ${subject}
-Cuerpo: ${emailBody}${domainInstructions}
+Cuerpo: ${emailBody}${domainInstructions}${knowledgeContext}
 
 Extrae la siguiente información en formato JSON (si no encuentras algún dato, usa null):
 {
@@ -270,6 +309,22 @@ Responde SOLO con el JSON, sin explicaciones adicionales.`;
       this.logger.warn('AI extraction failed, using basic extraction:', error.message);
       return this.basicExtraction(emailMessage, operationName, companyDomains);
     }
+  }
+
+  private extractKeywordsFromText(text: string): string[] {
+    const stopWords = new Set([
+      'el', 'la', 'los', 'las', 'un', 'una', 'de', 'del', 'y', 'o', 'en', 'a', 'por', 'para',
+      'con', 'sin', 'sobre', 'que', 'the', 'a', 'an', 'and', 'or', 'in', 'on', 'at', 'to', 'for'
+    ]);
+
+    const words = text
+      .toLowerCase()
+      .replace(/[^\w\sáéíóúñü]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length > 3 && !stopWords.has(word));
+
+    const unique = [...new Set(words)];
+    return unique.slice(0, 10);
   }
 
   private basicExtraction(emailMessage: any, operationName: string, companyDomains?: any) {
@@ -457,5 +512,92 @@ Responde SOLO con el JSON, sin explicaciones adicionales.`;
       const normalizedDomain = domain.startsWith('@') ? domain : '@' + domain;
       return email.toLowerCase().endsWith(normalizedDomain.toLowerCase());
     });
+  }
+
+  private async contributeToKnowledgeBase(
+    organizationId: string,
+    emailMessage: any,
+    extractedData: any,
+    operation: any,
+  ): Promise<void> {
+    try {
+      this.logger.log('📚 Contributing to Knowledge Base...');
+
+      // Agregar cliente si fue identificado
+      if (extractedData.clientName && extractedData.clientName !== 'Cliente Desconocido') {
+        await this.knowledgeBase.addKnowledge(organizationId, null, {
+          category: 'clients',
+          title: `Cliente: ${extractedData.clientName}`,
+          content: `${extractedData.clientName}${extractedData.clientEmail ? ` (${extractedData.clientEmail})` : ''}`,
+          keywords: [extractedData.clientName.toLowerCase()],
+          source: 'smart_operation_creator',
+          sourceId: operation.id,
+          metadata: { operationId: operation.id, emailId: emailMessage.id },
+        });
+      }
+
+      // Agregar ruta si ambas direcciones fueron identificadas
+      if (extractedData.pickupAddress && extractedData.deliveryAddress) {
+        await this.knowledgeBase.addKnowledge(organizationId, null, {
+          category: 'routes',
+          title: `Ruta: ${extractedData.pickupAddress} → ${extractedData.deliveryAddress}`,
+          content: `Origen: ${extractedData.pickupAddress}, Destino: ${extractedData.deliveryAddress}`,
+          keywords: [
+            extractedData.pickupAddress.toLowerCase().split(',')[0],
+            extractedData.deliveryAddress.toLowerCase().split(',')[0],
+          ],
+          source: 'smart_operation_creator',
+          sourceId: operation.id,
+          metadata: { 
+            operationId: operation.id,
+            shippingMode: extractedData.shippingMode,
+            operationType: extractedData.operationType,
+          },
+        });
+      }
+
+      // Agregar courier si fue identificado
+      if (extractedData.courrier) {
+        await this.knowledgeBase.addKnowledge(organizationId, null, {
+          category: 'carriers',
+          title: `Courier: ${extractedData.courrier}`,
+          content: extractedData.courrier,
+          keywords: [extractedData.courrier.toLowerCase()],
+          source: 'smart_operation_creator',
+          sourceId: operation.id,
+          metadata: { operationId: operation.id, shippingMode: extractedData.shippingMode },
+        });
+      }
+
+      // Agregar números de tracking/booking
+      if (extractedData.bookingTracking && extractedData.bookingTracking !== operation.projectName) {
+        await this.knowledgeBase.addKnowledge(organizationId, null, {
+          category: 'tracking_numbers',
+          title: `Tracking/Booking: ${extractedData.bookingTracking}`,
+          content: extractedData.bookingTracking,
+          keywords: [extractedData.bookingTracking.toLowerCase()],
+          source: 'smart_operation_creator',
+          sourceId: operation.id,
+          metadata: { operationId: operation.id },
+        });
+      }
+
+      // Agregar MBL/AWB si fue identificado
+      if (extractedData.mbl_awb) {
+        await this.knowledgeBase.addKnowledge(organizationId, null, {
+          category: 'tracking_numbers',
+          title: `MBL/AWB: ${extractedData.mbl_awb}`,
+          content: extractedData.mbl_awb,
+          keywords: [extractedData.mbl_awb.toLowerCase()],
+          source: 'smart_operation_creator',
+          sourceId: operation.id,
+          metadata: { operationId: operation.id, type: 'mbl_awb' },
+        });
+      }
+
+      this.logger.log('✅ Knowledge Base contribution completed');
+    } catch (error) {
+      this.logger.warn('Error contributing to Knowledge Base:', error.message);
+    }
   }
 }
