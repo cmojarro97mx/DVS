@@ -17,7 +17,7 @@ export class OperationsService {
   ) {}
 
   async findAll(organizationId: string) {
-    return this.prisma.operations.findMany({
+    const operations = await this.prisma.operations.findMany({
       where: { organizationId },
       include: {
         clients: true,
@@ -35,6 +35,27 @@ export class OperationsService {
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    // Transform operation_assignees to assignees array of employee IDs for each operation
+    return Promise.all(
+      operations.map(async (operation) => {
+        const assignees = [];
+        for (const assignee of operation.operation_assignees) {
+          // Find employee by userId
+          const employee = await this.prisma.employees.findFirst({
+            where: { userId: assignee.userId, organizationId },
+            select: { id: true },
+          });
+          if (employee) {
+            assignees.push(employee.id);
+          }
+        }
+        return {
+          ...operation,
+          assignees,
+        };
+      })
+    );
   }
 
   async findOne(id: string, organizationId: string) {
@@ -60,7 +81,23 @@ export class OperationsService {
       throw new NotFoundException(`Operation with ID ${id} not found`);
     }
 
-    return operation;
+    // Transform operation_assignees to assignees array of employee IDs
+    const assignees = [];
+    for (const assignee of operation.operation_assignees) {
+      // Find employee by userId
+      const employee = await this.prisma.employees.findFirst({
+        where: { userId: assignee.userId, organizationId },
+        select: { id: true },
+      });
+      if (employee) {
+        assignees.push(employee.id);
+      }
+    }
+
+    return {
+      ...operation,
+      assignees,
+    };
   }
 
   async create(data: any, organizationId: string, userId: string) {
