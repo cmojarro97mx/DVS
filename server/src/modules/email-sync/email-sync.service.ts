@@ -189,6 +189,7 @@ export class EmailSyncService {
             date: emailMessage.date,
           },
           account.users.organizationId,
+          accountId, // Pass the email account ID for filtering
         );
       } catch (error) {
         this.logger.error('Error processing email for smart operation creation:', error.message);

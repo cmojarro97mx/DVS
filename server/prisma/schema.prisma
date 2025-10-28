@@ -393,6 +393,7 @@ model operation_linking_rules {
   subjectPattern       String
   defaultAssignees     Json?
   companyDomains       Json?
+  emailAccountIds      Json?
   autoCreateOperations Boolean        @default(true)
   autoCreateClients    Boolean        @default(true)
   autoFillFields       Boolean        @default(true)

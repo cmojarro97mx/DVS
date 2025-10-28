@@ -26,6 +26,7 @@ export class SmartOperationCreatorService {
   async processEmailForOperationCreation(
     emailMessage: any,
     organizationId: string,
+    emailAccountId?: string,
   ) {
     try {
       const rules = await this.linkingRulesService.getEnabledRules(organizationId);
@@ -39,6 +40,16 @@ export class SmartOperationCreatorService {
       const emailFrom = emailMessage.from || '';
 
       for (const rule of rules) {
+        // Check if rule is configured for specific email accounts
+        if (emailAccountId && rule.emailAccountIds && Array.isArray(rule.emailAccountIds)) {
+          if (rule.emailAccountIds.length > 0 && !rule.emailAccountIds.includes(emailAccountId)) {
+            this.logger.debug(
+              `Email from account "${emailAccountId}" is not in configured accounts for rule "${rule.name}", skipping`,
+            );
+            continue;
+          }
+        }
+
         if (!this.isEmailFromCompanyDomain(emailFrom, rule.companyDomains)) {
           this.logger.debug(
             `Email from "${emailFrom}" is not from configured company domains, skipping rule "${rule.name}"`,

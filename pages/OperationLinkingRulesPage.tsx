@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, Edit2, Save, X, Power } from 'lucide-react';
-import { operationLinkingRulesService, OperationLinkingRule, CreateOperationLinkingRuleDto } from '../src/services/operationLinkingRulesService';
+import { Plus, Trash2, Edit2, Save, X, Power, Mail } from 'lucide-react';
+import { operationLinkingRulesService, OperationLinkingRule, CreateOperationLinkingRuleDto, EmailAccount } from '../src/services/operationLinkingRulesService';
 import { employeesService } from '../src/services/employeesService';
 
 interface Employee {
@@ -12,6 +12,7 @@ interface Employee {
 export default function OperationLinkingRulesPage() {
   const [rules, setRules] = useState<OperationLinkingRule[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [emailAccounts, setEmailAccounts] = useState<EmailAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingRule, setEditingRule] = useState<OperationLinkingRule | null>(null);
@@ -21,6 +22,7 @@ export default function OperationLinkingRulesPage() {
     subjectPattern: '',
     defaultAssigneeIds: [],
     companyDomains: [],
+    emailAccountIds: [],
     autoCreate: true,
     enabled: true,
   });
@@ -35,12 +37,14 @@ export default function OperationLinkingRulesPage() {
   const loadData = async () => {
     try {
       setError(null);
-      const [rulesData, employeesData] = await Promise.all([
+      const [rulesData, employeesData, accountsData] = await Promise.all([
         operationLinkingRulesService.getRules(),
         employeesService.getAll(),
+        operationLinkingRulesService.getEmailAccounts(),
       ]);
       setRules(rulesData);
       setEmployees(employeesData);
+      setEmailAccounts(accountsData);
     } catch (err: any) {
       console.error('Error loading data:', err);
       setError(err.response?.data?.message || 'Error al cargar datos');
@@ -56,6 +60,7 @@ export default function OperationLinkingRulesPage() {
       subjectPattern: '',
       defaultAssigneeIds: [],
       companyDomains: [],
+      emailAccountIds: [],
       autoCreate: true,
       enabled: true,
     });
@@ -71,12 +76,25 @@ export default function OperationLinkingRulesPage() {
       subjectPattern: rule.subjectPattern,
       defaultAssigneeIds: rule.defaultAssigneeIds,
       companyDomains: rule.companyDomains || [],
+      emailAccountIds: rule.emailAccountIds || [],
       autoCreate: rule.autoCreate,
       enabled: rule.enabled,
     });
     setCompanyDomainInput('');
     setEditingRule(rule);
     setShowCreateModal(true);
+  };
+
+  const toggleEmailAccount = (accountId: string) => {
+    setFormData((prev) => {
+      const isSelected = (prev.emailAccountIds || []).includes(accountId);
+      return {
+        ...prev,
+        emailAccountIds: isSelected
+          ? (prev.emailAccountIds || []).filter((id) => id !== accountId)
+          : [...(prev.emailAccountIds || []), accountId],
+      };
+    });
   };
 
   const handleSave = async () => {
@@ -270,6 +288,26 @@ export default function OperationLinkingRulesPage() {
                     </div>
                   )}
 
+                  {rule.emailAccountIds && rule.emailAccountIds.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-xs text-gray-500 mb-1">Cuentas de correo:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {rule.emailAccountIds.map((accountId) => {
+                          const account = emailAccounts.find((a) => a.id === accountId);
+                          return account ? (
+                            <span
+                              key={accountId}
+                              className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs"
+                            >
+                              <Mail className="w-3 h-3" />
+                              {account.email}
+                            </span>
+                          ) : null;
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {rule.defaultAssigneeIds.length > 0 && (
                     <div className="mt-2">
                       <p className="text-xs text-gray-500 mb-1">Asignados por defecto:</p>
@@ -423,6 +461,44 @@ export default function OperationLinkingRulesPage() {
                   <p className="text-xs text-gray-500 mt-2">
                     Agrega dominios completos (ej: @empresa.com) o usuarios específicos (ej: usuario@empresa.com). 
                     Solo se procesarán emails que VENGAN DE estos dominios y NO se extraerán como clientes.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Cuentas de correo
+                  </label>
+                  <div className="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto">
+                    {emailAccounts.length === 0 ? (
+                      <p className="text-sm text-gray-500">No hay cuentas de correo vinculadas</p>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          {emailAccounts.map((account) => (
+                            <label
+                              key={account.id}
+                              className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={(formData.emailAccountIds || []).includes(account.id)}
+                                onChange={() => toggleEmailAccount(account.id)}
+                                className="rounded text-blue-600"
+                              />
+                              <Mail className="w-4 h-4 text-gray-400" />
+                              <span className="text-sm text-gray-700">{account.email}</span>
+                              {account.status === 'connected' && account.syncEmail && (
+                                <span className="ml-auto text-xs text-green-600">●</span>
+                              )}
+                            </label>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Si no seleccionas ninguna cuenta, la regla se aplicará a emails de TODAS las cuentas vinculadas. 
+                    Si seleccionas cuentas específicas, solo se procesarán emails de esas cuentas.
                   </p>
                 </div>
 

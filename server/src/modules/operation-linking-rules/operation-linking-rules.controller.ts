@@ -11,13 +11,32 @@ import {
 } from '@nestjs/common';
 import { OperationLinkingRulesService } from './operation-linking-rules.service';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
+import { PrismaService } from '../../common/prisma.service';
 
 @Controller('operation-linking-rules')
 @UseGuards(JwtAuthGuard)
 export class OperationLinkingRulesController {
   constructor(
     private readonly linkingRulesService: OperationLinkingRulesService,
+    private readonly prisma: PrismaService,
   ) {}
+
+  @Get('email-accounts')
+  async getEmailAccounts(@Request() req) {
+    const userId = req.user.userId;
+    const accounts = await this.prisma.email_accounts.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        email: true,
+        provider: true,
+        status: true,
+        syncEmail: true,
+      },
+      orderBy: { email: 'asc' },
+    });
+    return accounts;
+  }
 
   @Get()
   async findAll(@Request() req) {

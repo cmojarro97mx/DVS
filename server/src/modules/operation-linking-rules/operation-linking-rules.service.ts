@@ -14,6 +14,7 @@ export class OperationLinkingRulesService {
     return rules.map(rule => ({
       ...rule,
       defaultAssigneeIds: Array.isArray(rule.defaultAssignees) ? rule.defaultAssignees : [],
+      emailAccountIds: Array.isArray(rule.emailAccountIds) ? rule.emailAccountIds : [],
       autoCreate: rule.autoCreateOperations,
     }));
   }
@@ -30,18 +31,20 @@ export class OperationLinkingRulesService {
     return {
       ...rule,
       defaultAssigneeIds: Array.isArray(rule.defaultAssignees) ? rule.defaultAssignees : [],
+      emailAccountIds: Array.isArray(rule.emailAccountIds) ? rule.emailAccountIds : [],
       autoCreate: rule.autoCreateOperations,
     };
   }
 
   async create(data: any, organizationId: string) {
-    const { defaultAssigneeIds, autoCreate, ...rest } = data;
+    const { defaultAssigneeIds, emailAccountIds, autoCreate, ...rest } = data;
     
     return this.prisma.operation_linking_rules.create({
       data: {
         ...rest,
         organizationId,
         defaultAssignees: defaultAssigneeIds || [],
+        emailAccountIds: emailAccountIds || [],
         autoCreateOperations: autoCreate !== undefined ? autoCreate : true,
       },
     });
@@ -57,12 +60,16 @@ export class OperationLinkingRulesService {
       throw new NotFoundException(`Rule with ID ${id} not found`);
     }
 
-    const { defaultAssigneeIds, autoCreate, ...rest } = data;
+    const { defaultAssigneeIds, emailAccountIds, autoCreate, ...rest } = data;
     
     const updateData: any = { ...rest };
     
     if (defaultAssigneeIds !== undefined) {
       updateData.defaultAssignees = defaultAssigneeIds;
+    }
+    
+    if (emailAccountIds !== undefined) {
+      updateData.emailAccountIds = emailAccountIds;
     }
     
     if (autoCreate !== undefined) {

@@ -1,5 +1,13 @@
 import { apiService } from './api';
 
+export interface EmailAccount {
+  id: string;
+  email: string;
+  provider: string;
+  status: string;
+  syncEmail: boolean;
+}
+
 export interface OperationLinkingRule {
   id: string;
   organizationId: string;
@@ -8,6 +16,7 @@ export interface OperationLinkingRule {
   subjectPattern: string;
   defaultAssigneeIds: string[];
   companyDomains?: string[];
+  emailAccountIds?: string[];
   autoCreate: boolean;
   enabled: boolean;
   createdAt: Date;
@@ -20,6 +29,7 @@ export interface CreateOperationLinkingRuleDto {
   subjectPattern: string;
   defaultAssigneeIds: string[];
   companyDomains?: string[];
+  emailAccountIds?: string[];
   autoCreate: boolean;
   enabled: boolean;
 }
@@ -30,6 +40,7 @@ export interface UpdateOperationLinkingRuleDto {
   subjectPattern?: string;
   defaultAssigneeIds?: string[];
   companyDomains?: string[];
+  emailAccountIds?: string[];
   autoCreate?: boolean;
   enabled?: boolean;
 }
@@ -41,6 +52,10 @@ class OperationLinkingRulesService {
 
   async getRule(id: string): Promise<OperationLinkingRule> {
     return apiService.get<OperationLinkingRule>(`/operation-linking-rules/${id}`);
+  }
+
+  async getEmailAccounts(): Promise<EmailAccount[]> {
+    return apiService.get<EmailAccount[]>('/operation-linking-rules/email-accounts');
   }
 
   async createRule(data: CreateOperationLinkingRuleDto): Promise<OperationLinkingRule> {
