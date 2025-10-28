@@ -854,10 +854,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
                 setProjects(projects.map(p => p.id === selectedProject.id ? {...p, documents: updatedFiles} : p))
             }}
             notes={projectNotes}
-            onAddNote={async (content, file) => {
+            onAddNote={async (content) => {
                 try {
-                    let attachmentUrl: string | undefined;
-                    let attachmentName: string | undefined;
+                    const newNote = await notesService.create({
+                        title: '',
+                        content,
+                        operationId: selectedProject.id,
+                    });
+                    setProjectNotes([newNote, ...projectNotes]); undefined;
 
                     if (file) {
                         const uploadedDoc = await operationsService.uploadDocument(selectedProject.id, file);

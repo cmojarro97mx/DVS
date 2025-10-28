@@ -10,8 +10,6 @@ export interface Note {
   isPinned?: boolean;
   operationId?: string;
   userId?: string;
-  attachmentUrl?: string;
-  attachmentName?: string;
   createdAt?: string;
   updatedAt?: string;
   organizationId?: string;
@@ -24,8 +22,6 @@ export interface CreateNoteData {
   tags?: string[];
   isPinned?: boolean;
   operationId?: string;
-  attachmentUrl?: string;
-  attachmentName?: string;
 }
 
 export interface UpdateNoteData extends Partial<CreateNoteData> {}

@@ -313,48 +313,21 @@ const ProjectDocuments: React.FC<{
 
 const ProjectNotes: React.FC<{
     notes: Note[];
-    onAddNote: (content: string, file?: File) => void;
+    onAddNote: (content: string) => void;
     onUpdateNote: (noteId: string, content: string) => void;
     onDeleteNote: (noteId: string) => void;
 }> = ({ notes, onAddNote, onUpdateNote, onDeleteNote }) => {
     const [newNoteContent, setNewNoteContent] = useState('');
     const [editingNote, setEditingNote] = useState<{ id: string; content: string } | null>(null);
     const [isSaving, setIsSaving] = useState(false);
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setSelectedFile(e.target.files[0]);
-        }
-    };
-
-    const handleRemoveFile = () => {
-        setSelectedFile(null);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-    };
-
-    const getFileIcon = (fileType: string) => {
-        if (fileType.startsWith('image/')) return PhotoIcon;
-        if (fileType === 'application/pdf') return DocumentPdfIcon;
-        if (fileType.includes('spreadsheet') || fileType.includes('csv')) return DocumentCsvIcon;
-        if (fileType.startsWith('application/vnd.openxmlformats-officedocument') || fileType === 'application/msword') return DocumentTextIcon;
-        return FileIcon;
-    };
 
     const handleAddClick = async () => {
         if (isSaving || !newNoteContent.trim()) return;
         
         setIsSaving(true);
         try {
-            await onAddNote(newNoteContent, selectedFile || undefined);
+            await onAddNote(newNoteContent);
             setNewNoteContent('');
-            setSelectedFile(null);
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-            }
         } catch (error) {
             console.error('Error saving note:', error);
             alert(`Error al guardar la nota: ${error instanceof Error ? error.message : 'Error desconocido'}`);
@@ -448,36 +421,7 @@ const ProjectNotes: React.FC<{
                         rows={3}
                     />
                     
-                    {/* File Attachment Section */}
-                    <div className="mt-3 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                onChange={handleFileSelect}
-                                className="hidden"
-                                id="note-file-input"
-                            />
-                            <label
-                                htmlFor="note-file-input"
-                                className="cursor-pointer px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-xs font-medium hover:bg-gray-200 transition-colors flex items-center gap-1.5"
-                            >
-                                <PaperClipIcon className="w-3.5 h-3.5" />
-                                Archivo
-                            </label>
-                            {selectedFile && (
-                                <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 border border-blue-200 rounded-md">
-                                    {React.createElement(getFileIcon(selectedFile.type), { className: "w-4 h-4 text-blue-600" })}
-                                    <span className="text-xs text-gray-700 max-w-[150px] truncate">{selectedFile.name}</span>
-                                    <button
-                                        onClick={handleRemoveFile}
-                                        className="text-red-500 hover:text-red-700 transition-colors"
-                                    >
-                                        <XIcon className="w-3 h-3" />
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                    <div className="mt-3 flex items-center justify-end">
                         <button 
                             onClick={handleAddClick} 
                             className="px-4 py-1.5 bg-blue-600 text-white rounded-md text-xs font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
@@ -586,22 +530,6 @@ const ProjectNotes: React.FC<{
                                         </div>
                                         <div className="px-5 py-4">
                                             <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{note.content}</p>
-                                            
-                                            {/* Attachment display */}
-                                            {note.attachmentUrl && note.attachmentName && (
-                                                <div className="mt-4 pt-4 border-t border-gray-100">
-                                                    <a
-                                                        href={note.attachmentUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all group"
-                                                    >
-                                                        <PaperClipIcon className="w-4 h-4 text-gray-500 group-hover:text-blue-600" />
-                                                        <span className="text-sm text-gray-700 group-hover:text-blue-600 font-medium">{note.attachmentName}</span>
-                                                        <DownloadIcon className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-600" />
-                                                    </a>
-                                                </div>
-                                            )}
                                         </div>
                                     </>
                                 )}

@@ -36,7 +36,7 @@ export class NotesService {
       select: { name: true },
     });
 
-    const { operationId, content, attachmentUrl, attachmentName } = data;
+    const { operationId, content } = data;
 
     return this.prisma.notes.create({
       data: {
@@ -47,8 +47,6 @@ export class NotesService {
         users: { connect: { id: userId } },
         organizations: { connect: { id: organizationId } },
         ...(operationId && { operations: { connect: { id: operationId } } }),
-        ...(attachmentUrl && { attachmentUrl }),
-        ...(attachmentName && { attachmentName }),
       },
     });
   }
