@@ -9,6 +9,10 @@ import { CalendarIcon } from '../components/icons/CalendarIcon';
 import { ChevronRightIcon } from '../components/icons/ChevronRightIcon';
 import { FilterIcon } from '../components/icons/FilterIcon';
 import { TrashIcon } from '../components/icons/TrashIcon';
+import { TruckIcon } from '../components/icons/TruckIcon';
+import { CheckCircleIcon } from '../components/icons/CheckCircleIcon';
+import { ExclamationTriangleIcon } from '../components/icons/ExclamationTriangleIcon';
+import { ChartPieIcon } from '../components/icons/ChartPieIcon';
 import { operationsService } from '../src/services/operationsService';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 
@@ -69,6 +73,33 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
     }
   };
 
+  // Calculate statistics
+  const statistics = useMemo(() => {
+    const total = filteredProjects.length;
+    const byStatus = filteredProjects.reduce((acc, p) => {
+      acc[p.status] = (acc[p.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const avgProgress = total > 0 
+      ? Math.round(filteredProjects.reduce((sum, p) => sum + p.progress, 0) / total)
+      : 0;
+    
+    const needsAttention = filteredProjects.filter(p => p.needsAttention).length;
+    const autoCreated = filteredProjects.filter(p => p.autoCreated).length;
+    
+    return {
+      total,
+      byStatus,
+      avgProgress,
+      needsAttention,
+      autoCreated,
+      delivered: byStatus['Delivered'] || 0,
+      inTransit: byStatus['In Transit'] || 0,
+      planning: byStatus['Planning'] || 0,
+    };
+  }, [filteredProjects]);
+
   const handleDeleteOperation = async () => {
     if (!operationToDelete) return;
 
@@ -107,6 +138,65 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
         title="Logistics Operations"
         description="Monitor, manage, and track all your ongoing and completed logistics projects from a centralized dashboard."
       />
+
+      {/* Statistics Cards */}
+      {!isLoading && projects.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-slate-500 uppercase">Total</span>
+              <ClipboardListIcon className="w-4 h-4 text-slate-400" />
+            </div>
+            <p className="text-2xl font-bold text-slate-800">{statistics.total}</p>
+            <p className="text-xs text-slate-500 mt-1">Operaciones</p>
+          </div>
+
+          <div className="bg-blue-50 rounded-lg border border-blue-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-blue-600 uppercase">En Tránsito</span>
+              <TruckIcon className="w-4 h-4 text-blue-500" />
+            </div>
+            <p className="text-2xl font-bold text-blue-700">{statistics.inTransit}</p>
+            <p className="text-xs text-blue-600 mt-1">{statistics.total > 0 ? Math.round((statistics.inTransit / statistics.total) * 100) : 0}% del total</p>
+          </div>
+
+          <div className="bg-green-50 rounded-lg border border-green-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-green-600 uppercase">Completadas</span>
+              <CheckCircleIcon className="w-4 h-4 text-green-500" />
+            </div>
+            <p className="text-2xl font-bold text-green-700">{statistics.delivered}</p>
+            <p className="text-xs text-green-600 mt-1">{statistics.total > 0 ? Math.round((statistics.delivered / statistics.total) * 100) : 0}% del total</p>
+          </div>
+
+          <div className="bg-purple-50 rounded-lg border border-purple-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-purple-600 uppercase">Planificación</span>
+              <CalendarIcon className="w-4 h-4 text-purple-500" />
+            </div>
+            <p className="text-2xl font-bold text-purple-700">{statistics.planning}</p>
+            <p className="text-xs text-purple-600 mt-1">{statistics.total > 0 ? Math.round((statistics.planning / statistics.total) * 100) : 0}% del total</p>
+          </div>
+
+          <div className="bg-amber-50 rounded-lg border border-amber-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-amber-600 uppercase">Atención</span>
+              <ExclamationTriangleIcon className="w-4 h-4 text-amber-500" />
+            </div>
+            <p className="text-2xl font-bold text-amber-700">{statistics.needsAttention}</p>
+            <p className="text-xs text-amber-600 mt-1">Requieren revisión</p>
+          </div>
+
+          <div className="bg-slate-50 rounded-lg border border-slate-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-slate-600 uppercase">Progreso</span>
+              <ChartPieIcon className="w-4 h-4 text-slate-500" />
+            </div>
+            <p className="text-2xl font-bold text-slate-700">{statistics.avgProgress}%</p>
+            <p className="text-xs text-slate-500 mt-1">Promedio general</p>
+          </div>
+        </div>
+      )}
 
       {/* Controls Bar */}
       <div className="flex-shrink-0 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -157,106 +247,135 @@ const LogisticsProjectsPage: React.FC<LogisticsProjectsPageProps> = ({ setActive
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
           </div>
         ) : filteredProjects.length > 0 ? (
-          <div className="overflow-y-auto">
-            <table className="w-full">
-              <thead className="sticky top-0 bg-white z-10">
-                <tr className="border-b border-slate-300">
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 tracking-wider">Project</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 tracking-wider">Team</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 tracking-wider">Deadline</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 tracking-wider">Progress</th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 tracking-wider"></th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-slate-200">
-                {filteredProjects.map((project) => (
-                  <tr key={project.id} onClick={() => onViewOperation(project.id)} className={`hover:bg-slate-50 cursor-pointer group ${project.needsAttention ? 'bg-amber-50' : ''}`}>
-                    <td className="px-6 py-4 align-middle">
-                      <div className="flex items-center gap-4">
-                        <ProjectAvatar projectName={project.projectName} />
-                        <div className="min-w-0 flex-1">
+          <div className="overflow-y-auto p-4">
+            <div className="space-y-3">
+              {filteredProjects.map((project) => (
+                <div 
+                  key={project.id} 
+                  onClick={() => onViewOperation(project.id)}
+                  className={`group bg-white border rounded-lg p-4 hover:shadow-md transition-all cursor-pointer ${
+                    project.needsAttention ? 'border-amber-300 bg-amber-50/30' : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    {/* Left section - Project info */}
+                    <div className="flex items-start gap-4 flex-1 min-w-0">
+                      <ProjectAvatar projectName={project.projectName} />
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-slate-800 truncate">{project.projectName}</h3>
+                          {project.autoCreated && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 whitespace-nowrap">
+                              🤖 Auto
+                            </span>
+                          )}
+                          {project.needsAttention && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700 whitespace-nowrap">
+                              ⚠️ Atención
+                            </span>
+                          )}
+                        </div>
+                        
+                        <p className="text-xs font-mono text-slate-500 mb-3">{project.id}</p>
+                        
+                        {/* Bottom info row */}
+                        <div className="flex items-center gap-6 text-xs text-slate-600">
+                          <div className="flex items-center gap-1.5">
+                            <CalendarIcon className="w-3.5 h-3.5 text-slate-400" />
+                            <span>{project.deadline || 'Sin fecha límite'}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-1.5">
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusColor(project.status)}`}>
+                              {project.status}
+                            </span>
+                          </div>
+                          
+                          {/* Team avatars */}
                           <div className="flex items-center gap-2">
-                            <p className="font-semibold text-sm text-slate-800 truncate" title={project.projectName}>{project.projectName}</p>
-                            {project.autoCreated && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 whitespace-nowrap">
-                                🤖 Auto
-                              </span>
-                            )}
-                            {project.needsAttention && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700 whitespace-nowrap">
-                                ⚠️ Atención
-                              </span>
+                            <div className="flex items-center -space-x-1.5">
+                              {(project.assignees || [])
+                                .filter((id: string) => id && id !== 'Unknown')
+                                .slice(0, 3)
+                                .map((employeeId: string) => {
+                                  const member = teamMembers.find(m => m.id === employeeId);
+                                  const name = member?.name || 'Unknown';
+                                  const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
+                                  return (
+                                    <div 
+                                      key={employeeId} 
+                                      className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-white" 
+                                      title={name}
+                                    >
+                                      {initials}
+                                    </div>
+                                  );
+                                })}
+                              {(project.assignees || []).filter((id: string) => id && id !== 'Unknown').length > 3 && (
+                                <div className="w-6 h-6 bg-slate-300 rounded-full flex items-center justify-center text-xs font-bold text-slate-700 border-2 border-white">
+                                  +{(project.assignees || []).filter((id: string) => id && id !== 'Unknown').length - 3}
+                                </div>
+                              )}
+                            </div>
+                            {(project.assignees || []).filter((id: string) => id && id !== 'Unknown').length === 0 && (
+                              <span className="text-slate-400 italic">Sin asignar</span>
                             )}
                           </div>
-                          <p className="text-xs font-mono text-slate-500">{project.id}</p>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 align-middle">
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(project.status)}`}>
-                        {project.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 align-middle">
-                      <div className="flex items-center -space-x-2">
-                        {(project.assignees || [])
-                          .filter((id: string) => id && id !== 'Unknown')
-                          .slice(0, 3)
-                          .map((employeeId: string) => {
-                            const member = teamMembers.find(m => m.id === employeeId);
-                            const name = member?.name || 'Unknown';
-                            const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
-                            return (
-                              <div 
-                                key={employeeId} 
-                                className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-white ring-2 ring-slate-100" 
-                                title={name}
-                              >
-                                {initials}
-                              </div>
-                            );
-                          })}
-                        {(project.assignees || []).filter((id: string) => id && id !== 'Unknown').length > 3 && (
-                           <div className="w-8 h-8 bg-slate-300 rounded-full flex items-center justify-center text-xs font-bold text-slate-700 border-2 border-white ring-2 ring-slate-100">
-                               +{(project.assignees || []).filter((id: string) => id && id !== 'Unknown').length - 3}
-                           </div>
-                        )}
-                         {!(project.assignees || []).filter((id: string) => id && id !== 'Unknown').length && (
-                           <div className="text-xs text-slate-400 italic">Unassigned</div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600 font-medium align-middle">
-                        <div className="flex items-center gap-2">
-                            <CalendarIcon className="w-4 h-4 text-slate-400" />
-                            <span>{project.deadline || 'N/A'}</span>
+                    </div>
+                    
+                    {/* Right section - Progress & Actions */}
+                    <div className="flex items-center gap-4">
+                      {/* Progress circle */}
+                      <div className="flex flex-col items-center">
+                        <div className="relative w-14 h-14">
+                          <svg className="transform -rotate-90 w-14 h-14">
+                            <circle
+                              cx="28"
+                              cy="28"
+                              r="24"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              fill="none"
+                              className="text-slate-200"
+                            />
+                            <circle
+                              cx="28"
+                              cy="28"
+                              r="24"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              fill="none"
+                              strokeDasharray={`${2 * Math.PI * 24}`}
+                              strokeDashoffset={`${2 * Math.PI * 24 * (1 - project.progress / 100)}`}
+                              className="text-red-600 transition-all duration-300"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-xs font-bold text-slate-700">{project.progress}%</span>
+                          </div>
                         </div>
-                    </td>
-                    <td className="px-6 py-4 align-middle">
-                      <div className="flex items-center gap-3">
-                        <div className="w-full bg-slate-200 rounded-full h-2">
-                          <div className="bg-red-600 h-2 rounded-full" style={{ width: `${project.progress}%` }}></div>
-                        </div>
-                        <span className="text-xs font-semibold text-slate-600 w-8 text-right">{project.progress}%</span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 align-middle text-right">
-                        <button 
+                      
+                      {/* Delete button */}
+                      <button 
                         onClick={(e) => {
                           e.stopPropagation();
                           setOperationToDelete(project);
                         }}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" 
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100" 
                         title="Eliminar"
                       >
                         <TrashIcon className="w-4 h-4" />
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         ) : (
           <div className="text-center py-20 flex flex-col items-center justify-center flex-grow">
