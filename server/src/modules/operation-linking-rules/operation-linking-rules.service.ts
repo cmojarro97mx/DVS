@@ -1,9 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
+import { SmartOperationCreatorService } from './smart-operation-creator.service';
 
 @Injectable()
 export class OperationLinkingRulesService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(OperationLinkingRulesService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => SmartOperationCreatorService))
+    private smartOperationCreator: SmartOperationCreatorService,
+  ) {}
 
   async findAll(organizationId: string) {
     const rules = await this.prisma.operation_linking_rules.findMany({
@@ -37,17 +44,30 @@ export class OperationLinkingRulesService {
   }
 
   async create(data: any, organizationId: string) {
-    const { defaultAssigneeIds, emailAccountIds, autoCreate, ...rest } = data;
+    const { defaultAssigneeIds, emailAccountIds, autoCreate, processFromDate, ...rest } = data;
     
-    return this.prisma.operation_linking_rules.create({
+    const rule = await this.prisma.operation_linking_rules.create({
       data: {
         ...rest,
         organizationId,
         defaultAssignees: defaultAssigneeIds || [],
         emailAccountIds: emailAccountIds || [],
         autoCreateOperations: autoCreate !== undefined ? autoCreate : true,
+        processFromDate: processFromDate || null,
       },
     });
+
+    // Process historical emails if processFromDate is set
+    if (processFromDate) {
+      // Run in background to avoid blocking the response
+      setImmediate(() => {
+        this.processHistoricalEmails(rule.id, organizationId).catch(error => {
+          this.logger.error(`Error processing historical emails for rule ${rule.id}:`, error);
+        });
+      });
+    }
+
+    return rule;
   }
 
   async update(id: string, data: any, organizationId: string) {
@@ -60,7 +80,7 @@ export class OperationLinkingRulesService {
       throw new NotFoundException(`Rule with ID ${id} not found`);
     }
 
-    const { defaultAssigneeIds, emailAccountIds, autoCreate, ...rest } = data;
+    const { defaultAssigneeIds, emailAccountIds, autoCreate, processFromDate, ...rest } = data;
     
     const updateData: any = { ...rest };
     
@@ -76,10 +96,31 @@ export class OperationLinkingRulesService {
       updateData.autoCreateOperations = autoCreate;
     }
 
-    return this.prisma.operation_linking_rules.update({
+    if (processFromDate !== undefined) {
+      updateData.processFromDate = processFromDate;
+    }
+
+    const updated = await this.prisma.operation_linking_rules.update({
       where: { id: existing.id },
       data: updateData,
     });
+
+    // Process historical emails if processFromDate is set and changed
+    // Convert both to Date objects for proper comparison
+    const newDate = processFromDate ? new Date(processFromDate).getTime() : null;
+    const oldDate = existing.processFromDate ? new Date(existing.processFromDate).getTime() : null;
+    
+    if (processFromDate && newDate !== oldDate) {
+      this.logger.log(`ProcessFromDate changed from ${existing.processFromDate} to ${processFromDate}, triggering historical processing`);
+      // Run in background to avoid blocking the response
+      setImmediate(() => {
+        this.processHistoricalEmails(updated.id, organizationId).catch(error => {
+          this.logger.error(`Error processing historical emails for rule ${updated.id}:`, error);
+        });
+      });
+    }
+
+    return updated;
   }
 
   async remove(id: string, organizationId: string) {
@@ -118,5 +159,100 @@ export class OperationLinkingRulesService {
       where: { id: rule.id },
       data: { enabled: !rule.enabled },
     });
+  }
+
+  async processHistoricalEmails(ruleId: string, organizationId: string) {
+    const rule = await this.prisma.operation_linking_rules.findFirst({
+      where: { id: ruleId, organizationId },
+    });
+
+    if (!rule) {
+      throw new NotFoundException(`Rule with ID ${ruleId} not found`);
+    }
+
+    if (!rule.processFromDate) {
+      this.logger.warn(`Rule ${ruleId} has no processFromDate set, skipping historical processing`);
+      return { processed: 0, created: 0, errors: 0 };
+    }
+
+    this.logger.log(`Processing historical emails for rule ${rule.name} (${ruleId}) from ${rule.processFromDate}`);
+
+    // Build query to find matching emails
+    const whereConditions: any = {
+      date: {
+        gte: rule.processFromDate,
+      },
+      OR: [
+        { subject: { contains: rule.subjectPattern, mode: 'insensitive' } },
+        { body: { contains: rule.subjectPattern, mode: 'insensitive' } },
+      ],
+    };
+
+    // Filter by email accounts if specified
+    const emailAccountIds = Array.isArray(rule.emailAccountIds) ? rule.emailAccountIds : [];
+    if (emailAccountIds.length > 0) {
+      whereConditions.accountId = { in: emailAccountIds };
+    }
+
+    // Only process if not already processed (lastHistoricalProcessed)
+    if (rule.lastHistoricalProcessed) {
+      whereConditions.date.gte = rule.lastHistoricalProcessed;
+    }
+
+    const emails = await this.prisma.email_messages.findMany({
+      where: whereConditions,
+      orderBy: { date: 'asc' },
+    });
+
+    this.logger.log(`Found ${emails.length} historical emails to process for rule ${rule.name}`);
+
+    let processed = 0;
+    let created = 0;
+    let errors = 0;
+    let lastSuccessfulDate: Date | null = null;
+
+    for (const email of emails) {
+      try {
+        this.logger.log(`Processing email ${email.id} - ${email.subject}`);
+        const result = await this.smartOperationCreator.processEmailForOperationCreation(
+          {
+            id: email.id,
+            subject: email.subject,
+            from: email.from,
+            bodyText: email.body,
+            snippet: email.snippet,
+            date: email.date,
+          },
+          organizationId,
+          email.accountId,
+        );
+        
+        processed++;
+        lastSuccessfulDate = email.date;
+        if (result) {
+          created++;
+          this.logger.log(`✅ Created operation: ${result.projectName}`);
+        }
+      } catch (error) {
+        this.logger.error(`Error processing email ${email.id}: ${error.message}`, error.stack);
+        errors++;
+      }
+    }
+
+    // Only update lastHistoricalProcessed if no errors occurred
+    // This allows manual retry to reprocess failed emails
+    if (errors === 0 && lastSuccessfulDate) {
+      await this.prisma.operation_linking_rules.update({
+        where: { id: rule.id },
+        data: { lastHistoricalProcessed: lastSuccessfulDate },
+      });
+      this.logger.log(`✅ Updated lastHistoricalProcessed to ${lastSuccessfulDate}`);
+    } else if (errors > 0) {
+      this.logger.warn(`⚠️ Errors occurred during processing, NOT updating lastHistoricalProcessed to allow retry`);
+    }
+
+    this.logger.log(`Historical processing complete for rule ${rule.name}: ${processed} processed, ${created} created, ${errors} errors`);
+
+    return { processed, created, errors };
   }
 }

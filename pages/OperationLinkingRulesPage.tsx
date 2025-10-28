@@ -25,7 +25,9 @@ export default function OperationLinkingRulesPage() {
     emailAccountIds: [],
     autoCreate: true,
     enabled: true,
+    processFromDate: null,
   });
+  const [historicalPeriod, setHistoricalPeriod] = useState<string>('none');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [companyDomainInput, setCompanyDomainInput] = useState<string>('');
@@ -63,8 +65,10 @@ export default function OperationLinkingRulesPage() {
       emailAccountIds: [],
       autoCreate: true,
       enabled: true,
+      processFromDate: null,
     });
     setCompanyDomainInput('');
+    setHistoricalPeriod('none');
     setEditingRule(null);
     setShowCreateModal(true);
   };
@@ -79,8 +83,10 @@ export default function OperationLinkingRulesPage() {
       emailAccountIds: rule.emailAccountIds || [],
       autoCreate: rule.autoCreate,
       enabled: rule.enabled,
+      processFromDate: null,
     });
     setCompanyDomainInput('');
+    setHistoricalPeriod('none');
     setEditingRule(rule);
     setShowCreateModal(true);
   };
@@ -97,6 +103,34 @@ export default function OperationLinkingRulesPage() {
     });
   };
 
+  const calculateProcessFromDate = (period: string): Date | null => {
+    if (period === 'none') return null;
+    
+    const now = new Date();
+    const date = new Date(now.getFullYear(), now.getMonth(), 1); // Start of current month
+    
+    switch (period) {
+      case 'current':
+        return date;
+      case '2months':
+        date.setMonth(date.getMonth() - 2);
+        return date;
+      case '3months':
+        date.setMonth(date.getMonth() - 3);
+        return date;
+      case '6months':
+        date.setMonth(date.getMonth() - 6);
+        return date;
+      case '1year':
+        date.setMonth(date.getMonth() - 12);
+        return date;
+      case 'all':
+        return new Date('2020-01-01'); // Far enough back to get all emails
+      default:
+        return null;
+    }
+  };
+
   const handleSave = async () => {
     if (!formData.name.trim()) {
       setError('El nombre es obligatorio');
@@ -111,10 +145,16 @@ export default function OperationLinkingRulesPage() {
     setSaving(true);
     setError(null);
     try {
+      const processFromDate = calculateProcessFromDate(historicalPeriod);
+      const dataToSave = {
+        ...formData,
+        processFromDate,
+      };
+
       if (editingRule) {
-        await operationLinkingRulesService.updateRule(editingRule.id, formData);
+        await operationLinkingRulesService.updateRule(editingRule.id, dataToSave);
       } else {
-        await operationLinkingRulesService.createRule(formData);
+        await operationLinkingRulesService.createRule(dataToSave);
       }
       setShowCreateModal(false);
       loadData();
@@ -499,6 +539,28 @@ export default function OperationLinkingRulesPage() {
                   <p className="text-xs text-gray-500 mt-2">
                     Si no seleccionas ninguna cuenta, la regla se aplicará a emails de TODAS las cuentas vinculadas. 
                     Si seleccionas cuentas específicas, solo se procesarán emails de esas cuentas.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Procesar emails históricos
+                  </label>
+                  <select
+                    value={historicalPeriod}
+                    onChange={(e) => setHistoricalPeriod(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="none">No procesar emails históricos</option>
+                    <option value="current">Mes actual</option>
+                    <option value="2months">Últimos 2 meses</option>
+                    <option value="3months">Últimos 3 meses</option>
+                    <option value="6months">Últimos 6 meses</option>
+                    <option value="1year">Último año</option>
+                    <option value="all">Todos los emails</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Al crear la regla, se procesarán automáticamente los emails históricos que coincidan con el patrón desde la fecha seleccionada.
                   </p>
                 </div>
 

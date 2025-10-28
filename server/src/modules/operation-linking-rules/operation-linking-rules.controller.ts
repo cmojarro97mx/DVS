@@ -80,6 +80,12 @@ export class OperationLinkingRulesController {
     return this.linkingRulesService.toggleRule(id, organizationId);
   }
 
+  @Post(':id/process-historical')
+  async processHistorical(@Param('id') id: string, @Request() req) {
+    const organizationId = req.user.organizationId;
+    return this.linkingRulesService.processHistoricalEmails(id, organizationId);
+  }
+
   @Post('test/process-email/:emailId')
   async testProcessEmail(@Param('emailId') emailId: string, @Request() req) {
     const organizationId = req.user.organizationId;

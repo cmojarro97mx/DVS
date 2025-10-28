@@ -32,6 +32,7 @@ export interface CreateOperationLinkingRuleDto {
   emailAccountIds?: string[];
   autoCreate: boolean;
   enabled: boolean;
+  processFromDate?: Date | null;
 }
 
 export interface UpdateOperationLinkingRuleDto {
@@ -43,6 +44,7 @@ export interface UpdateOperationLinkingRuleDto {
   emailAccountIds?: string[];
   autoCreate?: boolean;
   enabled?: boolean;
+  processFromDate?: Date | null;
 }
 
 class OperationLinkingRulesService {
