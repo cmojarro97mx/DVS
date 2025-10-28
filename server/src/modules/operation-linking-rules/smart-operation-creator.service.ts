@@ -114,8 +114,8 @@ export class SmartOperationCreatorService {
       // Si no es regex, buscar el patrón como texto literal y extraer el número completo
       if (subject.toUpperCase().includes(pattern.toUpperCase())) {
         // Extraer el patrón + número completo (ej: "NAVI-1590057")
-        // Buscar el patrón seguido de dígitos, posiblemente con guiones
-        const patternRegex = new RegExp(`${this.escapeRegex(pattern)}[\\d\\-]+`, 'i');
+        // Buscar el patrón seguido de dígitos (no guiones en el conjunto)
+        const patternRegex = new RegExp(`${this.escapeRegex(pattern)}\\d+`, 'i');
         const fullMatch = subject.match(patternRegex);
         
         if (fullMatch) {
