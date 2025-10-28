@@ -111,11 +111,11 @@ export class SmartOperationCreatorService {
         return { operationName, fullMatch: match[0] };
       }
 
-      // Si no es regex, buscar el patrón como texto literal y extraer el número completo
+      // Si no es regex, buscar el patrón como texto literal y extraer el ID completo
       if (subject.toUpperCase().includes(pattern.toUpperCase())) {
-        // Extraer el patrón + número completo (ej: "NAVI-1590057")
-        // Buscar el patrón seguido de dígitos (no guiones en el conjunto)
-        const patternRegex = new RegExp(`${this.escapeRegex(pattern)}\\d+`, 'i');
+        // Extraer el patrón + ID completo (ej: "NAVI-1590057", "NAVI-5DS", "NAVI-ABC-123")
+        // Buscar el patrón seguido de letras, números y guiones
+        const patternRegex = new RegExp(`${this.escapeRegex(pattern)}[A-Z0-9-]+`, 'i');
         const fullMatch = subject.match(patternRegex);
         
         if (fullMatch) {
