@@ -632,13 +632,22 @@ const ProjectMembers: React.FC<{
   const [memberToAdd, setMemberToAdd] = useState('');
 
   // projectAssignees now contains employee IDs
+  // Filter out invalid assignees first
+  const validAssignees = projectAssignees.filter(id => 
+    id && id !== 'Unknown' && allTeamMembers.some(m => m.id === id)
+  );
+  
   const availableMembers = allTeamMembers.filter(
-    member => !projectAssignees.includes(member.id)
+    member => !validAssignees.includes(member.id)
   );
 
   const handleAddMember = () => {
     if (memberToAdd && !projectAssignees.includes(memberToAdd)) {
-      const newAssignees = [...projectAssignees, memberToAdd];
+      // Filter out invalid IDs like "Unknown"
+      const validAssignees = projectAssignees.filter(id => 
+        id && id !== 'Unknown' && allTeamMembers.some(m => m.id === id)
+      );
+      const newAssignees = [...validAssignees, memberToAdd];
       onUpdateAssignees(newAssignees);
       setMemberToAdd('');
     }
@@ -649,14 +658,17 @@ const ProjectMembers: React.FC<{
     const memberName = memberToRemove?.name || 'this member';
     
     if (window.confirm(`¿Estás seguro de que deseas eliminar ${memberName} de esta operación?`)) {
-      const newAssignees = projectAssignees.filter(id => id !== memberId);
+      // Filter out invalid IDs like "Unknown"
+      const newAssignees = projectAssignees.filter(id => 
+        id !== memberId && id && id !== 'Unknown' && allTeamMembers.some(m => m.id === id)
+      );
       onUpdateAssignees(newAssignees);
     }
   };
 
   // Get member names for display
   const getAssignedMembers = () => {
-    return projectAssignees
+    return validAssignees
       .map(assigneeId => allTeamMembers.find(m => m.id === assigneeId))
       .filter(m => m !== undefined);
   };
@@ -702,7 +714,7 @@ const ProjectMembers: React.FC<{
             </button>
           </div>
         ))}
-        {projectAssignees.length === 0 && (
+        {validAssignees.length === 0 && (
           <p className="col-span-full text-center text-gray-500 text-sm py-8">No hay miembros asignados a esta operación.</p>
         )}
       </div>
