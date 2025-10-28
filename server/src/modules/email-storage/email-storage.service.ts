@@ -141,6 +141,29 @@ export class EmailStorageService {
     }
   }
 
+  async downloadAttachment(key: string): Promise<Buffer> {
+    try {
+      const command = new GetObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+      });
+
+      const response = await this.s3Client.send(command);
+      
+      const stream = response.Body as any;
+      const chunks: Buffer[] = [];
+
+      for await (const chunk of stream) {
+        chunks.push(Buffer.from(chunk));
+      }
+
+      return Buffer.concat(chunks);
+    } catch (error) {
+      this.logger.error(`Failed to download attachment ${key}:`, error);
+      throw error;
+    }
+  }
+
   async deleteFiles(keys: string[]): Promise<void> {
     if (keys.length === 0) return;
 
