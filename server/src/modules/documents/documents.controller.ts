@@ -14,12 +14,14 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { DocumentsService } from './documents.service';
 import { AIClassifierService } from './ai-classifier.service';
+import { EmailExtractionService } from './email-extraction.service';
 
 @Controller('documents')
 export class DocumentsController {
   constructor(
     private documentsService: DocumentsService,
     private aiClassifier: AIClassifierService,
+    private emailExtraction: EmailExtractionService,
   ) {}
 
   @Post('folders')
@@ -114,5 +116,23 @@ export class DocumentsController {
     @Body() body: any,
   ) {
     return this.aiClassifier.updateAutomationConfig(organizationId, body);
+  }
+
+  @Post('extract-email-attachments')
+  async extractEmailAttachments(
+    @Body() body: { emailMessageId: string; operationId: string; folderId?: string },
+  ) {
+    await this.emailExtraction.extractAttachmentsFromEmail(
+      body.emailMessageId,
+      body.operationId,
+      body.folderId,
+    );
+    return { success: true };
+  }
+
+  @Post('operation/:operationId/process-email-attachments')
+  async processOperationEmailAttachments(@Param('operationId') operationId: string) {
+    await this.emailExtraction.processOperationEmailAttachments(operationId);
+    return { success: true };
   }
 }
