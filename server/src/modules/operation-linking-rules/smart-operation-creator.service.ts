@@ -101,19 +101,27 @@ export class SmartOperationCreatorService {
 
   private matchSubjectPattern(subject: string, pattern: string) {
     try {
+      // Intentar usar como regex primero
       const regex = new RegExp(pattern, 'i');
       const match = subject.match(regex);
 
       if (match) {
+        // Si hay un grupo de captura, usarlo
         const operationName = match[1] || match[0];
         return { operationName, fullMatch: match[0] };
       }
 
-      if (subject.includes(pattern)) {
-        const parts = subject.split(pattern);
-        if (parts.length > 1) {
-          const operationName = parts[1].trim().split(' ')[0].trim();
-          return { operationName, fullMatch: pattern + operationName };
+      // Si no es regex, buscar el patrón como texto literal y extraer el número completo
+      if (subject.toUpperCase().includes(pattern.toUpperCase())) {
+        // Extraer el patrón + número completo (ej: "NAVI-1590057")
+        // Buscar el patrón seguido de dígitos, posiblemente con guiones
+        const patternRegex = new RegExp(`${this.escapeRegex(pattern)}[\\d\\-]+`, 'i');
+        const fullMatch = subject.match(patternRegex);
+        
+        if (fullMatch) {
+          const operationName = fullMatch[0];
+          this.logger.log(`📋 Extracted operation name: "${operationName}" from subject: "${subject}"`);
+          return { operationName, fullMatch: operationName };
         }
       }
 
@@ -124,11 +132,33 @@ export class SmartOperationCreatorService {
     }
   }
 
+  private escapeRegex(str: string): string {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
   private async findOperationByName(
     projectName: string,
     organizationId: string,
   ) {
-    return this.prisma.operations.findFirst({
+    // Primero intentar búsqueda exacta
+    const exactMatch = await this.prisma.operations.findFirst({
+      where: {
+        projectName: {
+          equals: projectName,
+          mode: 'insensitive',
+        },
+        organizationId,
+      },
+    });
+
+    if (exactMatch) {
+      this.logger.log(`🔍 Found exact match for operation: ${projectName}`);
+      return exactMatch;
+    }
+
+    // Si no hay coincidencia exacta, buscar operaciones que contengan el nombre completo
+    // Esto ayuda con casos donde el projectName puede tener prefijos/sufijos
+    const partialMatch = await this.prisma.operations.findFirst({
       where: {
         projectName: {
           contains: projectName,
@@ -137,6 +167,12 @@ export class SmartOperationCreatorService {
         organizationId,
       },
     });
+
+    if (partialMatch) {
+      this.logger.log(`🔍 Found partial match for operation: ${projectName} (matched: ${partialMatch.projectName})`);
+    }
+
+    return partialMatch;
   }
 
   private async createOperationFromEmail(
