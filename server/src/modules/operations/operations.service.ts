@@ -83,16 +83,21 @@ export class OperationsService {
 
     // Transform operation_assignees to assignees array of employee IDs
     const assignees = [];
+    console.log('🔍 [FIND_ONE] operation_assignees:', operation.operation_assignees.length);
     for (const assignee of operation.operation_assignees) {
+      console.log('  - Searching employee for userId:', assignee.userId);
       // Find employee by userId
       const employee = await this.prisma.employees.findFirst({
         where: { userId: assignee.userId, organizationId },
-        select: { id: true },
+        select: { id: true, name: true },
       });
+      console.log('  - Found employee:', employee);
       if (employee) {
         assignees.push(employee.id);
       }
     }
+
+    console.log('✅ [FIND_ONE] Final assignees array:', assignees);
 
     return {
       ...operation,
