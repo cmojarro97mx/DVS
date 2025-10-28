@@ -106,23 +106,27 @@ export class SmartOperationCreatorService {
       const match = subject.match(regex);
 
       if (match) {
-        // Si hay un grupo de captura, usarlo
-        const operationName = match[1] || match[0];
-        return { operationName, fullMatch: match[0] };
-      }
-
-      // Si no es regex, buscar el patrón como texto literal y extraer el ID completo
-      if (subject.toUpperCase().includes(pattern.toUpperCase())) {
-        // Extraer el patrón + ID completo (ej: "NAVI-1590057", "NAVI-5DS", "NAVI-ABC-123")
-        // Buscar el patrón seguido de letras, números y guiones
-        const patternRegex = new RegExp(`${this.escapeRegex(pattern)}[A-Z0-9-]+`, 'i');
-        const fullMatch = subject.match(patternRegex);
+        // Si hay un grupo de captura, usarlo directamente
+        if (match[1]) {
+          const operationName = match[1];
+          this.logger.log(`📋 Extracted operation name from regex group: "${operationName}"`);
+          return { operationName, fullMatch: match[0] };
+        }
         
-        if (fullMatch) {
-          const operationName = fullMatch[0];
+        // Si NO hay grupo de captura, extraer el ID completo
+        // Buscar desde la posición del match hasta el final del ID
+        const matchIndex = subject.toLowerCase().indexOf(match[0].toLowerCase());
+        const afterMatch = subject.substring(matchIndex);
+        const fullIdMatch = afterMatch.match(/^[A-Z0-9-]+/i);
+        
+        if (fullIdMatch) {
+          const operationName = fullIdMatch[0];
           this.logger.log(`📋 Extracted operation name: "${operationName}" from subject: "${subject}"`);
           return { operationName, fullMatch: operationName };
         }
+        
+        // Fallback: usar solo lo que matcheó
+        return { operationName: match[0], fullMatch: match[0] };
       }
 
       return null;
