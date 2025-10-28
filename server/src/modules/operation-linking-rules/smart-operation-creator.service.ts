@@ -238,8 +238,17 @@ export class SmartOperationCreatorService {
 
     this.logger.log(`✅ Operation "${operationName}" created successfully (ID: ${operation.id})`);
 
+    this.logger.log(`📋 Rule defaultAssignees:`, {
+      hasDefaultAssignees: !!rule.defaultAssignees,
+      isArray: Array.isArray(rule.defaultAssignees),
+      length: Array.isArray(rule.defaultAssignees) ? rule.defaultAssignees.length : 0,
+      data: rule.defaultAssignees,
+    });
+
     if (rule.defaultAssignees && Array.isArray(rule.defaultAssignees) && rule.defaultAssignees.length > 0) {
       await this.assignDefaultEmployees(operation.id, rule.defaultAssignees, organizationId);
+    } else {
+      this.logger.warn(`⚠️ No employees to assign (defaultAssignees is empty or invalid)`);
     }
 
     // 📚 Contribuir a la Knowledge Base con la información extraída

@@ -209,10 +209,9 @@ export class OperationLinkingRulesService {
       whereConditions.accountId = { in: emailAccountIds };
     }
 
-    // Only process if not already processed (lastHistoricalProcessed)
-    if (rule.lastHistoricalProcessed) {
-      whereConditions.date.gte = rule.lastHistoricalProcessed;
-    }
+    // Note: We intentionally do NOT filter by lastHistoricalProcessed
+    // This allows reprocessing all emails when saving the rule (e.g., after bug fixes)
+    // The system already validates before creating operations, so no duplicates will be created
 
     const emails = await this.prisma.email_messages.findMany({
       where: whereConditions,
