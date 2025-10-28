@@ -73,7 +73,39 @@ export default function OperationLinkingRulesPage() {
     setShowCreateModal(true);
   };
 
+  const getPeriodFromDate = (processFromDate: Date | null): string => {
+    if (!processFromDate) return 'none';
+    
+    const savedDate = new Date(processFromDate);
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Calculate month differences
+    const monthsDiff = (now.getFullYear() - savedDate.getFullYear()) * 12 + 
+                       (now.getMonth() - savedDate.getMonth());
+    
+    // Check if it matches specific periods (with some tolerance for timezone differences)
+    if (Math.abs(savedDate.getTime() - currentMonthStart.getTime()) < 24 * 60 * 60 * 1000) {
+      return 'current';
+    } else if (monthsDiff >= 11) {
+      return '1year';
+    } else if (monthsDiff >= 5) {
+      return '6months';
+    } else if (monthsDiff >= 2) {
+      return '3months';
+    } else if (monthsDiff >= 1) {
+      return '2months';
+    } else if (savedDate.getFullYear() === 2020) {
+      return 'all';
+    }
+    
+    return 'none';
+  };
+
   const handleEdit = (rule: OperationLinkingRule) => {
+    // Determine the historical period from the saved processFromDate
+    const period = getPeriodFromDate((rule as any).processFromDate);
+    
     setFormData({
       name: rule.name,
       description: rule.description || '',
@@ -83,10 +115,10 @@ export default function OperationLinkingRulesPage() {
       emailAccountIds: rule.emailAccountIds || [],
       autoCreate: rule.autoCreate,
       enabled: rule.enabled,
-      processFromDate: null,
+      processFromDate: (rule as any).processFromDate || null,
     });
     setCompanyDomainInput('');
-    setHistoricalPeriod('none');
+    setHistoricalPeriod(period);
     setEditingRule(rule);
     setShowCreateModal(true);
   };
